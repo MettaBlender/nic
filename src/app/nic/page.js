@@ -1,13 +1,33 @@
-import Sidebar from '@/components/nic/cms/sidebar'
-import React from 'react'
+'use client';
 
-const page = () => {
+import React from 'react';
+import Sidebar from '@/components/nic/cms/sidebar';
+import CMSEditor from '@/components/nic/cms/CMSEditor';
+import { CMSProvider, useCMS } from '@/context/CMSContext';
+
+const CMSContent = () => {
+  const { sidebarOpen } = useCMS();
+
   return (
-    <div className='w-[calc(100% - 25rem)] flex ml-100 pl-5'>
-      <Sidebar/>
-      <p>page</p>
+    <div className="h-screen flex">
+      <Sidebar />
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? 'ml-80' : 'ml-16'
+        }`}
+      >
+        <CMSEditor />
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default page
+const NICPage = () => {
+  return (
+    <CMSProvider>
+      <CMSContent />
+    </CMSProvider>
+  );
+};
+
+export default NICPage;

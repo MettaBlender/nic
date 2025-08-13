@@ -1,29 +1,16 @@
 import Link from 'next/link';
-import { getPages, getPageBySlug } from '@/lib/database';
-import { redirect } from 'next/navigation';
+import { getPages } from '@/lib/database';
 
 export default async function HomePage() {
-  // Prüfe ob Home-Seite in CMS existiert
-  let homePage = null;
-  try {
-    homePage = await getPageBySlug('home');
-  } catch (error) {
-    console.error('Fehler beim Laden der Home-Seite:', error);
-  }
-
-  // Wenn Home-Seite existiert, leite zur CMS-Home-Seite weiter
-  if (homePage) {
-    redirect('/home');
-  }
-
-  // Ansonsten zeige die Standard-Landing-Page
   let pages = [];
 
   try {
     pages = await getPages();
   } catch (error) {
     console.error('Fehler beim Laden der Seiten:', error);
-  }  return (
+  }
+
+  return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
