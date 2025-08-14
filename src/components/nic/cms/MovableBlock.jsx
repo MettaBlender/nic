@@ -5,6 +5,7 @@ import Moveable from 'react-moveable';
 import { useCMS } from '@/context/CMSContext';
 import { Trash2, Palette } from 'lucide-react';
 import { HexAlphaColorPicker } from 'react-colorful';
+import toRelativePosition from '../../../lib/toRelativePosition';
 
 const MovableBlock = ({
   block,
@@ -28,6 +29,7 @@ const MovableBlock = ({
   const elementRef = useRef(null);
   const isResizing = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const initialElementPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (elementRef.current) {
@@ -190,76 +192,119 @@ const MovableBlock = ({
             resizable={isSelected}
             rotatable={isSelected}
             snappable={true}
-            throttleDrag={1}
-            throttleResize={1}
-            throttleRotate={1}
+            throttleDrag={0}
+            throttleResize={0}
+            throttleRotate={0}
             origin={false}
             renderDirections={isSelected ? ["nw", "n", "ne", "w", "e", "sw", "s", "se"] : []}
-            onDragStart={({ set }) => {
-              console.log('Drag start triggered');
+            keepRatio={false}
+            dragArea={false}
+            onDragStart={({ set, clientX, clientY }) => {
               // Automatisch selektieren beim Drag-Start
               if (onSelect) {
                 onSelect(block);
               }
+
+              // Speichere Maus-Startposition (JAPresentation Style)
+              dragStartPos.current = {
+                x: clientX,
+                y: clientY
+              };
+
+              // Setze initiale Position in Pixeln für Moveable
+              const containerWidth = containerSizeLocal.width || 800;
+              const containerHeight = containerSizeLocal.height || 600;
+              const currentX = (frame.translate[0] * containerWidth) / 100;
+              const currentY = (frame.translate[1] * containerHeight) / 100;
+              set([currentX, currentY]);
+
+              console.log('Drag start at:', clientX, clientY, 'Element at:', currentX, currentY);
             }}
-            onDrag={({ beforeTranslate }) => {
-              console.log('Dragging:', beforeTranslate);
+            onDrag={({ target, clientX, clientY }) => {
+              // JAPresentation-System: Delta mit Multiplikator 5
+              const deltaX = (clientX - dragStartPos.current.x) * 5;
+              const deltaY = (clientY - dragStartPos.current.y) * 5;
+
               const containerWidth = containerSizeLocal.width || 800;
               const containerHeight = containerSizeLocal.height || 600;
 
-              const newX = Math.max(0, Math.min(100 - (frame.width || 20), (beforeTranslate[0] / containerWidth) * 100));
-              const newY = Math.max(0, Math.min(100 - (frame.height || 20), (beforeTranslate[1] / containerHeight) * 100));
+              // Berechne neue absolute Position
+              const newX = (frame.translate[0] * containerWidth) / 100 + deltaX;
+              const newY = (frame.translate[1] * containerHeight) / 100 + deltaY;
 
+              // Konvertiere zu relativer Position
+              const relativePosition = toRelativePosition(
+                newX,
+                newY,
+                containerWidth,
+                containerHeight
+              );
+
+              // Update Frame
               setFrame(prev => ({
                 ...prev,
-                translate: [newX, newY]
+                translate: [relativePosition.x, relativePosition.y]
               }));
 
-              if (target) {
-                target.style.left = `${newX}%`;
-                target.style.top = `${newY}%`;
-              }
+              // Update Transform direkt
+              target.style.transform = `translate(${relativePosition.x}%, ${relativePosition.y}%) rotate(${frame.rotate}deg) scale(${frame.scale[0]}, ${frame.scale[1]})`;
+
+              // Update dragStartPos für nächsten Frame (wichtig!)
+              dragStartPos.current = {
+                x: clientX,
+                y: clientY
+              };
+
+              console.log('Drag delta:', deltaX, deltaY, 'New pos:', relativePosition.x, relativePosition.y);
             }}
             onDragEnd={updateElement}
-            onResizeStart={() => {
-              console.log('Resize start triggered');
+            onResizeStart={({ setOrigin, dragStart }) => {
               // Automatisch selektieren beim Resize-Start
               if (onSelect) {
                 onSelect(block);
               }
               isResizing.current = true;
+
+              // JAPresentation Style
+              setOrigin(['%', '%']);
+              if (dragStart) {
+                const containerWidth = containerSizeLocal.width || 800;
+                const containerHeight = containerSizeLocal.height || 600;
+                dragStart.set([
+                  (frame.translate[0] * containerWidth) / 100,
+                  (frame.translate[1] * containerHeight) / 100
+                ]);
+              }
+              console.log('Resize start');
             }}
-            onResize={({ width, height, drag }) => {
-              console.log('Resizing:', width, height);
+            onResize={({ target, width, height, drag }) => {
               if (!isResizing.current) return;
 
               const containerWidth = containerSizeLocal.width || 800;
               const containerHeight = containerSizeLocal.height || 600;
 
-              const newWidth = Math.max(5, Math.min(95, (width / containerWidth) * 100));
-              const newHeight = Math.max(5, Math.min(95, (height / containerHeight) * 100));
+              // JAPresentation Style: Direkte Konvertierung
+              const newWidth = (width / containerWidth) * 100;
+              const newHeight = (height / containerHeight) * 100;
 
-              let newX = frame.translate[0] || 0;
-              let newY = frame.translate[1] || 0;
-
-              if (drag && drag.beforeTranslate) {
-                newX = Math.max(0, Math.min(100 - newWidth, (drag.beforeTranslate[0] / containerWidth) * 100));
-                newY = Math.max(0, Math.min(100 - newHeight, (drag.beforeTranslate[1] / containerHeight) * 100));
-              }
+              const relativePosition = toRelativePosition(
+                drag.beforeTranslate[0],
+                drag.beforeTranslate[1],
+                containerWidth,
+                containerHeight
+              );
 
               setFrame(prev => ({
                 ...prev,
                 width: newWidth,
                 height: newHeight,
-                translate: [newX, newY]
+                translate: [relativePosition.x, relativePosition.y]
               }));
 
-              if (target) {
-                target.style.width = `${newWidth}%`;
-                target.style.height = `${newHeight}%`;
-                target.style.left = `${newX}%`;
-                target.style.top = `${newY}%`;
-              }
+              // Update Transform direkt
+              target.style.transform = `translate(${relativePosition.x}%, ${relativePosition.y}%) rotate(${frame.rotate}deg) scale(${frame.scale[0]}, ${frame.scale[1]})`;
+
+              console.log('Resize:', newWidth, newHeight, 'Pos:', relativePosition.x, relativePosition.y);
             }}
             onResizeEnd={() => {
               console.log('Resize end triggered');
