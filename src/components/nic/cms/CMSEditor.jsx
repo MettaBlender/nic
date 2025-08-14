@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import MovableBlock from './MovableBlock';
-import { Play, Edit, Trash2, Eye, Plus, Move, RotateCw } from 'lucide-react';
+import { Play, Edit, Trash2, Eye, Plus } from 'lucide-react';
 
 const CMSEditor = () => {
   const {
@@ -140,30 +140,6 @@ const CMSEditor = () => {
           >
             <Edit size={16} />
             Bearbeiten
-          </button>
-
-          <button
-            onClick={() => setMode('free')}
-            className={`px-3 py-2 rounded-md flex items-center gap-2 ${
-              mode === 'free'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <RotateCw size={16} />
-            Frei Bewegen
-          </button>
-
-          <button
-            onClick={() => setMode('move')}
-            className={`px-3 py-2 rounded-md flex items-center gap-2 ${
-              mode === 'move'
-                ? 'bg-purple-500 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <Move size={16} />
-            Verschieben
           </button>
 
           <button
