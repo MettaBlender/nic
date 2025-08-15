@@ -16,6 +16,7 @@ const CMSEditor = () => {
     deselectAllBlocks,
     updateBlock,
     deleteBlock,
+    duplicateBlock,
     containerSize,
     setContainerSize,
     layoutSettings
@@ -82,6 +83,14 @@ const CMSEditor = () => {
       await deleteBlock(blockId);
     } catch (error) {
       console.error('Fehler beim Löschen des Blocks:', error);
+    }
+  };
+
+  const handleBlockDuplicate = async (block) => {
+    try {
+      await duplicateBlock(block);
+    } catch (error) {
+      console.error('Fehler beim Duplizieren des Blocks:', error);
     }
   };
 
@@ -193,6 +202,7 @@ const CMSEditor = () => {
               onSelect={handleBlockSelect}
               onUpdate={handleBlockUpdate}
               onDelete={handleBlockDelete}
+              onDuplicate={handleBlockDuplicate}
             >
               {renderBlock(block)}
             </MovableBlock>

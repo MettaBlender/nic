@@ -23,6 +23,12 @@ export const CMSProvider = ({ children }) => {
   const [activeBlock, setActiveBlock] = useState(null);
   const [selectedBlocks, setSelectedBlocks] = useState([]);
 
+  // Draft & Publishing System
+  const [draftChanges, setDraftChanges] = useState([]);
+  const [isDraftMode, setIsDraftMode] = useState(true);
+  const [undoHistory, setUndoHistory] = useState([]);
+  const [redoHistory, setRedoHistory] = useState([]);
+
   // CMS Modus
   const [mode, setMode] = useState('edit'); // 'edit', 'free', 'move', 'precise', 'preview', 'delete'
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -44,6 +50,84 @@ export const CMSProvider = ({ children }) => {
   // Container Größe für Prozentuale Positionierung
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
+  // Persistente Draft-Änderungen (über localStorage)
+  useEffect(() => {
+    if (currentPage) {
+      const savedDrafts = localStorage.getItem(`nic-drafts-${currentPage.id}`);
+      if (savedDrafts) {
+        try {
+          const parsedDrafts = JSON.parse(savedDrafts);
+          setDraftChanges(parsedDrafts);
+        } catch (error) {
+          console.error('Fehler beim Laden der Draft-Änderungen:', error);
+        }
+      }
+    }
+  }, [currentPage]);
+
+  // Speichere Draft-Änderungen in localStorage
+  useEffect(() => {
+    if (currentPage && draftChanges.length > 0) {
+      localStorage.setItem(`nic-drafts-${currentPage.id}`, JSON.stringify(draftChanges));
+    }
+  }, [draftChanges, currentPage]);
+
+  // Keyboard Shortcuts (Ctrl+Z, Ctrl+Y)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Undo/Redo Funktionen
+  const undo = () => {
+    if (undoHistory.length === 0) return;
+
+    const lastAction = undoHistory[undoHistory.length - 1];
+    setRedoHistory(prev => [...prev, { type: 'current_state', blocks: [...blocks] }]);
+    setUndoHistory(prev => prev.slice(0, -1));
+
+    // Wende die Rückgängig-Operation an
+    if (lastAction.type === 'add_block') {
+      setBlocks(prev => prev.filter(block => block.id !== lastAction.blockId));
+    } else if (lastAction.type === 'delete_block') {
+      setBlocks(prev => [...prev, lastAction.block]);
+    } else if (lastAction.type === 'update_block') {
+      setBlocks(prev => prev.map(block =>
+        block.id === lastAction.blockId ? lastAction.oldData : block
+      ));
+    }
+  };
+
+  const redo = () => {
+    if (redoHistory.length === 0) return;
+
+    const nextAction = redoHistory[redoHistory.length - 1];
+    setUndoHistory(prev => [...prev, { type: 'current_state', blocks: [...blocks] }]);
+    setRedoHistory(prev => prev.slice(0, -1));
+
+    if (nextAction.type === 'current_state') {
+      setBlocks(nextAction.blocks);
+    }
+  };
+
+  // Hilfsfunktion für Undo-History
+  const addToUndoHistory = (action) => {
+    setUndoHistory(prev => [...prev.slice(-19), action]); // Maximal 20 Undo-Schritte
+    setRedoHistory([]); // Redo-History zurücksetzen
+  };
+
   // API Calls
   const loadPages = async () => {
     setIsLoading(true);
@@ -63,13 +147,55 @@ export const CMSProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/cms/blocks?pageId=${pageId}`);
-      const data = await response.json();
+      let data = await response.json();
+
+      // Wende Draft-Änderungen an (nur in NIC, nicht auf der veröffentlichten Seite)
+      data = applyDraftChangesToBlocks(data);
+
       setBlocks(data);
     } catch (error) {
       console.error('Fehler beim Laden der Blöcke:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Wende Draft-Änderungen auf Blöcke an
+  const applyDraftChangesToBlocks = (originalBlocks) => {
+    let modifiedBlocks = [...originalBlocks];
+
+    draftChanges.forEach(change => {
+      if (change.type === 'add') {
+        // Temporäre IDs für Draft-Blöcke
+        const tempBlock = {
+          id: `temp-${change.id}`,
+          page_id: currentPage?.id,
+          block_type: change.blockType,
+          content: getDefaultContent(change.blockType),
+          position_x: 10 + (modifiedBlocks.length * 5),
+          position_y: 10 + (modifiedBlocks.length * 5),
+          width: 20,
+          height: 20,
+          rotation: 0,
+          scale_x: 1,
+          scale_y: 1,
+          z_index: Math.max(...modifiedBlocks.map(b => b.z_index || 0), 0) + 1,
+          background_color: '#ffffff',
+          text_color: '#000000',
+          order_index: modifiedBlocks.length,
+          isDraft: true // Markierung für Draft-Blöcke
+        };
+        modifiedBlocks.push(tempBlock);
+      } else if (change.type === 'delete') {
+        modifiedBlocks = modifiedBlocks.filter(block => block.id !== change.blockId);
+      } else if (change.type === 'update') {
+        modifiedBlocks = modifiedBlocks.map(block =>
+          block.id === change.blockId ? { ...block, ...change.data } : block
+        );
+      }
+    });
+
+    return modifiedBlocks;
   };
 
   const createPage = async (title, slug) => {
@@ -121,48 +247,139 @@ export const CMSProvider = ({ children }) => {
     }
   };
 
-  const createBlock = async (blockData) => {
-    try {
-      const response = await fetch('/api/cms/blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(blockData)
-      });
-      const newBlock = await response.json();
-      setBlocks(prev => [...prev, newBlock]);
-      return newBlock;
-    } catch (error) {
-      console.error('Fehler beim Erstellen des Blocks:', error);
-      throw error;
-    }
+  const createBlock = (blockType) => {
+    // Erstelle Draft-Änderung statt direkter Datenbankänderung
+    const draftId = Date.now(); // Temporäre ID für Draft
+
+    const newDraftChange = {
+      id: draftId,
+      type: 'add',
+      blockType: blockType,
+      timestamp: Date.now()
+    };
+
+    addToUndoHistory({
+      type: 'undo_add',
+      draftChangeId: draftId
+    });
+
+    setDraftChanges(prev => {
+      const updated = [...prev, newDraftChange];
+      localStorage.setItem('cms_draft_changes', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Lade Blöcke neu, um Draft-Änderungen anzuzeigen
+    loadBlocks(currentPage?.id);
   };
 
-  const updateBlock = async (id, blockData) => {
-    try {
-      const response = await fetch(`/api/cms/blocks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(blockData)
-      });
-      const updatedBlock = await response.json();
-      setBlocks(prev => prev.map(block => block.id === id ? updatedBlock : block));
-      return updatedBlock;
-    } catch (error) {
-      console.error('Fehler beim Aktualisieren des Blocks:', error);
-      throw error;
-    }
+  const updateBlock = (id, blockData) => {
+    // Erstelle Draft-Änderung für Update
+    const newDraftChange = {
+      id: Date.now(),
+      type: 'update',
+      blockId: id,
+      data: blockData,
+      timestamp: Date.now()
+    };
+
+    addToUndoHistory({
+      type: 'undo_update',
+      blockId: id,
+      previousData: blocks.find(b => b.id === id)
+    });
+
+    setDraftChanges(prev => {
+      const updated = [...prev, newDraftChange];
+      localStorage.setItem('cms_draft_changes', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Lade Blöcke neu, um Draft-Änderungen anzuzeigen
+    loadBlocks(currentPage?.id);
   };
 
-  const deleteBlock = async (id) => {
+  const deleteBlock = (id) => {
+    // Erstelle Draft-Änderung für Delete
+    const blockToDelete = blocks.find(b => b.id === id);
+
+    const newDraftChange = {
+      id: Date.now(),
+      type: 'delete',
+      blockId: id,
+      timestamp: Date.now()
+    };
+
+    addToUndoHistory({
+      type: 'undo_delete',
+      blockData: blockToDelete
+    });
+
+    setDraftChanges(prev => {
+      const updated = [...prev, newDraftChange];
+      localStorage.setItem('cms_draft_changes', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (activeBlock && activeBlock.id === id) {
+      setActiveBlock(null);
+    }
+
+    // Lade Blöcke neu, um Draft-Änderungen anzuzeigen
+    loadBlocks(currentPage?.id);
+  };
+
+  // Veröffentliche alle Draft-Änderungen in die Datenbank
+  const publishDrafts = async () => {
+    if (draftChanges.length === 0) return;
+
     try {
-      await fetch(`/api/cms/blocks/${id}`, { method: 'DELETE' });
-      setBlocks(prev => prev.filter(block => block.id !== id));
-      if (activeBlock && activeBlock.id === id) {
-        setActiveBlock(null);
+      for (const change of draftChanges) {
+        if (change.type === 'add') {
+          const blockData = {
+            page_id: currentPage.id,
+            block_type: change.blockType,
+            content: getDefaultContent(change.blockType),
+            position_x: 10 + (blocks.length * 5),
+            position_y: 10 + (blocks.length * 5),
+            width: 20,
+            height: 20,
+            rotation: 0,
+            scale_x: 1,
+            scale_y: 1,
+            z_index: Math.max(...blocks.map(b => b.z_index || 0), 0) + 1,
+            background_color: '#ffffff',
+            text_color: '#000000',
+            order_index: blocks.length
+          };
+
+          await fetch('/api/cms/blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(blockData)
+          });
+        } else if (change.type === 'update') {
+          await fetch(`/api/cms/blocks/${change.blockId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(change.data)
+          });
+        } else if (change.type === 'delete') {
+          await fetch(`/api/cms/blocks/${change.blockId}`, {
+            method: 'DELETE'
+          });
+        }
       }
+
+      // Lösche Draft-Änderungen nach Veröffentlichung
+      setDraftChanges([]);
+      localStorage.removeItem('cms_draft_changes');
+
+      // Lade veröffentlichte Blöcke
+      loadBlocks(currentPage?.id);
+
     } catch (error) {
-      console.error('Fehler beim Löschen des Blocks:', error);
-      throw error;
+      console.error('Fehler beim Veröffentlichen der Drafts:', error);
     }
   };
 
@@ -190,42 +407,6 @@ export const CMSProvider = ({ children }) => {
       console.error('Fehler beim Aktualisieren der Layout-Einstellungen:', error);
       throw error;
     }
-  };
-
-  // Block Utilities
-  const addBlockToPage = async (blockType, position) => {
-    if (!currentPage) return;
-
-    const maxZ = blocks.length > 0 ? Math.max(...blocks.map(b => b.z_index || 0)) : 0;
-
-    // Automatische Positionierung wenn keine Position angegeben
-    let blockPosition = position;
-    if (!blockPosition) {
-      const offset = blocks.length * 5; // Versatz für jeden neuen Block
-      blockPosition = {
-        x: 10 + offset,
-        y: 10 + offset
-      };
-    }
-
-    const blockData = {
-      page_id: currentPage.id,
-      block_type: blockType,
-      content: getDefaultContent(blockType),
-      position_x: blockPosition.x,
-      position_y: blockPosition.y,
-      width: 20,
-      height: 20,
-      rotation: 0,
-      scale_x: 1,
-      scale_y: 1,
-      z_index: maxZ + 1,
-      background_color: '#ffffff',
-      text_color: '#000000',
-      order_index: blocks.length
-    };
-
-    return await createBlock(blockData);
   };
 
   const getDefaultContent = (blockType) => {
@@ -299,6 +480,9 @@ export const CMSProvider = ({ children }) => {
     isDragging,
     containerSize,
     isLoading,
+    draftChanges,
+    undoHistory,
+    redoHistory,
 
     // Setters
     setPages,
@@ -322,11 +506,19 @@ export const CMSProvider = ({ children }) => {
     createBlock,
     updateBlock,
     deleteBlock,
+    publishDrafts,
+    discardDrafts: () => {
+      setDraftChanges([]);
+      localStorage.removeItem('cms_draft_changes');
+      loadBlocks(currentPage?.id);
+    },
+    undo,
+    redo,
+    deleteBlock,
     loadLayoutSettings,
     updateLayoutSettings,
 
     // Utilities
-    addBlockToPage,
     selectBlock,
     deselectAllBlocks,
     duplicateBlock

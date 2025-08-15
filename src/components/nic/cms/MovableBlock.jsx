@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Moveable from 'react-moveable';
 import { useCMS } from '@/context/CMSContext';
-import { Trash2, Palette } from 'lucide-react';
+import { Trash2, Palette, Info, X, Copy, Eye } from 'lucide-react';
 import { HexAlphaColorPicker } from 'react-colorful';
 import toRelativePosition from '../../../lib/toRelativePosition';
 
@@ -12,6 +12,7 @@ const MovableBlock = ({
   children,
   onUpdate,
   onDelete,
+  onDuplicate,
   isSelected = false,
   onSelect
 }) => {
@@ -26,6 +27,8 @@ const MovableBlock = ({
     height: block.height || 20
   });
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showInfoMenu, setShowInfoMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef(null);
   const isResizing = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -75,6 +78,12 @@ const MovableBlock = ({
     e.stopPropagation();
     if (mode === 'delete' && onDelete) {
       onDelete(block.id);
+    } else if (mode === 'edit' && !isDragging) {
+      // Bei normalem Klick: Info-Menü öffnen/schließen
+      setShowInfoMenu(!showInfoMenu);
+      if (onSelect) {
+        onSelect(block);
+      }
     } else if (onSelect) {
       onSelect(block);
     }
@@ -99,6 +108,102 @@ const MovableBlock = ({
 
   return (
     <>
+      {/* Info Menu */}
+      {showInfoMenu && mode === 'edit' && (
+        <div
+          className="absolute z-[1001] bg-white rounded-lg shadow-xl border p-4 min-w-[280px]"
+          style={{
+            left: `${(frame.translate && frame.translate[0]) || 0}%`,
+            top: `${((frame.translate && frame.translate[1]) || 0) - 5}%`,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">Block-Informationen</h3>
+            <button
+              onClick={() => setShowInfoMenu(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div className="grid grid-cols-2 gap-2">
+              <span className="font-medium text-gray-600">Typ:</span>
+              <span className="text-gray-800">{block.block_type}</span>
+
+              <span className="font-medium text-gray-600">ID:</span>
+              <span className="text-gray-800">#{block.id}</span>
+
+              <span className="font-medium text-gray-600">Position:</span>
+              <span className="text-gray-800">
+                {Math.round(frame.translate[0] * 10) / 10}%, {Math.round(frame.translate[1] * 10) / 10}%
+              </span>
+
+              <span className="font-medium text-gray-600">Größe:</span>
+              <span className="text-gray-800">
+                {Math.round(frame.width * 10) / 10}% × {Math.round(frame.height * 10) / 10}%
+              </span>
+
+              <span className="font-medium text-gray-600">Rotation:</span>
+              <span className="text-gray-800">{Math.round(frame.rotate)}°</span>
+
+              <span className="font-medium text-gray-600">Z-Index:</span>
+              <span className="text-gray-800">{block.z_index}</span>
+            </div>
+
+            {block.content && (
+              <div className="mt-3 pt-3 border-t">
+                <span className="font-medium text-gray-600">Inhalt:</span>
+                <div className="mt-1 p-2 bg-gray-50 rounded text-xs text-gray-700 max-h-20 overflow-y-auto">
+                  {typeof block.content === 'string'
+                    ? block.content.substring(0, 100) + (block.content.length > 100 ? '...' : '')
+                    : JSON.stringify(block.content).substring(0, 100) + '...'
+                  }
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-4 pt-3 border-t">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowColorPicker(!showColorPicker);
+              }}
+              className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+            >
+              <Palette size={12} />
+              Farbe
+            </button>
+            {onDuplicate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(block);
+                  setShowInfoMenu(false);
+                }}
+                className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+              >
+                <Copy size={12} />
+                Duplizieren
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onDelete) onDelete(block.id);
+              }}
+              className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+            >
+              <Trash2 size={12} />
+              Löschen
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Color Picker Overlay */}
       {showColorPicker && mode === 'edit' && (
         <div
@@ -128,11 +233,13 @@ const MovableBlock = ({
 
       <div
         ref={elementRef}
-        className={`absolute p-0 m-0 cursor-pointer ${
+        className={`absolute p-0 m-0 cursor-pointer transition-all duration-200 ease-out group ${
           mode === 'edit' && isSelected ? 'shadow-lg border-2 border-blue-500' : 'shadow-md'
         } ${
           mode === 'delete' ? 'hover:bg-red-100' : ''
-        } rounded-md overflow-hidden transition-all duration-200`}
+        } ${
+          isDragging ? 'z-50' : ''
+        } rounded-md overflow-hidden`}
         style={{
           left: `${(frame.translate && frame.translate[0]) || 0}%`,
           top: `${(frame.translate && frame.translate[1]) || 0}%`,
@@ -141,22 +248,60 @@ const MovableBlock = ({
           transform: `rotate(${frame.rotate || 0}deg) scale(${(frame.scale && frame.scale[0]) || 1}, ${(frame.scale && frame.scale[1]) || 1})`,
           backgroundColor: block.background_color || '#ffffff',
           color: block.text_color || '#000000',
-          zIndex: block.z_index || 1,
+          zIndex: isDragging ? 1000 : (block.z_index || 1),
         }}
         onClick={handleElementClick}
       >
+        {/* Quick Action Button - nur wenn nicht bereits ausgewählt */}
+        {!isSelected && mode === 'edit' && !showInfoMenu && (
+          <div className="absolute -top-6 -right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInfoMenu(true);
+                if (onSelect) onSelect(block);
+              }}
+              className="w-5 h-5 bg-gray-600 text-white rounded-full flex items-center justify-center hover:bg-gray-700 text-xs"
+            >
+              <Info size={10} />
+            </button>
+          </div>
+        )}
+
         {/* Control Buttons nur bei Selektion im Edit Mode */}
         {isSelected && mode === 'edit' && (
           <div className="absolute -top-8 left-0 flex gap-1 z-50">
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                setShowInfoMenu(!showInfoMenu);
+              }}
+              className={`w-6 h-6 text-white rounded-sm flex items-center justify-center ${
+                showInfoMenu ? 'bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
+            >
+              <Info size={12} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowColorPicker(!showColorPicker);
               }}
-              className="w-6 h-6 bg-blue-500 text-white rounded-sm flex items-center justify-center hover:bg-blue-600"
+              className="w-6 h-6 bg-green-500 text-white rounded-sm flex items-center justify-center hover:bg-green-600"
             >
               <Palette size={12} />
             </button>
+            {onDuplicate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(block);
+                }}
+                className="w-6 h-6 bg-yellow-500 text-white rounded-sm flex items-center justify-center hover:bg-yellow-600"
+              >
+                <Copy size={12} />
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -200,6 +345,8 @@ const MovableBlock = ({
             keepRatio={false}
             dragArea={false}
             onDragStart={({ set, clientX, clientY }) => {
+              setIsDragging(true);
+
               // Automatisch selektieren beim Drag-Start
               if (onSelect) {
                 onSelect(block);
@@ -221,9 +368,9 @@ const MovableBlock = ({
               console.log('Drag start at:', clientX, clientY, 'Element at:', currentX, currentY);
             }}
             onDrag={({ target, clientX, clientY }) => {
-              // JAPresentation-System: Delta mit Multiplikator 5
-              const deltaX = (clientX - dragStartPos.current.x) * 5;
-              const deltaY = (clientY - dragStartPos.current.y) * 5;
+              // JAPresentation-System: Delta mit verbessertem Multiplikator
+              const deltaX = (clientX - dragStartPos.current.x) * 3;
+              const deltaY = (clientY - dragStartPos.current.y) * 3;
 
               const containerWidth = containerSizeLocal.width || 800;
               const containerHeight = containerSizeLocal.height || 600;
@@ -246,7 +393,7 @@ const MovableBlock = ({
                 translate: [relativePosition.x, relativePosition.y]
               }));
 
-              // Update Transform direkt
+              // Update Transform direkt mit smootherer Transition
               target.style.transform = `translate(${relativePosition.x}%, ${relativePosition.y}%) rotate(${frame.rotate}deg) scale(${frame.scale[0]}, ${frame.scale[1]})`;
 
               // Update dragStartPos für nächsten Frame (wichtig!)
@@ -257,7 +404,10 @@ const MovableBlock = ({
 
               console.log('Drag delta:', deltaX, deltaY, 'New pos:', relativePosition.x, relativePosition.y);
             }}
-            onDragEnd={updateElement}
+            onDragEnd={() => {
+              setIsDragging(false);
+              updateElement();
+            }}
             onResizeStart={({ setOrigin, dragStart }) => {
               // Automatisch selektieren beim Resize-Start
               if (onSelect) {

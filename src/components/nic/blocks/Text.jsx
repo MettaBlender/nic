@@ -1,3 +1,8 @@
+/**
+ * Einfacher Text Block für Inhalte
+ * @icon 📝
+ */
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react'
