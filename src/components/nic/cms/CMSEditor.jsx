@@ -7,42 +7,80 @@ import { Play, Edit, Trash2, Eye, Plus, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import dynamic from 'next/dynamic';
-import fs from 'fs';
-import path from 'path';
 
-const componentsDir = path.join(process.cwd(), 'src/components/nic/blocks');
-
-async function getComponentFiles() {
+// Dynamische Komponenten-Erkennung über API
+const getComponentFiles = async () => {
   try {
-    const files = fs
-      .readdirSync(componentsDir)
-      .filter((file) => file.endsWith('.js') || file.endsWith('.tsx') || file.endsWith('.jsx') || file.endsWith('.ts'));
+    const response = await fetch('/api/cms/components');
+    const data = await response.json();
 
-    const components = [];
-    for (const file of files) {
-      // Dynamischer Import der Datei
-      const module = await import(`@/components/nic/blocks/${file}`);
+    if (data.success) {
+      const components = [];
 
-      // Extrahiere alle exportierten Komponenten (default und benannte Exports)
-      const exports = Object.entries(module).filter(([_, value]) =>
-        typeof value === 'function' && value.prototype?.render === undefined // React-Komponenten filtern
-      );
-
-      exports.forEach(([exportName, Component]) => {
-        components.push({
-          name: Component.name || exportName, // Verwende den tatsächlichen Komponentennamen
-          Component: dynamic(() => import(`@/components/nic/blocks/${file}`).then((mod) => mod[exportName]), {
-            ssr: true, // Serverseitiges Rendering aktiviert (optional)
-          }),
+      // Flatten die Kategorien zu einer Liste von Komponenten
+      Object.entries(data.categories).forEach(([category, categoryComponents]) => {
+        categoryComponents.forEach(comp => {
+          components.push({
+            name: comp.name,
+            componentName: comp.componentName,
+            component: category === 'root' ? comp.file.replace(/\.(jsx?|tsx?)$/, '') : `${category}/${comp.file.replace(/\.(jsx?|tsx?)$/, '')}`,
+            icon: comp.icon || '🧩',
+            description: comp.description || 'Block-Komponente',
+            category: category
+          });
         });
       });
+
+      return components;
     }
-    return components;
   } catch (error) {
-    console.error('Fehler beim Lesen des Ordners oder Imports:', error);
-    return [];
+    console.error('Fehler beim Laden der Komponenten-Liste:', error);
   }
-}
+
+  // Fallback zu statischer Liste wenn API nicht verfügbar
+  return [
+    {
+      name: 'Text',
+      componentName: 'Text',
+      component: 'Text',
+      icon: '�',
+      description: 'Einfacher Text Block',
+      category: 'root'
+    },
+    {
+      name: 'ButtonBlock',
+      componentName: 'ButtonBlock',
+      component: 'ButtonBlock',
+      icon: '�',
+      description: 'Interaktiver Button',
+      category: 'root'
+    },
+    {
+      name: 'ImageBlock',
+      componentName: 'ImageBlock',
+      component: 'ImageBlock',
+      icon: '🖼️',
+      description: 'Bild Block',
+      category: 'root'
+    },
+    {
+      name: 'VideoBlock',
+      componentName: 'VideoBlock',
+      component: 'VideoBlock',
+      icon: '🎥',
+      description: 'Video Block',
+      category: 'root'
+    },
+    {
+      name: 'ContainerBlock',
+      componentName: 'ContainerBlock',
+      component: 'ContainerBlock',
+      icon: '�',
+      description: 'Container für andere Blöcke',
+      category: 'root'
+    }
+  ];
+};
 
 const CMSEditor = () => {
   const {
@@ -63,19 +101,47 @@ const CMSEditor = () => {
 
   const containerRef = useRef(null);
   const [blockComponents, setBlockComponents] = useState({});
+  const [availableComponents, setAvailableComponents] = useState([]);
   const router = useRouter();
 
   // Dynamisches Laden der Block-Komponenten
   useEffect(() => {
     const loadComponents = async () => {
       const components = {};
+      const availableComps = await getComponentFiles();
+
+      setAvailableComponents(availableComps);
 
       try {
-        components.Text = (await import('@/components/nic/blocks/Text')).default;
-        components.ImageBlock = (await import('@/components/nic/blocks/ImageBlock')).default;
-        components.ButtonBlock = (await import('@/components/nic/blocks/ButtonBlock')).default;
-        components.VideoBlock = (await import('@/components/nic/blocks/VideoBlock')).default;
-        components.ContainerBlock = (await import('@/components/nic/blocks/ContainerBlock')).default;
+        // Lade alle verfügbaren Komponenten dynamisch
+        for (const comp of availableComps) {
+          try {
+            const module = await import(`@/components/nic/blocks/${comp.component}`);
+
+            // Verwende sowohl den Namen als auch den Komponentennamen als Key
+            components[comp.name] = module.default;
+            components[comp.componentName] = module.default;
+
+            // Für Block-Typen auch ohne "Block" Suffix verfügbar machen
+            if (comp.component.endsWith('Block')) {
+              const shortName = comp.component.replace('Block', '');
+              components[shortName] = module.default;
+            }
+
+          } catch (importError) {
+            console.warn(`Komponente ${comp.component} konnte nicht geladen werden:`, importError);
+
+            // Fallback-Komponente für nicht ladbare Komponenten
+            components[comp.name] = ({ content }) => (
+              <div className="text-red-500 p-4 border border-red-300 rounded">
+                <div className="font-bold">Komponente nicht verfügbar</div>
+                <div className="text-sm">Type: {comp.name}</div>
+                <div className="text-xs mt-2">{content}</div>
+              </div>
+            );
+          }
+        }
+
       } catch (error) {
         console.error('Fehler beim Laden der Komponenten:', error);
       }
@@ -141,7 +207,12 @@ const CMSEditor = () => {
   const renderBlock = (block) => {
     const Component = blockComponents[block.block_type];
     if (!Component) {
-      return <div className="text-red-500">Unbekannter Block-Typ: {block.block_type}</div>;
+      return (
+        <div className="text-red-500 p-4 border border-red-300 rounded bg-red-50">
+          <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
+          <div className="text-sm mt-2">Verfügbare Komponenten: {Object.keys(blockComponents).join(', ')}</div>
+        </div>
+      );
     }
 
     const handleContentChange = async (newContent) => {
@@ -155,6 +226,29 @@ const CMSEditor = () => {
         editable={mode === 'edit'}
       />
     );
+  };
+
+  // Funktion um verfügbare Komponenten zu exportieren (für Sidebar etc.)
+  const getLoadedComponents = () => {
+    return availableComponents.map(comp => ({
+      ...comp,
+      isLoaded: !!blockComponents[comp.name] || !!blockComponents[comp.componentName]
+    }));
+  };
+
+  // Mache die Funktion global verfügbar (für andere Komponenten)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.cmsGetAvailableComponents = getLoadedComponents;
+    }
+  }, [availableComponents, blockComponents]);
+
+  // Funktion um verfügbare Komponenten zu exportieren (für Sidebar etc.)
+  const getAvailableComponents = () => {
+    return getComponentFiles().map(comp => ({
+      ...comp,
+      isLoaded: !!blockComponents[comp.name] || !!blockComponents[comp.component]
+    }));
   };
 
   if (!currentPage) {
@@ -295,7 +389,8 @@ const CMSEditor = () => {
       {/* Status Bar */}
       <div className="bg-gray-100 border-t border-gray-200 px-4 py-2 flex items-center justify-between text-sm text-gray-600">
         <div>
-          Modus: <span className="font-medium capitalize">{mode}</span>
+          Modus: <span className="font-medium capitalize">{mode}</span> |
+          Komponenten geladen: {Object.keys(blockComponents).length}
         </div>
         <div>
           Blöcke: {blocks.length} |
