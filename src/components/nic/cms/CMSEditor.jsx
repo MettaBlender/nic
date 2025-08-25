@@ -3,7 +3,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import MovableBlock from './MovableBlock';
-import { Play, Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { Play, Edit, Trash2, Eye, Plus, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import dynamic from 'next/dynamic';
+import fs from 'fs';
+import path from 'path';
+
+const componentsDir = path.join(process.cwd(), 'src/components/nic/blocks');
+
+async function getComponentFiles() {
+  try {
+    const files = fs
+      .readdirSync(componentsDir)
+      .filter((file) => file.endsWith('.js') || file.endsWith('.tsx') || file.endsWith('.jsx') || file.endsWith('.ts'));
+
+    const components = [];
+    for (const file of files) {
+      // Dynamischer Import der Datei
+      const module = await import(`@/components/nic/blocks/${file}`);
+
+      // Extrahiere alle exportierten Komponenten (default und benannte Exports)
+      const exports = Object.entries(module).filter(([_, value]) =>
+        typeof value === 'function' && value.prototype?.render === undefined // React-Komponenten filtern
+      );
+
+      exports.forEach(([exportName, Component]) => {
+        components.push({
+          name: Component.name || exportName, // Verwende den tatsächlichen Komponentennamen
+          Component: dynamic(() => import(`@/components/nic/blocks/${file}`).then((mod) => mod[exportName]), {
+            ssr: true, // Serverseitiges Rendering aktiviert (optional)
+          }),
+        });
+      });
+    }
+    return components;
+  } catch (error) {
+    console.error('Fehler beim Lesen des Ordners oder Imports:', error);
+    return [];
+  }
+}
 
 const CMSEditor = () => {
   const {
@@ -24,6 +63,7 @@ const CMSEditor = () => {
 
   const containerRef = useRef(null);
   const [blockComponents, setBlockComponents] = useState({});
+  const router = useRouter();
 
   // Dynamisches Laden der Block-Komponenten
   useEffect(() => {
@@ -129,6 +169,15 @@ const CMSEditor = () => {
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/login', { method: 'DELETE' });
+      router.push('/nic/login');
+    } catch (error) {
+      console.error('Logout fehler:', error);
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Editor Toolbar */}
@@ -173,6 +222,14 @@ const CMSEditor = () => {
           >
             <Trash2 size={16} />
             Löschen
+          </button>
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className='px-3 py-2 rounded-md flex items-center gap-2 bg-red-500 text-white hover:bg-red-600'
+          >
+            <LogOut size={16} />
+            Logout
           </button>
         </div>
       </div>
