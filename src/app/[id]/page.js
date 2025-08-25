@@ -1,31 +1,30 @@
 import { getPageBySlug, getBlocks, getLayoutSettings } from '@/lib/database';
-import dynamic from 'next/dynamic';
+import {
+  createDynamicComponents,
+  createDynamicHeaderComponents,
+  createDynamicFooterComponents
+} from '@/lib/componentLoaderServer';
 import { notFound } from 'next/navigation';
 
-// Dynamische Block-Komponenten
-const blockComponents = {
-  Text: dynamic(() => import('@/components/nic/blocks/Text'), { ssr: true }),
-  ImageBlock: dynamic(() => import('@/components/nic/blocks/ImageBlock'), { ssr: true }),
-  ButtonBlock: dynamic(() => import('@/components/nic/blocks/ButtonBlock'), { ssr: true }),
-  VideoBlock: dynamic(() => import('@/components/nic/blocks/VideoBlock'), { ssr: true }),
-  ContainerBlock: dynamic(() => import('@/components/nic/blocks/ContainerBlock'), { ssr: true })
-};
+// Dynamische Block-Komponenten - werden automatisch erkannt
+const blockComponents = createDynamicComponents();
 
-// Header Komponenten
-const headerComponents = {
-  default: dynamic(() => import('@/components/nic/blocks/header/DefaultHeader'), { ssr: true }),
-  navigation: dynamic(() => import('@/components/nic/blocks/header/NavigationHeader'), { ssr: true })
-};
+// Header Komponenten - werden automatisch erkannt
+const headerComponents = createDynamicHeaderComponents();
 
-// Footer Komponenten
-const footerComponents = {
-  default: dynamic(() => import('@/components/nic/blocks/footer/DefaultFooter'), { ssr: true }),
-  social: dynamic(() => import('@/components/nic/blocks/footer/SocialFooter'), { ssr: true })
-};
+// Footer Komponenten - werden automatisch erkannt
+const footerComponents = createDynamicFooterComponents();
 
 export default async function PublicPage({ params }) {
   const resolvedParams = await params;
   const { id } = resolvedParams;
+
+  // Debug: Zeige geladene Komponenten in der Konsole
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Geladene Block-Komponenten:', Object.keys(blockComponents));
+    console.log('Geladene Header-Komponenten:', Object.keys(headerComponents));
+    console.log('Geladene Footer-Komponenten:', Object.keys(footerComponents));
+  }
 
   try {
     // Lade Seite und Daten
@@ -69,8 +68,19 @@ export default async function PublicPage({ params }) {
               const Component = blockComponents[block.block_type];
               if (!Component) {
                 return (
-                  <div key={block.id} className="text-red-500">
-                    Unbekannter Block-Typ: {block.block_type}
+                  <div
+                    key={block.id}
+                    className="absolute text-red-500 p-2 border border-red-300 rounded bg-red-50"
+                    style={{
+                      left: `${block.position_x}%`,
+                      top: `${block.position_y}%`,
+                      width: `${block.width}%`,
+                      height: `${block.height}%`,
+                      zIndex: block.z_index || 1
+                    }}
+                  >
+                    <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
+                    <div className="text-sm mt-1">Verfügbare Typen: {Object.keys(blockComponents).join(', ')}</div>
                   </div>
                 );
               }
@@ -78,19 +88,22 @@ export default async function PublicPage({ params }) {
               return (
                 <div
                   key={block.id}
-                  className="absolute"
+                  className="absolute rounded-md overflow-hidden"
                   style={{
-                    left: `${block.position_x}%`,
-                    top: `${block.position_y}%`,
+                    left: '0',
+                    top: '0',
                     width: `${block.width}%`,
                     height: `${block.height}%`,
-                    transform: `rotate(${block.rotation || 0}deg) scale(${block.scale_x || 1}, ${block.scale_y || 1})`,
+                    transform: `translate(${block.position_x}%, ${block.position_y}%) rotate(${block.rotation || 0}deg) scale(${block.scale_x || 1}, ${block.scale_y || 1})`,
                     backgroundColor: block.background_color || 'transparent',
                     color: block.text_color || '#000000',
-                    zIndex: block.z_index || 1
+                    zIndex: block.z_index || 1,
+                    transformOrigin: 'center center'
                   }}
                 >
-                  <Component content={block.content} />
+                  <div className="w-full h-full relative">
+                    <Component content={block.content} />
+                  </div>
                 </div>
               );
             })}

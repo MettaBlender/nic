@@ -33,6 +33,13 @@ export const CMSProvider = ({ children }) => {
   const [mode, setMode] = useState('edit'); // 'edit', 'free', 'move', 'precise', 'preview', 'delete'
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Grid & Snap System
+  const [gridEnabled, setGridEnabled] = useState(false);
+  const [gridSize, setGridSize] = useState(20); // Grid-Größe in Pixeln
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [snapToElements, setSnapToElements] = useState(true); // Snap zu anderen Elementen
+
   // Layout Einstellungen
   const [layoutSettings, setLayoutSettings] = useState({
     header_component: 'default',
@@ -426,6 +433,50 @@ export const CMSProvider = ({ children }) => {
     }
   };
 
+  // Grid Helper Functions
+  const snapToGridValue = (value, gridSize, containerSize) => {
+    if (!snapToGrid) return value;
+
+    const pixelValue = (value * containerSize) / 100;
+    const snappedPixel = Math.round(pixelValue / gridSize) * gridSize;
+    return (snappedPixel / containerSize) * 100;
+  };
+
+  const getSnapLines = () => {
+    if (!snapToElements) return [];
+
+    const lines = [];
+    blocks.forEach(block => {
+      if (block.id === activeBlock?.id) return; // Ignore active block
+
+      // Vertikale Linien
+      lines.push({
+        type: 'vertical',
+        pos: block.position_x,
+        range: [block.position_y, block.position_y + block.height]
+      });
+      lines.push({
+        type: 'vertical',
+        pos: block.position_x + block.width,
+        range: [block.position_y, block.position_y + block.height]
+      });
+
+      // Horizontale Linien
+      lines.push({
+        type: 'horizontal',
+        pos: block.position_y,
+        range: [block.position_x, block.position_x + block.width]
+      });
+      lines.push({
+        type: 'horizontal',
+        pos: block.position_y + block.height,
+        range: [block.position_x, block.position_x + block.width]
+      });
+    });
+
+    return lines;
+  };
+
   const selectBlock = (block) => {
     setActiveBlock(block);
     if (!selectedBlocks.find(b => b.id === block.id)) {
@@ -483,6 +534,11 @@ export const CMSProvider = ({ children }) => {
     draftChanges,
     undoHistory,
     redoHistory,
+    gridEnabled,
+    gridSize,
+    snapToGrid,
+    showGrid,
+    snapToElements,
 
     // Setters
     setPages,
@@ -496,6 +552,11 @@ export const CMSProvider = ({ children }) => {
     setDraggedBlock,
     setIsDragging,
     setContainerSize,
+    setGridEnabled,
+    setGridSize,
+    setSnapToGrid,
+    setShowGrid,
+    setSnapToElements,
 
     // API Methods
     loadPages,
@@ -521,7 +582,9 @@ export const CMSProvider = ({ children }) => {
     // Utilities
     selectBlock,
     deselectAllBlocks,
-    duplicateBlock
+    duplicateBlock,
+    snapToGridValue,
+    getSnapLines
   };
 
   return (

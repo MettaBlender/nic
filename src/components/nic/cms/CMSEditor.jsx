@@ -3,10 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import MovableBlock from './MovableBlock';
-import { Play, Edit, Trash2, Eye, Plus, LogOut } from 'lucide-react';
+import { Play, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-import dynamic from 'next/dynamic';
 
 // Dynamische Komponenten-Erkennung über API
 const getComponentFiles = async () => {
@@ -96,7 +94,17 @@ const CMSEditor = () => {
     duplicateBlock,
     containerSize,
     setContainerSize,
-    layoutSettings
+    layoutSettings,
+    gridEnabled,
+    gridSize,
+    snapToGrid,
+    showGrid,
+    snapToElements,
+    setGridEnabled,
+    setGridSize,
+    setSnapToGrid,
+    setShowGrid,
+    setSnapToElements
   } = useCMS();
 
   const containerRef = useRef(null);
@@ -317,7 +325,48 @@ const CMSEditor = () => {
             <Trash2 size={16} />
             Löschen
           </button>
+
+          {/* Grid Controls */}
+          <div className="h-6 w-px bg-gray-300 mx-2"></div>
+
+          <button
+            onClick={() => setShowGrid(!showGrid)}
+            className={`px-3 py-2 rounded-md flex items-center gap-2 ${
+              showGrid
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            title="Raster anzeigen"
+          >
+            <Grid3X3 size={16} />
+          </button>
+
+          <button
+            onClick={() => setSnapToGrid(!snapToGrid)}
+            className={`px-3 py-2 rounded-md flex items-center gap-2 ${
+              snapToGrid
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            title="Am Raster einrasten"
+          >
+            <Magnet size={16} />
+          </button>
+
+          <select
+            value={gridSize}
+            onChange={(e) => setGridSize(Number(e.target.value))}
+            className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white"
+            title="Raster-Größe"
+          >
+            <option value={10}>10px</option>
+            <option value={20}>20px</option>
+            <option value={25}>25px</option>
+            <option value={50}>50px</option>
+          </select>
+
           {/* Logout Button */}
+          <div className="h-6 w-px bg-gray-300 mx-2"></div>
           <button
             onClick={handleLogout}
             className='px-3 py-2 rounded-md flex items-center gap-2 bg-red-500 text-white hover:bg-red-600'
@@ -332,7 +381,8 @@ const CMSEditor = () => {
       <div className="flex-1 overflow-hidden">
         <div
           ref={containerRef}
-          className="w-full h-full relative"
+          className="w-full h-full relative select-none"
+          data-editor-container="true"
           style={{
             backgroundColor: layoutSettings.background_color || '#ffffff',
             backgroundImage: layoutSettings.background_image
@@ -340,9 +390,18 @@ const CMSEditor = () => {
               : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            minHeight: '600px'
+            minHeight: '600px',
+            userSelect: 'none',
+            webkitUserSelect: 'none',
+            msUserSelect: 'none'
           }}
           onClick={handleContainerClick}
+          onMouseDown={(e) => {
+            // Verbesserte Event-Behandlung für Drag-Operations
+            if (e.target === containerRef.current) {
+              e.preventDefault();
+            }
+          }}
         >
           {/* Render Blocks */}
           {blocks.map((block) => (
@@ -370,10 +429,31 @@ const CMSEditor = () => {
             </div>
           )}
 
-          {/* Grid Overlay for Edit Mode */}
-          {mode === 'edit' && (
+          {/* Grid Overlay */}
+          {showGrid && mode === 'edit' && (
             <div
-              className="absolute inset-0 pointer-events-none opacity-20"
+              className="absolute inset-0 pointer-events-none z-10"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(99, 102, 241, 0.3) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(99, 102, 241, 0.3) 1px, transparent 1px)
+                `,
+                backgroundSize: `${gridSize}px ${gridSize}px`
+              }}
+            />
+          )}
+
+          {/* Snap Guidelines */}
+          {snapToElements && mode === 'edit' && activeBlock && (
+            <div className="absolute inset-0 pointer-events-none z-20">
+              {/* Snap lines will be rendered here by Moveable */}
+            </div>
+          )}
+
+          {/* Edit Mode Grid Overlay (fallback) */}
+          {mode === 'edit' && !showGrid && (
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-5"
               style={{
                 backgroundImage: `
                   linear-gradient(to right, #000 1px, transparent 1px),
@@ -388,13 +468,25 @@ const CMSEditor = () => {
 
       {/* Status Bar */}
       <div className="bg-gray-100 border-t border-gray-200 px-4 py-2 flex items-center justify-between text-sm text-gray-600">
-        <div>
-          Modus: <span className="font-medium capitalize">{mode}</span> |
-          Komponenten geladen: {Object.keys(blockComponents).length}
+        <div className="flex items-center gap-4">
+          <span>Modus: <span className="font-medium capitalize">{mode}</span></span>
+          <span>Komponenten geladen: {Object.keys(blockComponents).length}</span>
+          {gridEnabled && (
+            <span className="flex items-center gap-1">
+              <Grid3X3 size={12} />
+              Raster: {gridSize}px
+              {snapToGrid && <span className="text-orange-600">(Einrasten aktiv)</span>}
+            </span>
+          )}
         </div>
-        <div>
-          Blöcke: {blocks.length} |
-          Container: {containerSize.width}x{containerSize.height}px
+        <div className="flex items-center gap-4">
+          <span>Blöcke: {blocks.length}</span>
+          <span>Container: {containerSize.width}x{containerSize.height}px</span>
+          {activeBlock && (
+            <span className="text-blue-600">
+              Aktiv: {activeBlock.block_type} #{activeBlock.id}
+            </span>
+          )}
         </div>
       </div>
     </div>
