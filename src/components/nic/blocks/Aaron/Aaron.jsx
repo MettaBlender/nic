@@ -7,7 +7,7 @@ import React from 'react'
 
 const Aaron = () => {
   return (
-    <div className='w-full h-full'>Aaron</div>
+    <div className='w-full h-full bg-white'>Aaron</div>
   )
 }
 

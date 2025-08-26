@@ -5,65 +5,17 @@
 
 import React from 'react';
 
-// Direkte Inline-Komponenten für sofortige Funktionalität
-const TextComponent = ({ content = '', onContentChange, editable = false, block_type = 'Text' }) => {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [textContent, setTextContent] = React.useState(content);
+// Import der echten Komponenten
+import Text from '../components/nic/blocks/Text.jsx';
+import ButtonBlock from '../components/nic/blocks/ButtonBlock.jsx';
+import ImageBlock from '../components/nic/blocks/ImageBlock.jsx';
+import ContainerBlock from '../components/nic/blocks/ContainerBlock.jsx';
+import VideoBlock from '../components/nic/blocks/VideoBlock.jsx';
+import GalleryBlock from '../components/nic/blocks/media/GalleryBlock.jsx';
+import ColumnsBlock from '../components/nic/blocks/layout/ColumnsBlock.jsx';
+import ContactFormBlock from '../components/nic/blocks/forms/ContactFormBlock.jsx';
 
-  const getDefaultContent = () => {
-    if (content && content.trim()) return content;
-    return editable ? 'Neuer Text Block - Doppelklick zum Bearbeiten' : 'Text Block';
-  };
-
-  const displayContent = textContent || getDefaultContent();
-
-  React.useEffect(() => {
-    setTextContent(content);
-  }, [content]);
-
-  const handleDoubleClick = (e) => {
-    e.stopPropagation();
-    if (editable) {
-      setIsEditing(true);
-    }
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    if (onContentChange && textContent !== content) {
-      onContentChange(textContent);
-    }
-  };
-
-  return (
-    <div
-      className="w-full h-full flex items-center justify-center p-2 min-h-[60px]"
-      onDoubleClick={handleDoubleClick}
-      style={{ minHeight: '60px' }}
-    >
-      {isEditing ? (
-        <textarea
-          value={textContent}
-          onChange={(e) => setTextContent(e.target.value)}
-          onBlur={handleBlur}
-          className="w-full h-full resize-none border-none outline-none bg-transparent text-center"
-          placeholder="Text eingeben..."
-          autoFocus
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-center">
-          <span style={{
-            fontSize: block_type === 'Heading' ? '1.5rem' : '1rem',
-            fontWeight: block_type === 'Heading' ? 'bold' : 'normal'
-          }}>
-            {displayContent}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-};
-
+// Fallback Komponente für unbekannte Typen
 const FallbackComponent = ({ componentName = 'Unbekannte Komponente', content }) => (
   <div className="w-full h-full min-h-[60px] flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
     <div className="text-center text-gray-500">
@@ -75,34 +27,18 @@ const FallbackComponent = ({ componentName = 'Unbekannte Komponente', content })
   </div>
 );
 
-// Statische Komponenten-Map mit direkten Inline-Komponenten
+// Statische Komponenten-Map mit echten Komponenten
 const COMPONENT_MAP = {
-  Text: TextComponent,
-  Heading: TextComponent,
-  Paragraph: TextComponent,
-
-  // Simple Image Component
-  Image: ({ content }) => (
-    <div className="w-full h-full flex items-center justify-center bg-gray-50 border border-gray-200">
-      <span className="text-gray-500">🖼️ Bild: {content || 'Kein Bild'}</span>
-    </div>
-  ),
-
-  // Simple Button Component
-  Button: ({ content }) => (
-    <div className="w-full h-full flex items-center justify-center">
-      <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-        {content || 'Button'}
-      </button>
-    </div>
-  ),
-
-  // Simple Container Component
-  Container: ({ content }) => (
-    <div className="w-full h-full bg-gray-50 border border-gray-200 p-4">
-      <div className="text-sm text-gray-600">Container: {content || 'Leer'}</div>
-    </div>
-  ),
+  Text: Text,
+  Heading: Text, // Text kann verschiedene Typen handhaben
+  Paragraph: Text,
+  Button: ButtonBlock,
+  Image: ImageBlock,
+  Container: ContainerBlock,
+  Video: VideoBlock,
+  Gallery: GalleryBlock,
+  Columns: ColumnsBlock,
+  ContactForm: ContactFormBlock,
 
   // Fallback
   fallback: FallbackComponent

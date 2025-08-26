@@ -7,7 +7,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
-import { resolveComponent, preloadComponents } from '../../../utils/staticComponentResolver';
+import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '../../../utils/hybridComponentResolver';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -15,7 +15,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
   const blockRef = useRef(null);
 
   // Lade die Komponente dynamisch
-  const Component = resolveComponent(block.block_type);
+  const Component = resolveComponentSync(block.block_type);
 
   // Keyboard Navigation
   const handleKeyDown = useCallback((e) => {
@@ -275,7 +275,7 @@ const GridCanvas = () => {
 
   // Preload components on mount
   useEffect(() => {
-    preloadComponents();
+    preloadCommonComponents();
   }, []);
 
   // Improved update function with save feedback
@@ -372,6 +372,21 @@ const GridCanvas = () => {
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Preload components on mount
+  useEffect(() => {
+    const initializeComponents = async () => {
+      console.log('🚀 Initializing GridCanvas components...');
+      try {
+        await preloadCommonComponents();
+        console.log('✅ Common components preloaded successfully');
+      } catch (error) {
+        console.error('❌ Error preloading components:', error);
+      }
+    };
+
+    initializeComponents();
   }, []);
 
   // Handle canvas click (deselect blocks)
@@ -524,8 +539,11 @@ const GridCanvas = () => {
               });
             });
             console.log('=== Component Resolution Test ===');
-            const testComponent = resolveComponent('Text');
+            const testComponent = resolveComponentSync('Text');
             console.log('Text component resolved to:', testComponent);
+            console.log('=== Component Registry Debug ===');
+            const debugInfo = getDebugInfo();
+            console.log('Debug Info:', debugInfo);
             console.log('=== END DEBUG ===');
           }}
           style={{
@@ -539,6 +557,56 @@ const GridCanvas = () => {
           }}
         >
           Debug Blocks
+        </button>
+
+        <button
+          onClick={async () => {
+            console.log('🔄 Refreshing components...');
+            try {
+              const components = await refreshComponents();
+              console.log('✅ Refreshed components:', components);
+              alert(`✅ ${components.length} Komponenten neu geladen!`);
+            } catch (error) {
+              console.error('❌ Error refreshing components:', error);
+              alert('❌ Fehler beim Neuladen der Komponenten');
+            }
+          }}
+          style={{
+            background: '#059669',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '6px 12px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          🔄 Komponenten neu laden
+        </button>
+
+        <button
+          onClick={async () => {
+            console.log('📦 Preloading common components...');
+            try {
+              await preloadCommonComponents();
+              console.log('✅ Common components preloaded');
+              alert('✅ Häufige Komponenten vorgeladen!');
+            } catch (error) {
+              console.error('❌ Error preloading components:', error);
+              alert('❌ Fehler beim Vorladen der Komponenten');
+            }
+          }}
+          style={{
+            background: '#7c3aed',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '6px 12px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          📦 Komponenten vorladen
         </button>
 
         <button
