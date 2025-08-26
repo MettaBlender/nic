@@ -525,7 +525,7 @@ const GridCanvas = () => {
           + Zeile hinzufügen
         </button>
 
-        <button
+        {/* <button
           onClick={() => {
             console.log('=== DEBUG: All Blocks ===');
             blocks.forEach((block, i) => {
@@ -558,7 +558,7 @@ const GridCanvas = () => {
           }}
         >
           Debug Blocks
-        </button>
+        </button> */}
 
         <button
           onClick={async () => {

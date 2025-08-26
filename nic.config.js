@@ -11,7 +11,7 @@ const nicConfig = {
     columns: 12,
 
     // Minimale Anzahl der Reihen (automatisch erweiterbar)
-    minRows: 10,
+    minRows: 12,
 
     // Maximale Anzahl der Reihen (0 = unbegrenzt)
     maxRows: 0,
@@ -91,7 +91,7 @@ const nicConfig = {
     showGridLines: true,
     showBlockOutlines: true,
     highlightDropZones: true,
-    gridLineColor: 'rgba(99, 102, 241, 0.2)',
+    gridLineColor: 'rgba(99, 102, 241, 0.8)',
     dropZoneColor: 'rgba(34, 197, 94, 0.3)',
     selectedBlockColor: 'rgba(59, 130, 246, 0.5)'
   }

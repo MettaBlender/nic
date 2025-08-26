@@ -189,8 +189,8 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
       backgroundColor: '#ffffff', // Weiße Hintergrundfarbe wie in der Live-Version
       background: nicConfig.visual.showGridLines ? `
         #ffffff,
-        linear-gradient(to right, ${nicConfig.visual.gridLineColor} 1px, transparent 1px),
-        linear-gradient(to bottom, ${nicConfig.visual.gridLineColor} 1px, transparent 1px)
+        linear-gradient(to right, ${nicConfig.visual.gridLineColor} 1px, #000 1px),
+        linear-gradient(to bottom, ${nicConfig.visual.gridLineColor} 1px, #000 1px)
       ` : '#ffffff',
       backgroundSize: nicConfig.visual.showGridLines ? `100% 100%, ${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px, ${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px` : '100% 100%',
       backgroundPosition: `0 0, ${nicConfig.grid.gap}px ${nicConfig.grid.gap}px, ${nicConfig.grid.gap}px ${nicConfig.grid.gap}px`
@@ -213,7 +213,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
       borderRadius: '6px',
       overflow: 'hidden',
       zIndex: block.z_index || 1,
-      border: nicConfig.visual.showBlockOutlines ? '1px solid rgba(0,0,0,0.1)' : 'none',
+      border: nicConfig.visual.showBlockOutlines ? '1px solid rgba(0,0,0,1)' : 'none',
       transition: isDragging ? 'none' : 'all 0.2s ease'
     };
   }, [gridToPixel, getBlockPixelSize, isDragging]);
