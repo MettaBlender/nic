@@ -1,299 +1,224 @@
 /**
- * Improved Dynamic Component Resolver
- * Lädt Komponenten zur Build-Zeit und Runtime dynamisch
+ * Hybrid Component Resolver
+ * Kombiniert dynamische Erkennung mit sync/async Auflösung
  */
 
 'use client';
 
-import React from 'react';
+import { scanAvailableBlocks, getComponent, clearComponentCache } from './dynamicBlockScanner';
 
-// Static imports für bessere Performance
-import Text from '../components/nic/blocks/Text.jsx';
-import ButtonBlock from '../components/nic/blocks/ButtonBlock.jsx';
-import ImageBlock from '../components/nic/blocks/ImageBlock.jsx';
-import ContainerBlock from '../components/nic/blocks/ContainerBlock.jsx';
-import VideoBlock from '../components/nic/blocks/VideoBlock.jsx';
-
-// Cache für dynamisch geladene Komponenten
-const dynamicComponentCache = new Map();
-const componentRegistry = new Map();
-
-// Fallback Komponente
-const FallbackComponent = ({ componentName = 'Unbekannte Komponente', content, ...props }) => (
-  <div className="w-full h-full min-h-[60px] flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
-    <div className="text-center text-gray-500">
-      <div className="text-2xl mb-1">⚠️</div>
-      <div className="text-sm font-medium">Komponente nicht gefunden</div>
-      <div className="text-xs">{componentName}</div>
-      {content && <div className="text-xs mt-1">Content: {String(content).substring(0, 20)}...</div>}
-      <div className="text-xs mt-1 text-blue-500 cursor-pointer" onClick={() => window.location.reload()}>
-        🔄 Seite neu laden
-      </div>
-    </div>
-  </div>
-);
-
-// Add display name for ESLint
-FallbackComponent.displayName = 'FallbackComponent';
-
-// Statische Komponenten-Map (garantiert verfügbar)
-const STATIC_COMPONENTS = {
-  Text: Text,
-  Heading: Text,
-  Paragraph: Text,
-  Button: ButtonBlock,
-  Image: ImageBlock,
-  Container: ContainerBlock,
-  Video: VideoBlock
-};
-
-// Dynamische Komponenten-Pfade
-const DYNAMIC_COMPONENT_PATHS = {
-  GalleryBlock: () => import('../components/nic/blocks/media/GalleryBlock.jsx'),
-  Gallery: () => import('../components/nic/blocks/media/GalleryBlock.jsx'),
-  AudioBlock: () => import('../components/nic/blocks/media/AudioBlock.jsx'),
-  Audio: () => import('../components/nic/blocks/media/AudioBlock.jsx'),
-  ColumnsBlock: () => import('../components/nic/blocks/layout/ColumnsBlock.jsx'),
-  Columns: () => import('../components/nic/blocks/layout/ColumnsBlock.jsx'),
-  GridBlock: () => import('../components/nic/blocks/layout/GridBlock.jsx'),
-  Grid: () => import('../components/nic/blocks/layout/GridBlock.jsx'),
-  ContactFormBlock: () => import('../components/nic/blocks/forms/ContactFormBlock.jsx'),
-  ContactForm: () => import('../components/nic/blocks/forms/ContactFormBlock.jsx'),
-  NewsletterBlock: () => import('../components/nic/blocks/forms/NewsletterBlock.jsx'),
-  Newsletter: () => import('../components/nic/blocks/forms/NewsletterBlock.jsx'),
-  DefaultHeader: () => import('../components/nic/blocks/header/DefaultHeader.jsx'),
-  NavigationHeader: () => import('../components/nic/blocks/header/NavigationHeader.jsx'),
-  DefaultFooter: () => import('../components/nic/blocks/footer/DefaultFooter.jsx'),
-  SocialFooter: () => import('../components/nic/blocks/footer/SocialFooter.jsx'),
-  Aaron: () => import('../components/nic/blocks/Aaron/Aaron.jsx')
-};
+// Cache für aufgelöste Komponenten
+const resolvedComponentCache = new Map();
+const preloadPromises = new Map();
 
 /**
- * Lädt eine dynamische Komponente
- */
-async function loadDynamicComponent(componentName) {
-  // Prüfe Cache
-  if (dynamicComponentCache.has(componentName)) {
-    return dynamicComponentCache.get(componentName);
-  }
-
-  // Prüfe ob dynamischer Pfad existiert
-  if (DYNAMIC_COMPONENT_PATHS[componentName]) {
-    try {
-      console.log(`⬇️ Loading dynamic component: ${componentName}`);
-
-      const moduleResult = await DYNAMIC_COMPONENT_PATHS[componentName]();
-      const Component = moduleResult.default || moduleResult;
-
-      if (Component) {
-        dynamicComponentCache.set(componentName, Component);
-        console.log(`✅ Successfully loaded dynamic component: ${componentName}`);
-        return Component;
-      }
-    } catch (error) {
-      console.error(`❌ Failed to load dynamic component ${componentName}:`, error);
-    }
-  }
-
-  return null;
-}
-
-/**
- * Löst eine Komponente basierend auf dem Namen auf (synchron)
+ * Löst eine Komponente synchron auf (verwendet Cache)
  */
 export const resolveComponentSync = (componentName) => {
-  console.log('🔍 Resolving component (sync):', componentName);
-
-  if (!componentName) {
-    return FallbackComponent;
+  if (!componentName || typeof componentName !== 'string') {
+    console.warn('⚠️ Invalid componentName provided to resolveComponentSync:', componentName);
+    return null;
   }
 
-  // 1. Prüfe statische Komponenten zuerst (sofort verfügbar)
-  if (STATIC_COMPONENTS[componentName]) {
-    console.log(`✅ Found static component: ${componentName}`);
-    return STATIC_COMPONENTS[componentName];
+  // Prüfe Cache zuerst
+  if (resolvedComponentCache.has(componentName)) {
+    return resolvedComponentCache.get(componentName);
   }
 
-  // 2. Name-Mapping für statische Komponenten
-  const staticMappings = [
-    componentName.replace('Block', ''),
-    componentName + 'Block',
-    componentName.toLowerCase(),
-    componentName.charAt(0).toUpperCase() + componentName.slice(1)
-  ];
-
-  for (const mappedName of staticMappings) {
-    if (STATIC_COMPONENTS[mappedName]) {
-      console.log(`✅ Found static component via mapping: ${mappedName} for ${componentName}`);
-      return STATIC_COMPONENTS[mappedName];
-    }
-  }
-
-  // 3. Prüfe dynamischen Cache
-  if (dynamicComponentCache.has(componentName)) {
-    console.log(`💾 Found cached dynamic component: ${componentName}`);
-    return dynamicComponentCache.get(componentName);
-  }
-
-  // 4. Prüfe dynamische Komponenten mit Name-Mapping
-  const dynamicMappings = [
-    componentName,
-    componentName + 'Block',
-    componentName.replace('Block', ''),
-    componentName.toLowerCase(),
-    componentName.charAt(0).toUpperCase() + componentName.slice(1)
-  ];
-
-  for (const mappedName of dynamicMappings) {
-    if (dynamicComponentCache.has(mappedName)) {
-      console.log(`💾 Found cached dynamic component via mapping: ${mappedName} for ${componentName}`);
-      return dynamicComponentCache.get(mappedName);
-    }
-  }
-
-  // 5. Versuche asynchrones Laden für dynamische Komponenten
-  // Erstelle eine Wrapper-Komponente die async lädt
-  const AsyncComponentWrapper = function(props) {
-    const [Component, setComponent] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
-
-    React.useEffect(() => {
-      let mounted = true;
-
-      const loadComponent = async () => {
-        try {
-          // Versuche alle möglichen Namen
-          for (const mappedName of dynamicMappings) {
-            if (DYNAMIC_COMPONENT_PATHS[mappedName]) {
-              const LoadedComponent = await loadDynamicComponent(mappedName);
-              if (LoadedComponent && mounted) {
-                setComponent(() => LoadedComponent);
-                setLoading(false);
-                return;
-              }
-            }
-          }
-
-          // Keine Komponente gefunden
-          if (mounted) {
-            setError(`Component "${componentName}" not found`);
-            setLoading(false);
-          }
-        } catch (err) {
-          if (mounted) {
-            setError(err.message);
-            setLoading(false);
-          }
-        }
-      };
-
-      loadComponent();
-
-      return () => {
-        mounted = false;
-      };
-    }, []);
-
-    if (loading) {
-      return (
-        <div className="w-full h-full min-h-[60px] flex items-center justify-center bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-center text-blue-600">
-            <div className="text-sm">🔄 Lade Komponente...</div>
-            <div className="text-xs">{componentName}</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (error || !Component) {
-      return <FallbackComponent {...props} componentName={componentName} />;
-    }
-
-    return <Component {...props} />;
+  // Fallback für häufige Komponenten
+  const fallbackComponents = {
+    'Text': () => ({ content, ...props }) => (
+      <div style={{ padding: '8px', minHeight: '40px' }} {...props}>
+        {content || 'Text Block'}
+      </div>
+    ),
+    'Button': () => ({ content, ...props }) => (
+      <button style={{ padding: '8px 16px', cursor: 'pointer' }} {...props}>
+        {content || 'Button'}
+      </button>
+    ),
+    'Image': () => ({ content, ...props }) => (
+      <div style={{
+        padding: '8px',
+        background: '#f3f4f6',
+        textAlign: 'center',
+        minHeight: '100px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }} {...props}>
+        {content || '🖼️ Image Block'}
+      </div>
+    ),
+    'Container': () => ({ children, content, ...props }) => (
+      <div style={{ padding: '16px', border: '1px dashed #d1d5db' }} {...props}>
+        {children || content || 'Container Block'}
+      </div>
+    )
   };
 
-  AsyncComponentWrapper.displayName = `AsyncComponentWrapper_${componentName}`;
-  return AsyncComponentWrapper;
+  if (fallbackComponents[componentName]) {
+    const component = fallbackComponents[componentName]();
+    resolvedComponentCache.set(componentName, component);
+    return component;
+  }
+
+  console.warn(`⚠️ Component "${componentName}" not found in sync cache`);
+  return null;
 };
 
 /**
- * Preload häufig verwendete dynamische Komponenten
+ * Löst eine Komponente asynchron auf
+ */
+export const resolveComponent = async (componentName) => {
+  if (!componentName || typeof componentName !== 'string') {
+    console.warn('⚠️ Invalid componentName provided to resolveComponent:', componentName);
+    return null;
+  }
+
+  // Prüfe Cache zuerst
+  if (resolvedComponentCache.has(componentName)) {
+    return resolvedComponentCache.get(componentName);
+  }
+
+  try {
+    // Versuche Komponente über Scanner zu laden
+    const component = await getComponent(componentName);
+
+    if (component) {
+      resolvedComponentCache.set(componentName, component);
+      console.log(`✅ Resolved component: ${componentName}`);
+      return component;
+    }
+
+    // Fallback auf sync resolver
+    const syncComponent = resolveComponentSync(componentName);
+    if (syncComponent) {
+      return syncComponent;
+    }
+
+    console.warn(`⚠️ Component "${componentName}" not found`);
+    return null;
+  } catch (error) {
+    console.error(`❌ Error resolving component "${componentName}":`, error);
+    return resolveComponentSync(componentName); // Fallback
+  }
+};
+
+/**
+ * Lädt häufige Komponenten vor
  */
 export const preloadCommonComponents = async () => {
-  console.log('📦 Preloading common dynamic components...');
+  const commonComponents = [
+    'Text', 'TextBlock',
+    'Button', 'ButtonBlock',
+    'Image', 'ImageBlock',
+    'Container', 'ContainerBlock',
+    'Video', 'VideoBlock',
+    'Gallery', 'GalleryBlock',
+    'Audio', 'AudioBlock',
+    'Columns', 'ColumnsBlock',
+    'Grid', 'GridBlock',
+    'ContactForm', 'ContactFormBlock',
+    'Newsletter', 'NewsletterBlock',
+    'Header', 'DefaultHeader', 'NavigationHeader',
+    'Footer', 'DefaultFooter', 'SocialFooter',
+    'Aaron', 'CustomBlock', 'TestAaron', 'Test'
+  ];  const cacheKey = 'preload-common';
 
-  const commonDynamic = ['Gallery', 'Columns', 'ContactForm'];
-
-  for (const componentName of commonDynamic) {
-    try {
-      await loadDynamicComponent(componentName);
-    } catch (error) {
-      console.error(`Failed to preload ${componentName}:`, error);
-    }
+  if (preloadPromises.has(cacheKey)) {
+    return await preloadPromises.get(cacheKey);
   }
 
-  console.log('✅ Common components preloaded');
+  const preloadPromise = (async () => {
+    console.log('📦 Preloading common components...');
+
+    try {
+      // Scanne alle verfügbaren Blöcke
+      const availableBlocks = await scanAvailableBlocks();
+
+      let preloadedCount = 0;
+
+      for (const componentName of commonComponents) {
+        try {
+          if (availableBlocks.has(componentName)) {
+            const component = availableBlocks.get(componentName);
+            if (component) {
+              resolvedComponentCache.set(componentName, component);
+              preloadedCount++;
+            }
+          }
+        } catch (error) {
+          console.warn(`⚠️ Could not preload component "${componentName}":`, error);
+        }
+      }
+
+      console.log(`✅ Preloaded ${preloadedCount} common components`);
+      return preloadedCount;
+    } catch (error) {
+      console.error('❌ Error preloading common components:', error);
+      throw error;
+    }
+  })();
+
+  preloadPromises.set(cacheKey, preloadPromise);
+
+  try {
+    return await preloadPromise;
+  } finally {
+    preloadPromises.delete(cacheKey);
+  }
 };
 
 /**
- * Alle verfügbaren Komponenten auflisten
- */
-export const listAvailableComponents = () => {
-  const staticComponents = Object.keys(STATIC_COMPONENTS);
-  const dynamicComponents = Object.keys(DYNAMIC_COMPONENT_PATHS);
-  const cachedDynamic = Array.from(dynamicComponentCache.keys());
-
-  return {
-    static: staticComponents,
-    dynamic: dynamicComponents,
-    cached: cachedDynamic,
-    total: staticComponents.length + dynamicComponents.length
-  };
-};
-
-/**
- * Cache aktualisieren (alle dynamischen Komponenten neu laden)
+ * Aktualisiert alle Komponenten neu
  */
 export const refreshComponents = async () => {
-  console.log('🔄 Refreshing dynamic components...');
+  console.log('🔄 Refreshing component cache...');
 
-  // Cache leeren
-  dynamicComponentCache.clear();
+  // Leere Caches
+  resolvedComponentCache.clear();
+  preloadPromises.clear();
+  clearComponentCache();
 
-  // Häufige Komponenten neu laden
-  await preloadCommonComponents();
+  try {
+    // Scanne Komponenten neu
+    const availableBlocks = await scanAvailableBlocks();
 
-  const available = listAvailableComponents();
-  console.log('✅ Components refreshed:', available);
+    // Lade alle gefundenen Komponenten in den Cache
+    let loadedCount = 0;
+    for (const [name, component] of availableBlocks) {
+      if (component) {
+        resolvedComponentCache.set(name, component);
+        loadedCount++;
+      }
+    }
 
-  return available.static.concat(available.dynamic);
+    console.log(`✅ Refreshed ${loadedCount} components`);
+    return Array.from(availableBlocks.keys());
+  } catch (error) {
+    console.error('❌ Error refreshing components:', error);
+    throw error;
+  }
 };
 
 /**
  * Debug-Informationen
  */
 export const getDebugInfo = () => {
-  const available = listAvailableComponents();
-
   return {
-    static: available.static,
-    dynamic: available.dynamic,
-    cached: available.cached,
-    totalStatic: available.static.length,
-    totalDynamic: available.dynamic.length,
-    totalCached: available.cached.length,
-    cacheSize: dynamicComponentCache.size
+    cachedComponents: Array.from(resolvedComponentCache.keys()),
+    cacheSize: resolvedComponentCache.size,
+    activePreloads: Array.from(preloadPromises.keys())
   };
 };
 
-// Legacy-Kompatibilität
-const hybridComponentResolverDefault = {
-  resolveComponent: resolveComponentSync,
-  preloadComponents: preloadCommonComponents,
-  listAvailableComponents,
-  refreshComponents,
-  getDebugInfo
+/**
+ * Leert alle Caches (für Entwicklung)
+ */
+export const clearAllCaches = () => {
+  resolvedComponentCache.clear();
+  preloadPromises.clear();
+  clearComponentCache();
+  console.log('🧹 All component caches cleared');
 };
-
-export default hybridComponentResolverDefault;

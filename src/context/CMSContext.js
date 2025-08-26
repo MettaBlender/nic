@@ -1,6 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import {
+  saveDraftChanges,
+  loadDraftChanges,
+  clearDraftChanges,
+  savePageBlockState,
+  loadPageBlockState,
+  saveSingleBlockChange,
+  cleanupOldDrafts
+} from '../utils/localStorageManager.js';
 
 const CMSContext = createContext();
 
@@ -41,12 +50,35 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  // Draft Changes für localStorage-Persistierung
+  const [draftChanges, setDraftChanges] = useState([]);
+
   // Mode Management (Edit/Preview)
   const [mode, setMode] = useState('edit');
 
   // Auto-Save Debouncing
   const autoSaveTimeoutRef = useRef(null);
   const AUTOSAVE_DELAY = 3000; // 3 Sekunden
+
+  // Lade Draft-Änderungen beim Start
+  useEffect(() => {
+    const savedDrafts = loadDraftChanges();
+    if (savedDrafts.length > 0) {
+      setDraftChanges(savedDrafts);
+      setSaveStatus('dirty');
+      console.log(`📂 Loaded ${savedDrafts.length} draft changes from localStorage`);
+    }
+
+    // Bereinige alte Drafts
+    cleanupOldDrafts();
+  }, []);
+
+  // Speichere Draft-Änderungen bei Änderungen
+  useEffect(() => {
+    if (draftChanges.length > 0) {
+      saveDraftChanges(draftChanges);
+    }
+  }, [draftChanges]);
 
   // Cleanup bei Unmount
   useEffect(() => {
@@ -248,6 +280,21 @@ export const CMSProvider = ({ children }) => {
     setBlocks(prev => [...prev, newBlock]);
     batchOperation(blockId, 'create', newBlock);
 
+    // Speichere Draft-Änderung in localStorage
+    const draftChange = {
+      id: Date.now(),
+      type: 'create',
+      blockId: blockId,
+      data: newBlock,
+      timestamp: Date.now()
+    };
+
+    setDraftChanges(prev => {
+      const updated = [...prev, draftChange];
+      saveSingleBlockChange(draftChange);
+      return updated;
+    });
+
     console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row})`);
     return newBlock;
   }, [currentPage, batchOperation, blocks]);
@@ -270,6 +317,22 @@ export const CMSProvider = ({ children }) => {
         updated_at: new Date().toISOString()
       };
       batchOperation(blockId, 'update', updatedBlock);
+
+      // Speichere Draft-Änderung in localStorage
+      const draftChange = {
+        id: Date.now(),
+        type: 'update',
+        blockId: blockId,
+        data: updates,
+        timestamp: Date.now()
+      };
+
+      setDraftChanges(prev => {
+        const filtered = prev.filter(change => !(change.blockId === blockId && change.type === 'update'));
+        const updated = [...filtered, draftChange];
+        saveSingleBlockChange(draftChange);
+        return updated;
+      });
     }
   }, [blocks, batchOperation]);
 
@@ -279,6 +342,20 @@ export const CMSProvider = ({ children }) => {
 
     setBlocks(prev => prev.filter(block => block.id !== blockId));
     batchOperation(blockId, 'delete', { id: blockId });
+
+    // Speichere Draft-Änderung in localStorage
+    const draftChange = {
+      id: Date.now(),
+      type: 'delete',
+      blockId: blockId,
+      timestamp: Date.now()
+    };
+
+    setDraftChanges(prev => {
+      const updated = [...prev, draftChange];
+      saveSingleBlockChange(draftChange);
+      return updated;
+    });
   }, [batchOperation]);
 
   // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
@@ -345,6 +422,10 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('saved');
       setLastSaveTime(new Date());
 
+      // Lösche Draft-Änderungen nach erfolgreichem Publishing
+      setDraftChanges([]);
+      clearDraftChanges();
+
       console.log(`✅ Successfully published ${operations.length} operations via batch API`);
 
     } catch (error) {
@@ -364,6 +445,10 @@ export const CMSProvider = ({ children }) => {
 
     setPendingOperations(new Map());
     setSaveStatus('saved');
+
+    // Lösche Draft-Änderungen aus localStorage
+    setDraftChanges([]);
+    clearDraftChanges();
   }, [currentPage]);
 
   // Manuelles Speichern

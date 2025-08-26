@@ -7,7 +7,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
-import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '../../../utils/hybridComponentResolver';
+import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '@/utils/hybridComponentResolver';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
   const [isDragging, setIsDragging] = useState(false);
