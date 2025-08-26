@@ -10,7 +10,7 @@ const CustomBlock = ({ content = {}, ...props }) => {
 
   return (
     <div
-      className="custom-block p-6 rounded-lg shadow-md"
+      className="custom-block p-6 rounded-lg shadow-md h-full w-full overflow-auto"
       style={{
         backgroundColor: backgroundColor,
         color: textColor,

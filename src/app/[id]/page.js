@@ -163,7 +163,13 @@ export default async function PublicPage({ params }) {
                 >
                   <div className="w-full h-full relative">
                     <Component
-                      content={block.content || ''}
+                      content={
+                        block.content &&
+                        typeof block.content === 'object' &&
+                        Object.keys(block.content).length > 0
+                          ? block.content
+                          : (typeof block.content === 'string' ? block.content : '')
+                      }
                       block_type={block.block_type}
                       editable={false}
                     />
