@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getPage, updatePage, deletePage } from '@/lib/database';
+import { getPageById, updatePageTitle, deletePage } from '@/lib/database';
 
 export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
     const { id } = resolvedParams;
-    const page = await getPage(id);
+    const page = await getPageById(id);
 
     if (!page) {
       return NextResponse.json({ error: 'Seite nicht gefunden' }, { status: 404 });
@@ -28,8 +28,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Titel und Slug sind erforderlich' }, { status: 400 });
     }
 
-    await updatePage(id, title, slug);
-    const updatedPage = await getPage(id);
+    const success = await updatePageTitle(id, title);
+
+    if (!success) {
+      return NextResponse.json({ error: 'Seite nicht gefunden' }, { status: 404 });
+    }
+
+    const updatedPage = await getPageById(id);
 
     return NextResponse.json(updatedPage);
   } catch (error) {

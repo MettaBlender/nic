@@ -55,7 +55,19 @@ export default function Components() {
             .catch(() => import('@/components/nic/blocks/fallback')), // Fallback bei Fehlern
           {
             ssr: false,
-            loading: () => <div className="animate-pulse bg-gray-200 h-8 rounded"></div>
+            loading: () => (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '32px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '4px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }}>
+                <span style={{ fontSize: '12px', color: '#6b7280' }}>Lädt...</span>
+              </div>
+            )
           }
         )
       }));
@@ -78,21 +90,37 @@ export default function Components() {
       return;
     }
 
-    if (isDraftMode) {
-      // Im Draft-Modus: Block direkt hinzufügen
+    try {
       createBlock(blockType);
-    } else {
-      // Direkt hinzufügen (als Draft)
-      try {
-        createBlock(blockType);
-      } catch (error) {
-        console.error('Fehler beim Hinzufügen des Blocks:', error);
-        alert('Fehler beim Hinzufügen des Blocks');
-      }
+    } catch (error) {
+      console.error('Fehler beim Hinzufügen des Blocks:', error);
+      alert('Fehler beim Hinzufügen des Blocks');
     }
   };
 
-  const publishChanges = async () => {
+  const handleDragStart = (e, blockType, categoryName = 'root') => {
+    // Importiere Config für Standard-Größen
+    let defaultSize = { width: 2, height: 1 };
+
+    // Versuche Standard-Größe aus nic.config zu laden
+    if (typeof window !== 'undefined' && window.nicConfig) {
+      defaultSize = window.nicConfig.defaultBlockSizes[blockType] || defaultSize;
+    }
+
+    const dragData = {
+      block_type: blockType,
+      category: categoryName,
+      grid_width: defaultSize.width,
+      grid_height: defaultSize.height,
+      content: '',
+      background_color: 'transparent',
+      text_color: '#000000',
+      z_index: 1
+    };
+
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'copy';
+  };  const publishChanges = async () => {
     if (draftChanges.length === 0) {
       alert('Keine ausstehenden Änderungen zum Veröffentlichen');
       return;
@@ -241,7 +269,9 @@ export default function Components() {
                     return (
                       <div
                         key={component.name}
-                        className="bg-white/5 rounded p-2 border border-white/10"
+                        className="bg-white/5 rounded p-2 border border-white/10 cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, component.componentName || component.name, categoryName)}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -258,17 +288,18 @@ export default function Components() {
                             </button>
                             <button
                               onClick={() => handleAddBlock(component.componentName || component.name, categoryName)}
-                              className={`p-1 text-white rounded ${
-                                isDraftMode
-                                  ? 'bg-yellow-500 hover:bg-yellow-600'
-                                  : 'bg-blue-500 hover:bg-blue-600'
-                              }`}
-                              title={isDraftMode ? 'Zu Draft hinzufügen' : 'Sofort hinzufügen'}
+                              className="p-1 text-white rounded bg-blue-500 hover:bg-blue-600"
+                              title="Block hinzufügen"
                               disabled={!currentPage}
                             >
                               <Plus size={12} />
                             </button>
                           </div>
+                        </div>
+
+                        {/* Drag Indicator */}
+                        <div className="text-xs text-white/50 mb-2 text-center">
+                          🔄 Ziehen zum Hinzufügen
                         </div>
 
                         {/* Component Description */}

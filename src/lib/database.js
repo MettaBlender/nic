@@ -2,6 +2,12 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.NEON_DATABASE_URL);
 
+// Backup Funktion für Legacy-Support
+export async function getDb() {
+  // Diese Funktion wird für Init-Routes benötigt
+  return sql;
+}
+
 // Alle Queries direkt mit der Neon-Syntax ausführen
 
 // CRUD Operationen für Seiten
@@ -9,9 +15,16 @@ export async function getPages() {
   return await sql`SELECT * FROM pages ORDER BY created_at DESC`;
 }
 
-export async function getPage(id) {
+export async function getPageById(id) {
   const result = await sql`SELECT * FROM pages WHERE id = ${id}`;
   return result[0] || null;
+}
+
+export async function updatePageTitle(id, title) {
+  const result = await sql`
+    UPDATE pages SET title = ${title}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}
+  `;
+  return result.length > 0;
 }
 
 export async function getPageBySlug(slug) {
@@ -37,73 +50,68 @@ export async function deletePage(id) {
 }
 
 // CRUD Operationen für Blöcke
-export async function getBlocks(pageId) {
+export async function getBlocksForPage(pageId) {
   return await sql`
-    SELECT * FROM blocks WHERE page_id = ${pageId} ORDER BY z_index ASC, order_index ASC
+    SELECT * FROM blocks WHERE page_id = ${pageId} ORDER BY z_index ASC, created_at ASC
   `;
 }
 
-export async function createBlock(blockData) {
-  const {
-    page_id,
-    block_type,
-    content = '',
-    position_x = 0,
-    position_y = 0,
-    width = 20,
-    height = 20,
-    rotation = 0,
-    scale_x = 1,
-    scale_y = 1,
-    z_index = 1,
-    background_color = '#ffffff',
-    text_color = '#000000',
-    order_index = 0
-  } = blockData;
+export async function getBlockById(id) {
+  const result = await sql`SELECT * FROM blocks WHERE id = ${id}`;
+  return result[0] || null;
+}
 
+export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth, gridHeight, content) {
   const result = await sql`
     INSERT INTO blocks (
-      page_id, block_type, content, position_x, position_y, width, height,
-      rotation, scale_x, scale_y, z_index, background_color, text_color, order_index
+      page_id, block_type, content, grid_col, grid_row, grid_width, grid_height,
+      background_color, text_color, z_index
     ) VALUES (
-      ${page_id}, ${block_type}, ${content}, ${position_x}, ${position_y}, ${width}, ${height},
-      ${rotation}, ${scale_x}, ${scale_y}, ${z_index}, ${background_color}, ${text_color}, ${order_index}
+      ${pageId}, ${blockType}, ${JSON.stringify(content)}, ${gridCol}, ${gridRow}, ${gridWidth}, ${gridHeight},
+      'transparent', '#000000', 1
     )
     RETURNING id
   `;
-
   return result[0]?.id;
 }
 
-export async function updateBlock(id, blockData) {
-  const {
-    content,
-    position_x,
-    position_y,
-    width,
-    height,
-    rotation,
-    scale_x,
-    scale_y,
-    z_index,
-    background_color,
-    text_color,
-    order_index
-  } = blockData;
-
-  return await sql`
+export async function updateBlock(id, gridCol, gridRow, gridWidth, gridHeight, content) {
+  const result = await sql`
     UPDATE blocks SET
-      content = ${content}, position_x = ${position_x}, position_y = ${position_y},
-      width = ${width}, height = ${height}, rotation = ${rotation},
-      scale_x = ${scale_x}, scale_y = ${scale_y}, z_index = ${z_index},
-      background_color = ${background_color}, text_color = ${text_color},
-      order_index = ${order_index}, updated_at = CURRENT_TIMESTAMP
+      grid_col = ${gridCol}, grid_row = ${gridRow},
+      grid_width = ${gridWidth}, grid_height = ${gridHeight},
+      content = ${JSON.stringify(content)}, updated_at = CURRENT_TIMESTAMP
     WHERE id = ${id}
+    RETURNING *
   `;
+  return result.length > 0;
 }
 
 export async function deleteBlock(id) {
-  return await sql`DELETE FROM blocks WHERE id = ${id}`;
+  const result = await sql`DELETE FROM blocks WHERE id = ${id}`;
+  return result.length > 0;
+}
+
+export async function deleteAllBlocksForPage(pageId) {
+  const result = await sql`DELETE FROM blocks WHERE page_id = ${pageId}`;
+  return result.count || 0;
+}
+
+export async function createMultipleBlocks(pageId, blocksData) {
+  const results = [];
+  for (const blockData of blocksData) {
+    const blockId = await createBlock(
+      pageId,
+      blockData.block_type,
+      blockData.grid_col,
+      blockData.grid_row,
+      blockData.grid_width,
+      blockData.grid_height,
+      blockData.content
+    );
+    results.push(blockId);
+  }
+  return results;
 }
 
 // Layout Einstellungen

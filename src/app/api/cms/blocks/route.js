@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getBlocks, createBlock } from '@/lib/database';
+import { getBlocksForPage, createBlock } from '@/lib/database';
 
 export async function GET(request) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Page ID ist erforderlich' }, { status: 400 });
     }
 
-    const blocks = await getBlocks(pageId);
+    const blocks = await getBlocksForPage(pageId);
     return NextResponse.json(blocks);
   } catch (error) {
     console.error('Fehler beim Abrufen der Blöcke:', error);
@@ -26,10 +26,25 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Page ID und Block Type sind erforderlich' }, { status: 400 });
     }
 
-    const blockId = await createBlock(blockData);
+    const blockId = await createBlock(
+      blockData.page_id,
+      blockData.block_type,
+      blockData.grid_col || 0,
+      blockData.grid_row || 0,
+      blockData.grid_width || 2,
+      blockData.grid_height || 1,
+      blockData.content || {}
+    );
+
     const newBlock = {
       id: blockId,
-      ...blockData,
+      page_id: blockData.page_id,
+      block_type: blockData.block_type,
+      grid_col: blockData.grid_col || 0,
+      grid_row: blockData.grid_row || 0,
+      grid_width: blockData.grid_width || 2,
+      grid_height: blockData.grid_height || 1,
+      content: blockData.content || {},
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

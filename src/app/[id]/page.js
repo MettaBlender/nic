@@ -1,10 +1,47 @@
-import { getPageBySlug, getBlocks, getLayoutSettings } from '@/lib/database';
+import fs from 'fs/promises';
+import path from 'path';
 import {
   createDynamicComponents,
   createDynamicHeaderComponents,
   createDynamicFooterComponents
 } from '@/lib/componentLoaderServer';
 import { notFound } from 'next/navigation';
+
+// Pfad zur Datenbank-Datei
+const DB_PATH = path.join(process.cwd(), 'data', 'nic-cms.json');
+
+// Utility: Datenbank lesen
+async function readDatabase() {
+  try {
+    const data = await fs.readFile(DB_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('❌ Error reading database:', error);
+    return { pages: [], blocks: [] };
+  }
+}
+
+// Page by slug
+async function getPageBySlug(slug) {
+  const db = await readDatabase();
+  return db.pages.find(page => page.slug === slug) || null;
+}
+
+// Blocks by page ID
+async function getBlocks(pageId) {
+  const db = await readDatabase();
+  return db.blocks.filter(block => block.page_id === pageId) || [];
+}
+
+// Layout settings (mock)
+async function getLayoutSettings() {
+  return {
+    background_color: '#ffffff',
+    background_image: null,
+    header_height: 64,
+    footer_height: 64
+  };
+}
 
 // Dynamische Block-Komponenten - werden automatisch erkannt
 const blockComponents = createDynamicComponents();
