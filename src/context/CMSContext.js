@@ -41,6 +41,9 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  // Mode Management (Edit/Preview)
+  const [mode, setMode] = useState('edit');
+
   // Auto-Save Debouncing
   const autoSaveTimeoutRef = useRef(null);
   const AUTOSAVE_DELAY = 3000; // 3 Sekunden
@@ -413,8 +416,8 @@ export const CMSProvider = ({ children }) => {
 
     // Additional properties that might be expected by existing components
     activeBlock: null,
-    mode: 'edit',
-    setMode: () => {},
+    mode,
+    setMode,
     selectBlock: () => {},
     deselectAllBlocks: () => {},
     duplicateBlock: () => {},

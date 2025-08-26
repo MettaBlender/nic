@@ -9,7 +9,7 @@ import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
 import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '../../../utils/hybridComponentResolver';
 
-const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem }) => {
+const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const blockRef = useRef(null);
@@ -19,7 +19,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   // Keyboard Navigation
   const handleKeyDown = useCallback((e) => {
-    if (!isSelected) return;
+    if (!isSelected || mode === 'preview') return;
 
     // Ensure current position values are valid numbers
     const currentCol = typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0;
@@ -66,13 +66,14 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   // Event Listener für Keyboard
   useEffect(() => {
-    if (isSelected) {
+    if (isSelected && mode !== 'preview') {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isSelected, handleKeyDown]);
+  }, [isSelected, handleKeyDown, mode]);
 
   const handleMouseDown = useCallback((e) => {
+    if (mode === 'preview') return; // Disable dragging in preview mode
     if (e.target.closest('.block-controls') || e.target.closest('button')) return;
 
     e.preventDefault();
@@ -158,10 +159,10 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   const blockStyle = {
     ...gridSystem.getBlockStyle(block),
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: mode === 'preview' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
     opacity: isDragging ? 0.7 : 1,
-    border: isSelected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)',
-    boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+    border: (isSelected && mode !== 'preview') ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)',
+    boxShadow: (isSelected && mode !== 'preview') ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
     outline: 'none', // Remove default focus outline
     zIndex: isDragging ? 1000 : (block.z_index || 1)
   };
@@ -170,13 +171,13 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
     <div
       ref={blockRef}
       style={blockStyle}
-      onMouseDown={handleMouseDown}
+      onMouseDown={mode === 'preview' ? undefined : handleMouseDown}
       className="grid-block"
       data-block-id={block.id}
       tabIndex={isSelected ? 0 : -1} // Make focusable when selected
     >
       {/* Block Controls */}
-      {isSelected && (
+      {isSelected && mode !== 'preview' && (
         <div className="block-controls" style={{
           position: 'absolute',
           top: '-30px',
@@ -267,7 +268,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 };
 
 const GridCanvas = () => {
-  const { blocks, updateBlock, deleteBlock, createBlock } = useCMS();
+  const { blocks, updateBlock, deleteBlock, createBlock, mode } = useCMS();
   const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
@@ -683,9 +684,10 @@ const GridCanvas = () => {
             onUpdate={handleUpdateBlock}
             onDelete={handleDeleteBlock}
             isSelected={selectedBlock === block.id}
-            onSelect={setSelectedBlock}
+            onSelect={mode === 'preview' ? () => {} : setSelectedBlock}
             containerRef={containerRef}
             gridSystem={gridSystem}
+            mode={mode}
           />
         ))}
 

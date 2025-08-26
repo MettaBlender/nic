@@ -284,10 +284,10 @@ const CMSEditor = () => {
   return (
     <div className="w-full h-full flex">
       {/* Sidebar */}
-      <Sidebar />
+      {mode !== 'preview' && <Sidebar />}
 
       {/* Main Editor */}
-      <div className="flex-1 flex flex-col ml-16">
+      <div className={`flex-1 flex flex-col ${mode !== 'preview' ? 'ml-16' : ''}`}>
         {/* Editor Toolbar */}
         <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
