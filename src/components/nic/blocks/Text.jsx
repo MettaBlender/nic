@@ -7,10 +7,28 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 
-const Text = ({ content = 'Text Block', onContentChange, editable = false }) => {
+const Text = ({ content = '', onContentChange, editable = false, block_type = 'Text' }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [textContent, setTextContent] = useState(content);
   const textRef = useRef(null);
+
+  // Besserer Default-Content basierend auf Block-Typ
+  const getDefaultContent = () => {
+    if (content && content.trim()) return content;
+
+    switch (block_type) {
+      case 'Text':
+        return editable ? 'Neuer Text Block - Doppelklick zum Bearbeiten' : 'Text Block';
+      case 'Heading':
+        return editable ? 'Neue Überschrift - Doppelklick zum Bearbeiten' : 'Überschrift';
+      case 'Paragraph':
+        return editable ? 'Neuer Absatz Text - Doppelklick zum Bearbeiten' : 'Absatz Text';
+      default:
+        return editable ? `${block_type} Block - Doppelklick zum Bearbeiten` : `${block_type} Block`;
+    }
+  };
+
+  const displayContent = textContent || getDefaultContent();
 
   useEffect(() => {
     setTextContent(content);
@@ -75,7 +93,14 @@ const Text = ({ content = 'Text Block', onContentChange, editable = false }) => 
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-center break-words relative">
-          {textContent || 'Text Block'}
+          <span style={{
+            color: (!textContent || !textContent.trim()) ? '#9ca3af' : 'inherit',
+            fontStyle: (!textContent || !textContent.trim()) ? 'italic' : 'normal',
+            fontSize: block_type === 'Heading' ? '1.5rem' : '1rem',
+            fontWeight: block_type === 'Heading' ? 'bold' : 'normal'
+          }}>
+            {displayContent}
+          </span>
           {editable && (
             <div className="absolute inset-0 opacity-0 hover:opacity-20 bg-blue-500 transition-opacity pointer-events-none" />
           )}

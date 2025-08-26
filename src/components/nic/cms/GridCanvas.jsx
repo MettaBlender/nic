@@ -225,6 +225,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
             block_type={block.block_type || ''}
             background_color={block.background_color || 'transparent'}
             text_color={block.text_color || '#000000'}
+            editable={true}
             onContentChange={(newContent) => onUpdate(block.id, { content: newContent })}
           />
         ) : (
@@ -374,7 +375,7 @@ const GridCanvas = () => {
     }
   }, []);
 
-  // Handle drop from sidebar
+  // Handle drop from sidebar mit verbesserter Collision Detection
   const handleDrop = useCallback((e) => {
     e.preventDefault();
 
@@ -389,17 +390,62 @@ const GridCanvas = () => {
     const gridPos = pixelToGrid(x, y);
 
     // Ensure grid position values are valid numbers
-    const validCol = typeof gridPos.col === 'number' && !isNaN(gridPos.col) ? gridPos.col : 0;
-    const validRow = typeof gridPos.row === 'number' && !isNaN(gridPos.row) ? gridPos.row : 0;
+    const validCol = typeof gridPos.col === 'number' && !isNaN(gridPos.col) ? Math.max(0, gridPos.col) : 0;
+    const validRow = typeof gridPos.row === 'number' && !isNaN(gridPos.row) ? Math.max(0, gridPos.row) : 0;
 
-    // Erstelle Block mit Grid-Position
+    // Collision Detection
+    const blockWidth = newBlock.grid_width || 2;
+    const blockHeight = newBlock.grid_height || 1;
+
+    const isPositionFree = (col, row) => {
+      return !blocks.some(existingBlock => {
+        const exCol = existingBlock.grid_col || 0;
+        const exRow = existingBlock.grid_row || 0;
+        const exWidth = existingBlock.grid_width || 2;
+        const exHeight = existingBlock.grid_height || 1;
+
+        // Prüfe Überlappung
+        return !(col + blockWidth <= exCol || col >= exCol + exWidth ||
+                 row + blockHeight <= exRow || row >= exRow + exHeight);
+      });
+    };
+
+    let finalCol = validCol;
+    let finalRow = validRow;
+
+    // Wenn Position nicht frei ist, finde nächste freie Position
+    if (!isPositionFree(validCol, validRow)) {
+      let found = false;
+
+      // Versuche Positionen in der Nähe
+      for (let rowOffset = 0; rowOffset < 5 && !found; rowOffset++) {
+        for (let colOffset = -2; colOffset <= 2 && !found; colOffset++) {
+          const newCol = Math.max(0, Math.min(12 - blockWidth, validCol + colOffset));
+          const newRow = validRow + rowOffset;
+
+          if (isPositionFree(newCol, newRow)) {
+            finalCol = newCol;
+            finalRow = newRow;
+            found = true;
+          }
+        }
+      }
+
+      // Fallback: neue Zeile am Ende
+      if (!found) {
+        finalCol = 0;
+        finalRow = Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1)), 0);
+      }
+    }
+
+    // Erstelle Block mit optimaler Position und Standard-Content
     const blockWithPosition = {
       block_type: newBlock.block_type,
-      content: newBlock.content || '',
-      grid_col: validCol,
-      grid_row: validRow,
-      grid_width: newBlock.grid_width || 2,
-      grid_height: newBlock.grid_height || 1,
+      content: newBlock.content || (newBlock.block_type === 'Text' ? 'Neuer Text Block' : ''),
+      grid_col: finalCol,
+      grid_row: finalRow,
+      grid_width: blockWidth,
+      grid_height: blockHeight,
       background_color: newBlock.background_color || 'transparent',
       text_color: newBlock.text_color || '#000000',
       z_index: newBlock.z_index || 1
@@ -407,8 +453,8 @@ const GridCanvas = () => {
 
     // Block über Context hinzufügen
     createBlock(blockWithPosition);
-    console.log('Block hinzugefügt:', blockWithPosition);
-  }, [pixelToGrid, createBlock]);
+    console.log(`✅ Block hinzugefügt: ${newBlock.block_type} an Position (${finalCol}, ${finalRow})`);
+  }, [pixelToGrid, createBlock, blocks]);
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();

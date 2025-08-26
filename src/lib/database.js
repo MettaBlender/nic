@@ -70,9 +70,9 @@ export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth
       ${pageId}, ${blockType}, ${JSON.stringify(content)}, ${gridCol}, ${gridRow}, ${gridWidth}, ${gridHeight},
       'transparent', '#000000', 1
     )
-    RETURNING id
+    RETURNING *
   `;
-  return result[0]?.id;
+  return result[0]; // Vollständiges Block-Objekt zurückgeben
 }
 
 export async function updateBlock(id, gridCol, gridRow, gridWidth, gridHeight, content) {

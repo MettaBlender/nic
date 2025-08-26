@@ -1,5 +1,4 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { neon } from '@neondatabase/serverless';
 import {
   createDynamicComponents,
   createDynamicHeaderComponents,
@@ -7,30 +6,52 @@ import {
 } from '@/lib/componentLoaderServer';
 import { notFound } from 'next/navigation';
 
-// Pfad zur Datenbank-Datei
-const DB_PATH = path.join(process.cwd(), 'data', 'nic-cms.json');
+// Database connection
+const connectionString = process.env.NEON_DATABASE_URL;
 
-// Utility: Datenbank lesen
-async function readDatabase() {
-  try {
-    const data = await fs.readFile(DB_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('❌ Error reading database:', error);
-    return { pages: [], blocks: [] };
-  }
+if (!connectionString) {
+  throw new Error('NEON_DATABASE_URL environment variable is not set');
 }
 
 // Page by slug
 async function getPageBySlug(slug) {
-  const db = await readDatabase();
-  return db.pages.find(page => page.slug === slug) || null;
+  try {
+    const sql = neon(connectionString);
+    const result = await sql`
+      SELECT * FROM pages WHERE slug = ${slug} LIMIT 1
+    `;
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Error fetching page:', error);
+    return null;
+  }
 }
 
 // Blocks by page ID
 async function getBlocks(pageId) {
-  const db = await readDatabase();
-  return db.blocks.filter(block => block.page_id === pageId) || [];
+  try {
+    const sql = neon(connectionString);
+    const result = await sql`
+      SELECT * FROM blocks
+      WHERE page_id = ${pageId}
+      ORDER BY grid_row ASC, grid_col ASC
+    `;
+
+    // Normalisiere Block-Daten für Live-View
+    return result.map(block => ({
+      ...block,
+      content: typeof block.content === 'string' && block.content.startsWith('{')
+        ? JSON.parse(block.content)
+        : block.content,
+      grid_col: block.grid_col || 0,
+      grid_row: block.grid_row || 0,
+      grid_width: block.grid_width || 2,
+      grid_height: block.grid_height || 1
+    }));
+  } catch (error) {
+    console.error('Error fetching blocks:', error);
+    return [];
+  }
 }
 
 // Layout settings (mock)
@@ -99,25 +120,31 @@ export default async function PublicPage({ params }) {
 
         {/* Main Content */}
         <main className="flex-1 relative">
-          <div className="w-full h-full relative" style={{ minHeight: '600px' }}>
-            {/* Render Blocks */}
+          <div
+            className="w-full h-full relative grid grid-cols-12 gap-2 p-4"
+            style={{
+              minHeight: '600px',
+              gridAutoRows: 'minmax(100px, auto)'
+            }}
+          >
+            {/* Render Blocks im Grid System */}
             {blocks.map((block) => {
               const Component = blockComponents[block.block_type];
               if (!Component) {
                 return (
                   <div
                     key={block.id}
-                    className="absolute text-red-500 p-2 border border-red-300 rounded bg-red-50"
+                    className="text-red-500 p-2 border border-red-300 rounded bg-red-50 flex items-center justify-center"
                     style={{
-                      left: `${block.position_x}%`,
-                      top: `${block.position_y}%`,
-                      width: `${block.width}%`,
-                      height: `${block.height}%`,
+                      gridColumn: `${(block.grid_col || 0) + 1} / span ${block.grid_width || 2}`,
+                      gridRow: `${(block.grid_row || 0) + 1} / span ${block.grid_height || 1}`,
                       zIndex: block.z_index || 1
                     }}
                   >
-                    <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
-                    <div className="text-sm mt-1">Verfügbare Typen: {Object.keys(blockComponents).join(', ')}</div>
+                    <div className="text-center">
+                      <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
+                      <div className="text-sm mt-1">Verfügbare Typen: {Object.keys(blockComponents).join(', ')}</div>
+                    </div>
                   </div>
                 );
               }
@@ -125,21 +152,21 @@ export default async function PublicPage({ params }) {
               return (
                 <div
                   key={block.id}
-                  className="absolute rounded-md overflow-hidden"
+                  className="rounded-md overflow-hidden"
                   style={{
-                    left: '0',
-                    top: '0',
-                    width: `${block.width}%`,
-                    height: `${block.height}%`,
-                    transform: `translate(${block.position_x}%, ${block.position_y}%) rotate(${block.rotation || 0}deg) scale(${block.scale_x || 1}, ${block.scale_y || 1})`,
+                    gridColumn: `${(block.grid_col || 0) + 1} / span ${block.grid_width || 2}`,
+                    gridRow: `${(block.grid_row || 0) + 1} / span ${block.grid_height || 1}`,
                     backgroundColor: block.background_color || 'transparent',
                     color: block.text_color || '#000000',
-                    zIndex: block.z_index || 1,
-                    transformOrigin: 'center center'
+                    zIndex: block.z_index || 1
                   }}
                 >
                   <div className="w-full h-full relative">
-                    <Component content={block.content} />
+                    <Component
+                      content={block.content || ''}
+                      block_type={block.block_type}
+                      editable={false}
+                    />
                   </div>
                 </div>
               );
@@ -147,7 +174,7 @@ export default async function PublicPage({ params }) {
 
             {/* Empty State für Seiten ohne Blöcke */}
             {blocks.length === 0 && (
-              <div className="flex items-center justify-center h-full">
+              <div className="col-span-12 flex items-center justify-center h-full">
                 <div className="text-center text-gray-500">
                   <h1 className="text-4xl font-bold mb-4">{page.title}</h1>
                   <p>Diese Seite ist noch in Bearbeitung.</p>

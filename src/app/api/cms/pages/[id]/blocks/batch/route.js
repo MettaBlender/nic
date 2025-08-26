@@ -11,7 +11,8 @@ import {
 // POST: Batch-Operations für Blöcke verarbeiten
 export async function POST(request, { params }) {
   try {
-    const pageId = params.id;
+    const resolvedParams = await params;
+    const pageId = resolvedParams.id;
     const { operations } = await request.json();
 
     if (!Array.isArray(operations) || operations.length === 0) {
@@ -35,7 +36,7 @@ export async function POST(request, { params }) {
       try {
         switch (opType) {
           case 'create':
-            const blockId = await createBlock(
+            const newBlock = await createBlock(
               pageId,
               data.block_type || 'Text',
               data.grid_col || 0,
@@ -48,11 +49,11 @@ export async function POST(request, { params }) {
             results.push({
               operation: 'create',
               success: true,
-              id: blockId,
+              block: newBlock,
               tempId: data.id
             });
 
-            console.log(`✅ Created block in SQL: ${blockId} (${data.block_type})`);
+            console.log(`✅ Created block in SQL: ${newBlock.id} (${data.block_type})`);
             break;
 
           case 'update':
@@ -99,24 +100,28 @@ export async function POST(request, { params }) {
             await deleteAllBlocksForPage(pageId);
 
             if (data.blocks && data.blocks.length > 0) {
-              const createData = data.blocks.map(block => ({
-                block_type: block.block_type || 'Text',
-                grid_col: block.grid_col || 0,
-                grid_row: block.grid_row || 0,
-                grid_width: block.grid_width || 2,
-                grid_height: block.grid_height || 1,
-                content: block.content || {}
-              }));
-
-              const newBlockIds = await createMultipleBlocks(pageId, createData);
+              const newBlocks = [];
+              for (const blockData of data.blocks) {
+                const newBlock = await createBlock(
+                  pageId,
+                  blockData.block_type || 'Text',
+                  blockData.grid_col || 0,
+                  blockData.grid_row || 0,
+                  blockData.grid_width || 2,
+                  blockData.grid_height || 1,
+                  blockData.content || {}
+                );
+                newBlocks.push(newBlock);
+              }
 
               results.push({
                 operation: 'replace_all',
                 success: true,
-                created: newBlockIds.length
+                blocks: newBlocks,
+                created: newBlocks.length
               });
 
-              console.log(`✅ Replaced all blocks in SQL: ${newBlockIds.length} new blocks`);
+              console.log(`✅ Replaced all blocks in SQL: ${newBlocks.length} new blocks`);
             } else {
               results.push({
                 operation: 'replace_all',

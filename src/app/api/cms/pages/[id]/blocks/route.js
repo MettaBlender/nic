@@ -4,7 +4,8 @@ import { getBlocksForPage, createBlock, deleteAllBlocksForPage } from '@/lib/dat
 // GET: Blöcke für eine bestimmte Seite laden
 export async function GET(request, { params }) {
   try {
-    const pageId = params.id;
+    const resolvedParams = await params;
+    const pageId = resolvedParams.id;
     console.log(`📦 Loading blocks for page ${pageId} from SQL...`);
 
     const blocks = await getBlocksForPage(pageId);
@@ -26,7 +27,8 @@ export async function GET(request, { params }) {
 // POST: Neuen Block erstellen
 export async function POST(request, { params }) {
   try {
-    const pageId = params.id;
+    const resolvedParams = await params;
+    const pageId = resolvedParams.id;
     const blockData = await request.json();
 
     console.log(`📝 Creating block for page: ${pageId} in SQL`, blockData);
@@ -79,7 +81,8 @@ export async function POST(request, { params }) {
 // DELETE: Alle Blöcke einer Seite löschen
 export async function DELETE(request, { params }) {
   try {
-    const pageId = params.id;
+    const resolvedParams = await params;
+    const pageId = resolvedParams.id;
     console.log(`🗑️ Deleting all blocks for page: ${pageId} from SQL`);
 
     const deletedCount = await deleteAllBlocksForPage(pageId);

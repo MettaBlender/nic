@@ -178,17 +178,61 @@ export const CMSProvider = ({ children }) => {
     setSaveStatus('dirty');
   }, []);
 
-  // Block erstellen
+  // Block erstellen mit verbesserter Collision Detection
   const createBlock = useCallback((blockData) => {
     const blockId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Finde freie Position mit Collision Detection
+    const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
+      const blockWidth = typeof blockData.grid_width === 'number' ? blockData.grid_width : 2;
+      const blockHeight = typeof blockData.grid_height === 'number' ? blockData.grid_height : 1;
+
+      // Prüfe die bevorzugte Position zuerst
+      const isPositionFree = (col, row) => {
+        return !blocks.some(existingBlock => {
+          const exCol = existingBlock.grid_col || 0;
+          const exRow = existingBlock.grid_row || 0;
+          const exWidth = existingBlock.grid_width || 2;
+          const exHeight = existingBlock.grid_height || 1;
+
+          // Prüfe Überlappung
+          return !(col + blockWidth <= exCol || col >= exCol + exWidth ||
+                   row + blockHeight <= exRow || row >= exRow + exHeight);
+        });
+      };
+
+      // Versuche bevorzugte Position
+      if (isPositionFree(preferredCol, preferredRow)) {
+        return { col: preferredCol, row: preferredRow };
+      }
+
+      // Suche freie Position von oben links
+      const maxRows = Math.max(10, Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1))) + 5);
+      for (let row = 0; row < maxRows; row++) {
+        for (let col = 0; col <= 12 - blockWidth; col++) {
+          if (isPositionFree(col, row)) {
+            return { col, row };
+          }
+        }
+      }
+
+      // Fallback: neue Zeile am Ende
+      const lastRow = Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1)), 0);
+      return { col: 0, row: lastRow };
+    };
+
+    const freePosition = findFreePosition(
+      typeof blockData.grid_col === 'number' ? blockData.grid_col : 0,
+      typeof blockData.grid_row === 'number' ? blockData.grid_row : 0
+    );
 
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
       block_type: typeof blockData === 'string' ? blockData : blockData.block_type,
-      content: blockData.content || '',
-      grid_col: typeof blockData.grid_col === 'number' ? blockData.grid_col : 0,
-      grid_row: typeof blockData.grid_row === 'number' ? blockData.grid_row : 0,
+      content: blockData.content || (blockData.block_type === 'Text' ? 'Neuer Text' : ''),
+      grid_col: freePosition.col,
+      grid_row: freePosition.row,
       grid_width: typeof blockData.grid_width === 'number' ? blockData.grid_width : 2,
       grid_height: typeof blockData.grid_height === 'number' ? blockData.grid_height : 1,
       background_color: blockData.background_color || 'transparent',
@@ -203,7 +247,7 @@ export const CMSProvider = ({ children }) => {
 
     console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row})`);
     return newBlock;
-  }, [currentPage, batchOperation]);
+  }, [currentPage, batchOperation, blocks]);
 
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
@@ -234,7 +278,7 @@ export const CMSProvider = ({ children }) => {
     batchOperation(blockId, 'delete', { id: blockId });
   }, [batchOperation]);
 
-  // Alle Draft-Änderungen veröffentlichen mit Batch-API
+  // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
   const publishDrafts = async () => {
     if (pendingOperations.size === 0) {
       console.log('📄 No changes to publish');
@@ -260,14 +304,39 @@ export const CMSProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Batch operation failed: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`Batch operation failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
       const result = await response.json();
       console.log(`✅ Batch operations completed:`, result);
 
-      // Lade die aktualisierten Blöcke von der DB
-      await loadBlocks(currentPage.id);
+      // Aktualisiere direkt mit den zurückgegebenen Blöcken
+      if (result.blocks && Array.isArray(result.blocks)) {
+        // Normalisiere die Block-Daten
+        const normalizedBlocks = result.blocks.map(block => ({
+          ...block,
+          grid_col: typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0,
+          grid_row: typeof block.grid_row === 'number' && !isNaN(block.grid_row) ? block.grid_row : 0,
+          grid_width: typeof block.grid_width === 'number' && !isNaN(block.grid_width) ? block.grid_width : 2,
+          grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
+          background_color: block.background_color || 'transparent',
+          text_color: block.text_color || '#000000',
+          z_index: typeof block.z_index === 'number' ? block.z_index : 1,
+          // Parse JSON content falls es als String gespeichert wurde
+          content: typeof block.content === 'string' ?
+            (block.content.startsWith('{') || block.content.startsWith('[') ?
+              (() => { try { return JSON.parse(block.content); } catch { return block.content; } })()
+              : block.content)
+            : block.content
+        }));
+
+        setBlocks(normalizedBlocks);
+        console.log(`✅ Updated UI with ${normalizedBlocks.length} blocks from server`);
+      } else {
+        // Fallback: Lade Blöcke separat
+        await loadBlocks(currentPage.id);
+      }
 
       setPendingOperations(new Map());
       setSaveStatus('saved');
