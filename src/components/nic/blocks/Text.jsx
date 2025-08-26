@@ -70,6 +70,14 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
     }
   }, [isEditing]);
 
+  console.log('Text Component Debug:', {
+    content,
+    textContent,
+    displayContent,
+    editable,
+    block_type
+  });
+
   return (
     <div
       className="w-full h-full flex items-center justify-center p-2"

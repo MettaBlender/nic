@@ -7,7 +7,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
-import { resolveComponent, preloadComponents } from '../../../utils/dynamicComponentResolver';
+import { resolveComponent, preloadComponents } from '../../../utils/staticComponentResolver';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -234,9 +234,15 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
             alignItems: 'center',
             justifyContent: 'center',
             color: '#ef4444',
-            fontSize: '14px'
+            fontSize: '14px',
+            padding: '8px',
+            textAlign: 'center'
           }}>
-            Komponente "{String(block.block_type)}" nicht gefunden
+            <div>
+              <div className="font-bold">Komponente "{String(block.block_type)}" nicht gefunden</div>
+              <div className="text-xs mt-1">Debug: Content = "{String(block.content)}"</div>
+              <div className="text-xs">Type = "{String(block.block_type)}"</div>
+            </div>
           </div>
         )}
       </div>
@@ -507,8 +513,19 @@ const GridCanvas = () => {
           onClick={() => {
             console.log('=== DEBUG: All Blocks ===');
             blocks.forEach((block, i) => {
-              console.log(`Block ${i}: ID=${String(block.id)}, grid_col=${block.grid_col} (${typeof block.grid_col}), grid_row=${block.grid_row} (${typeof block.grid_row}), type=${String(block.block_type)}`);
+              console.log(`Block ${i}:`, {
+                id: String(block.id),
+                type: String(block.block_type),
+                content: String(block.content),
+                grid_col: block.grid_col,
+                grid_row: block.grid_row,
+                grid_width: block.grid_width,
+                grid_height: block.grid_height
+              });
             });
+            console.log('=== Component Resolution Test ===');
+            const testComponent = resolveComponent('Text');
+            console.log('Text component resolved to:', testComponent);
             console.log('=== END DEBUG ===');
           }}
           style={{
