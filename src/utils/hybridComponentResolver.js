@@ -33,6 +33,9 @@ const FallbackComponent = ({ componentName = 'Unbekannte Komponente', content, .
   </div>
 );
 
+// Add display name for ESLint
+FallbackComponent.displayName = 'FallbackComponent';
+
 // Statische Komponenten-Map (garantiert verfügbar)
 const STATIC_COMPONENTS = {
   Text: Text,
@@ -79,8 +82,8 @@ async function loadDynamicComponent(componentName) {
     try {
       console.log(`⬇️ Loading dynamic component: ${componentName}`);
 
-      const module = await DYNAMIC_COMPONENT_PATHS[componentName]();
-      const Component = module.default || module;
+      const moduleResult = await DYNAMIC_COMPONENT_PATHS[componentName]();
+      const Component = moduleResult.default || moduleResult;
 
       if (Component) {
         dynamicComponentCache.set(componentName, Component);
@@ -150,7 +153,7 @@ export const resolveComponentSync = (componentName) => {
 
   // 5. Versuche asynchrones Laden für dynamische Komponenten
   // Erstelle eine Wrapper-Komponente die async lädt
-  return function AsyncComponentWrapper(props) {
+  const AsyncComponentWrapper = function(props) {
     const [Component, setComponent] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
@@ -190,7 +193,7 @@ export const resolveComponentSync = (componentName) => {
       return () => {
         mounted = false;
       };
-    }, [componentName]);
+    }, []);
 
     if (loading) {
       return (
@@ -209,6 +212,9 @@ export const resolveComponentSync = (componentName) => {
 
     return <Component {...props} />;
   };
+
+  AsyncComponentWrapper.displayName = `AsyncComponentWrapper_${componentName}`;
+  return AsyncComponentWrapper;
 };
 
 /**
@@ -282,10 +288,12 @@ export const getDebugInfo = () => {
 };
 
 // Legacy-Kompatibilität
-export default {
+const hybridComponentResolverDefault = {
   resolveComponent: resolveComponentSync,
   preloadComponents: preloadCommonComponents,
   listAvailableComponents,
   refreshComponents,
   getDebugInfo
 };
+
+export default hybridComponentResolverDefault;

@@ -48,10 +48,10 @@ export const loadAvailableComponents = async () => {
  */
 export const loadComponent = async (componentPath) => {
   try {
-    const module = await import(`@/components/nic/blocks/${componentPath}`);
+    const moduleResult = await import(`@/components/nic/blocks/${componentPath}`);
     return {
       success: true,
-      component: module.default
+      component: moduleResult.default
     };
   } catch (error) {
     console.error(`Fehler beim Laden der Komponente ${componentPath}:`, error);

@@ -58,7 +58,9 @@ export const resolveComponent = (componentName) => {
   }
 
   console.warn(`Component "${componentName}" not found, using fallback`);
-  return (props) => <FallbackBlock {...props} componentName={componentName} />;
+  const ComponentFallback = (props) => <FallbackBlock {...props} componentName={componentName} />;
+  ComponentFallback.displayName = `ComponentFallback_${componentName}`;
+  return ComponentFallback;
 };
 
 /**
@@ -78,9 +80,11 @@ export const componentExists = (componentName) => {
   return !!COMPONENT_REGISTRY[componentName];
 };
 
-export default {
+const componentResolverExport = {
   resolveComponent,
   getAvailableComponents,
   componentExists,
   COMPONENT_REGISTRY
 };
+
+export default componentResolverExport;

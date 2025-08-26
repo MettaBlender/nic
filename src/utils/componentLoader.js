@@ -38,25 +38,31 @@ export const loadBlockComponent = (componentName, category = '') => {
           // Fallback zur fallback Komponente
           try {
             const fallback = await import('../components/nic/blocks/fallback.jsx');
-            return (props) => fallback.default({ ...props, componentName: cacheKey });
+            const FallbackWrapper = (props) => fallback.default({ ...props, componentName: cacheKey });
+            FallbackWrapper.displayName = `FallbackWrapper_${cacheKey}`;
+            return FallbackWrapper;
           } catch (fallbackError) {
             console.error('Fallback-Komponente nicht gefunden:', fallbackError);
-            return () => (
+            const ErrorComponent = () => (
               <div className="p-4 bg-red-100 border border-red-300 rounded text-red-700">
                 <div className="font-bold">Fehler beim Laden der Komponente</div>
                 <div className="text-sm">{cacheKey}</div>
               </div>
             );
+            ErrorComponent.displayName = `ErrorComponent_${cacheKey}`;
+            return ErrorComponent;
           }
         }
       },
       {
         ssr: false,
-        loading: () => (
-          <div className="animate-pulse bg-gray-200 rounded p-4 flex items-center justify-center">
-            <div className="text-gray-500 text-sm">Lädt {componentName}...</div>
-          </div>
-        )
+        loading: function LoadingComponent() {
+          return (
+            <div className="animate-pulse bg-gray-200 rounded p-4 flex items-center justify-center">
+              <div className="text-gray-500 text-sm">Lädt {componentName}...</div>
+            </div>
+          );
+        }
       }
     );
   }
@@ -71,7 +77,9 @@ export const loadBlockComponent = (componentName, category = '') => {
  */
 export const loadGridComponent = (componentName) => {
   if (!componentName) {
-    return () => <div className="p-2 text-gray-500">Kein Component Name</div>;
+    const NoNameComponent = () => <div className="p-2 text-gray-500">Kein Component Name</div>;
+    NoNameComponent.displayName = 'NoNameComponent';
+    return NoNameComponent;
   }
 
   const cacheKey = `grid_${componentName}`;
@@ -129,8 +137,10 @@ export const clearComponentCache = () => {
   });
 };
 
-export default {
+const componentLoaderExport = {
   loadBlockComponent,
   loadGridComponent,
   clearComponentCache
 };
+
+export default componentLoaderExport;

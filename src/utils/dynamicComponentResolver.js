@@ -97,39 +97,45 @@ export const resolveComponent = (componentName) => {
           console.log(`Lade Komponente: ${componentName} von ${importPath}`);
 
           // Versuche Import
-          const module = await import(importPath);
-          return module.default || module;
+          const moduleResult = await import(importPath);
+          return moduleResult.default || moduleResult;
         }
 
         // Fallback wenn nicht gefunden
         console.warn(`Komponente "${componentName}" nicht in API gefunden, verwende Fallback`);
-        return (props) => <FallbackBlock {...props} componentName={componentName} />;
+        const ApiFallback = (props) => <FallbackBlock {...props} componentName={componentName} />;
+        ApiFallback.displayName = `ApiFallback_${componentName}`;
+        return ApiFallback;
 
       } catch (error) {
         console.error(`Fehler beim Laden der Komponente "${componentName}":`, error);
-        return (props) => <FallbackBlock {...props} componentName={componentName} />;
+        const ErrorFallback = (props) => <FallbackBlock {...props} componentName={componentName} />;
+        ErrorFallback.displayName = `ErrorFallback_${componentName}`;
+        return ErrorFallback;
       }
     },
     {
       ssr: false,
-      loading: () => (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '6px',
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-        }}>
+      loading: function LoadingComponent() {
+        return (
           <div style={{
-            color: '#6b7280',
-            fontSize: '14px'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '6px',
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
           }}>
-            Lädt {String(componentName)}...
+            <div style={{
+              color: '#6b7280',
+              fontSize: '14px'
+            }}>
+              Lädt {String(componentName)}...
+            </div>
           </div>
-        </div>
-      )
+        );
+      }
     }
   );
 
@@ -174,9 +180,11 @@ export const componentExists = async (componentName) => {
   return !!findComponentInCategories(componentName, categories);
 };
 
-export default {
+const dynamicComponentResolverDefault = {
   resolveComponent,
   preloadComponents,
   clearComponentCache,
   componentExists
 };
+
+export default dynamicComponentResolverDefault;

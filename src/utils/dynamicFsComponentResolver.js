@@ -82,8 +82,8 @@ async function scanForComponents() {
 async function loadComponent(componentPath) {
   try {
     // Dynamic import für die Komponente
-    const module = await import(componentPath);
-    return module.default || module;
+    const moduleResult = await import(componentPath);
+    return moduleResult.default || moduleResult;
   } catch (error) {
     console.error(`❌ Failed to load component from ${componentPath}:`, error);
     return null;
@@ -156,7 +156,9 @@ export const resolveComponent = async (componentName) => {
         console.log(`✅ Loaded component: ${componentName}`);
       } catch (error) {
         console.error(`❌ Failed to load ${componentName}:`, error);
-        return (props) => <FallbackComponent {...props} componentName={componentName} />;
+        const ErrorFallback = (props) => <FallbackComponent {...props} componentName={componentName} />;
+        ErrorFallback.displayName = `ErrorFallback_${componentName}`;
+        return ErrorFallback;
       }
     }
 
@@ -196,7 +198,9 @@ export const resolveComponent = async (componentName) => {
 
   // Fallback
   console.warn(`⚠️ Component "${componentName}" not found, using fallback`);
-  return (props) => <FallbackComponent {...props} componentName={componentName} />;
+  const MainFallback = (props) => <FallbackComponent {...props} componentName={componentName} />;
+  MainFallback.displayName = `MainFallback_${componentName}`;
+  return MainFallback;
 };
 
 /**
@@ -242,7 +246,9 @@ export const resolveComponentSync = (componentName) => {
 
   // Fallback
   console.warn(`⚠️ Component "${componentName}" not found in cache, using fallback`);
-  return (props) => <FallbackComponent {...props} componentName={componentName} />;
+  const SyncFallback = (props) => <FallbackComponent {...props} componentName={componentName} />;
+  SyncFallback.displayName = `SyncFallback_${componentName}`;
+  return SyncFallback;
 };
 
 /**
@@ -279,8 +285,10 @@ export const clearComponentCache = () => {
 /**
  * Legacy-Kompatibilität
  */
-export default {
+const dynamicFsComponentResolverDefault = {
   resolveComponent: resolveComponentSync, // Sync für bessere Performance
   preloadComponents: preloadAllComponents,
   clearCache: clearComponentCache
 };
+
+export default dynamicFsComponentResolverDefault;

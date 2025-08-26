@@ -77,8 +77,8 @@ async function loadComponent(componentInfo) {
     console.log(`⬇️ Loading component: ${componentInfo.name} from ${componentInfo.importPath}`);
 
     // Dynamic import der Komponente
-    const module = await import(componentInfo.importPath);
-    const Component = module.default || module;
+    const moduleResult = await import(componentInfo.importPath);
+    const Component = moduleResult.default || moduleResult;
 
     if (!Component) {
       throw new Error('No default export found');
@@ -161,7 +161,9 @@ export const resolveComponent = async (componentName) => {
   console.warn(`⚠️ Component "${componentName}" not found in registry, using fallback`);
   console.log('📋 Available components:', Array.from(componentRegistry.keys()));
 
-  return (props) => <FallbackComponent {...props} componentName={componentName} />;
+  const AsyncFallback = (props) => <FallbackComponent {...props} componentName={componentName} />;
+  AsyncFallback.displayName = `AsyncFallback_${componentName}`;
+  return AsyncFallback;
 };
 
 /**
@@ -200,7 +202,7 @@ export const resolveComponentSync = (componentName) => {
   // Fallback mit Hinweis auf asynchrones Laden
   console.warn(`⚠️ Component "${componentName}" not in cache, async loading required`);
 
-  return (props) => {
+  const AsyncLoadWrapper = function(props) {
     const [Component, setComponent] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
 
@@ -209,7 +211,7 @@ export const resolveComponentSync = (componentName) => {
         setComponent(() => ResolvedComponent);
         setLoading(false);
       });
-    }, [componentName]);
+    }, []);
 
     if (loading) {
       return (
@@ -224,6 +226,9 @@ export const resolveComponentSync = (componentName) => {
 
     return Component ? <Component {...props} /> : <FallbackComponent {...props} componentName={componentName} />;
   };
+
+  AsyncLoadWrapper.displayName = `AsyncLoadWrapper_${componentName}`;
+  return AsyncLoadWrapper;
 };
 
 /**
@@ -290,7 +295,7 @@ export const getDebugInfo = () => {
 /**
  * Legacy-Kompatibilität
  */
-export default {
+const dynamicApiComponentResolverDefault = {
   resolveComponent: resolveComponentSync,
   preloadComponents: preloadCommonComponents,
   listAvailableComponents,
@@ -298,3 +303,5 @@ export default {
   clearCache: clearComponentCache,
   getDebugInfo
 };
+
+export default dynamicApiComponentResolverDefault;

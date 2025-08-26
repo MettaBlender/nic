@@ -27,6 +27,9 @@ const FallbackComponent = ({ componentName = 'Unbekannte Komponente', content })
   </div>
 );
 
+// Add display name for ESLint
+FallbackComponent.displayName = 'FallbackComponent';
+
 // Statische Komponenten-Map mit echten Komponenten
 const COMPONENT_MAP = {
   Text: Text,
@@ -65,9 +68,11 @@ export const resolveComponent = (componentName) => {
 
   // Fallback
   console.warn(`⚠️ Component "${componentName}" not found, using fallback`);
-  return (props) => (
+  const WrappedFallback = (props) => (
     <FallbackComponent {...props} componentName={componentName} />
   );
+  WrappedFallback.displayName = `FallbackWrapper_${componentName}`;
+  return WrappedFallback;
 };
 
 /**
@@ -81,7 +86,9 @@ export const preloadComponents = () => {
 /**
  * Legacy-Kompatibilität
  */
-export default {
+const componentResolverDefault = {
   resolveComponent,
   preloadComponents
 };
+
+export default componentResolverDefault;
