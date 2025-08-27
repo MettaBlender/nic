@@ -1,0 +1,45 @@
+/* Custom styles for React Moveable */
+
+.moveable-control-box {
+  --control-handle-size: 10px;
+  --control-handle-color: #4f46e5;
+  --control-border-color: #4f46e5;
+}
+
+.moveable-control {
+  background: var(--control-handle-color);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  width: var(--control-handle-size);
+  height: var(--control-handle-size);
+}
+
+.moveable-line {
+  background: var(--control-border-color);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.moveable-rotation {
+  background: var(--control-handle-color);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.moveable-origin {
+  background: var(--control-handle-color);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide controls when not actively editing */
+.moveable:not(.moveable-target-selected) .moveable-control-box {
+  display: none;
+}
+
+/* Highlight active block */
+.moveable-target-selected {
+  outline: 2px solid var(--control-border-color);
+  outline-offset: 2px;
+}

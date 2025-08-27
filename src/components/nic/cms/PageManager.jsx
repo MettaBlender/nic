@@ -9,6 +9,7 @@ const PageManager = () => {
     pages,
     currentPage,
     setCurrentPage,
+    selectPage,
     createPage,
     updatePage,
     deletePage,
@@ -27,7 +28,7 @@ const PageManager = () => {
       const newPage = await createPage(formData.title, formData.slug);
       setShowCreateForm(false);
       setFormData({ title: '', slug: '' });
-      setCurrentPage(newPage);
+      selectPage(newPage);
     } catch (error) {
       alert('Fehler beim Erstellen der Seite: ' + error.message);
     }
@@ -187,7 +188,7 @@ const PageManager = () => {
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                 }`}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => selectPage(page)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

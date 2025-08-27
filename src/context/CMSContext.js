@@ -143,9 +143,13 @@ export const CMSProvider = ({ children }) => {
   };
 
   // Load blocks for a specific page
-  const loadBlocks = async (pageId) => {
-    if (!pageId) return;
+  const loadBlocks = useCallback(async (pageId) => {
+    if (!pageId) {
+      console.log('📦 No page ID provided, skipping block loading');
+      return;
+    }
 
+    console.log(`🔄 Loading blocks for page ID: ${pageId}`);
     setIsLoading(true);
     try {
       const response = await fetch(`/api/cms/pages/${pageId}/blocks`);
@@ -174,22 +178,39 @@ export const CMSProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Error loading blocks:', error);
       setSaveStatus('error');
+      // Set empty blocks on error to prevent stale data
+      setBlocks([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Select page and load its blocks
-  const selectPage = (page) => {
+  const selectPage = useCallback((page) => {
+    console.log(`🔄 Switching to page: ${page ? page.title : 'none'}`);
+
+    // Warn if there are unsaved changes
+    if (pendingOperations.size > 0) {
+      console.warn(`⚠️ Switching pages with ${pendingOperations.size} unsaved changes. Consider saving first.`);
+    }
+
+    // Clear current state
+    setBlocks([]);
+    setPendingOperations(new Map());
+    setSaveStatus('saved');
+    setDraftChanges([]);
+
+    // Set new page
     setCurrentPage(page);
-    if (page) {
+
+    // Load blocks for new page
+    if (page && page.id) {
+      console.log(`📦 Loading blocks for page: ${page.title} (ID: ${page.id})`);
       loadBlocks(page.id);
     } else {
-      setBlocks([]);
-      setPendingOperations(new Map());
-      setSaveStatus('saved');
+      console.log('📦 No page selected, clearing blocks');
     }
-  };
+  }, [pendingOperations.size, loadBlocks]);
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
@@ -527,9 +548,102 @@ export const CMSProvider = ({ children }) => {
 
     // API Methods that might be expected
     loadPages,
-    createPage: () => {},
-    updatePage: () => {},
-    deletePage: () => {},
+    createPage: async (title, slug) => {
+      try {
+        console.log(`📝 Creating new page: ${title} (${slug})`);
+
+        const response = await fetch('/api/cms/pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, slug })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const newPage = await response.json();
+        console.log('✅ Page created:', newPage);
+
+        // Aktualisiere die Seiten-Liste
+        setPages(prev => [...prev, newPage]);
+
+        return newPage;
+      } catch (error) {
+        console.error('❌ Error creating page:', error);
+        throw error;
+      }
+    },
+    updatePage: async (pageId, title, slug) => {
+      try {
+        console.log(`📝 Updating page ${pageId}: ${title} (${slug})`);
+
+        const response = await fetch(`/api/cms/pages/${pageId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, slug })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const updatedPage = await response.json();
+        console.log('✅ Page updated:', updatedPage);
+
+        // Aktualisiere die Seiten-Liste
+        setPages(prev => prev.map(page =>
+          page.id === pageId ? updatedPage : page
+        ));
+
+        // Aktualisiere currentPage falls es die gleiche ist
+        if (currentPage && currentPage.id === pageId) {
+          setCurrentPage(updatedPage);
+        }
+
+        return updatedPage;
+      } catch (error) {
+        console.error('❌ Error updating page:', error);
+        throw error;
+      }
+    },
+    deletePage: async (pageId) => {
+      try {
+        console.log(`🗑️ Deleting page ${pageId}`);
+
+        const response = await fetch(`/api/cms/pages/${pageId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        console.log('✅ Page deleted');
+
+        // Entferne die Seite aus der Liste
+        setPages(prev => prev.filter(page => page.id !== pageId));
+
+        // Falls die aktuelle Seite gelöscht wurde, wähle eine andere aus
+        if (currentPage && currentPage.id === pageId) {
+          const remainingPages = pages.filter(page => page.id !== pageId);
+          if (remainingPages.length > 0) {
+            selectPage(remainingPages[0]);
+          } else {
+            setCurrentPage(null);
+            setBlocks([]);
+          }
+        }
+
+        return true;
+      } catch (error) {
+        console.error('❌ Error deleting page:', error);
+        throw error;
+      }
+    },
     loadLayoutSettings: () => {},
     updateLayoutSettings: () => {},
     snapToGridValue: () => {},

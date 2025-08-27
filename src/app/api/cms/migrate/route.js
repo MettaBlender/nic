@@ -14,12 +14,26 @@ export async function POST() {
       WHERE table_name = 'blocks' AND column_name IN ('grid_col', 'grid_row', 'grid_width', 'grid_height')
     `;
 
+    const pagesColumnsCheck = await sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'pages' AND column_name = 'rows'
+    `;
+
     const existingColumns = columnsCheck.map(row => row.column_name);
+    const hasRowsColumn = pagesColumnsCheck.length > 0;
     console.log('📊 Existing grid columns:', existingColumns);
+    console.log('📊 Pages has rows column:', hasRowsColumn);
 
     const migrations = [];
 
-    // Schritt 2: Füge fehlende Spalten hinzu
+    // Schritt 2: Füge rows-Spalte zur pages Tabelle hinzu
+    if (!hasRowsColumn) {
+      await sql`ALTER TABLE pages ADD COLUMN rows INTEGER DEFAULT 12`;
+      migrations.push('Added rows column to pages table');
+    }
+
+    // Schritt 3: Füge fehlende Spalten hinzu
     if (!existingColumns.includes('grid_col')) {
       await sql`ALTER TABLE blocks ADD COLUMN grid_col INTEGER DEFAULT 0`;
       migrations.push('Added grid_col column');
@@ -40,7 +54,7 @@ export async function POST() {
       migrations.push('Added grid_height column');
     }
 
-    // Schritt 3: Konvertiere existierende Daten
+    // Schritt 4: Konvertiere existierende Daten
     const blocksToMigrate = await sql`
       SELECT id, position_x, position_y, width, height
       FROM blocks
@@ -70,7 +84,7 @@ export async function POST() {
       migrations.push(`Migrated ${blocksToMigrate.length} blocks from position to grid`);
     }
 
-    // Schritt 4: Setze Default-Werte für NULL-Werte
+    // Schritt 5: Setze Default-Werte für NULL-Werte
     const nullUpdates = await sql`
       UPDATE blocks SET
         grid_col = COALESCE(grid_col, 0),
@@ -84,7 +98,7 @@ export async function POST() {
       migrations.push(`Fixed ${nullUpdates.count} blocks with NULL grid values`);
     }
 
-    // Schritt 5: Erzwinge NOT NULL (optional, nur wenn alle Spalten existieren)
+    // Schritt 6: Erzwinge NOT NULL (optional, nur wenn alle Spalten existieren)
     try {
       if (existingColumns.length === 0) { // Nur bei komplett neuer Migration
         await sql`ALTER TABLE blocks ALTER COLUMN grid_col SET NOT NULL`;
@@ -97,7 +111,7 @@ export async function POST() {
       console.warn('⚠️ Could not set NOT NULL constraints:', error.message);
     }
 
-    // Schritt 6: Validierung
+    // Schritt 7: Validierung
     const finalCheck = await sql`
       SELECT
         COUNT(*) as total_blocks,
@@ -109,14 +123,23 @@ export async function POST() {
       FROM blocks
     `;
 
+    const pagesCheck = await sql`
+      SELECT COUNT(*) as total_pages, COUNT(rows) as pages_with_rows
+      FROM pages
+    `;
+
     console.log('✅ Migration completed successfully');
     console.log('📊 Final validation:', finalCheck[0]);
+    console.log('📊 Pages validation:', pagesCheck[0]);
 
     return NextResponse.json({
       success: true,
       message: 'Database migration completed successfully',
       migrations,
-      statistics: finalCheck[0],
+      statistics: {
+        blocks: finalCheck[0],
+        pages: pagesCheck[0]
+      },
       timestamp: new Date().toISOString()
     });
 
