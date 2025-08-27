@@ -12,6 +12,8 @@ import NavigationHeader from '@/components/nic/blocks/header/NavigationHeader';
 import DefaultFooter from '@/components/nic/blocks/footer/DefaultFooter';
 import SocialFooter from '@/components/nic/blocks/footer/SocialFooter';
 
+import nicConfig from '../../../nic.config.js';
+
 // Database connection
 const connectionString = process.env.NEON_DATABASE_URL;
 
@@ -217,10 +219,10 @@ export default async function PublicPage({ params }) {
         {/* Main Content */}
         <main className="flex-1 relative">
           <div
-            className="w-full h-full relative grid grid-cols-12 gap-2 p-4"
+            className="w-full h-full relative grid grid-rows-12 gap-2 p-4"
             style={{
-              minHeight: '600px',
-              gridAutoRows: 'minmax(100px, auto)'
+              gridTemplateRows: `repeat(${nicConfig.grid.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
+              gridTemplateColumns: `repeat(${nicConfig.grid.columns}, minmax(0, 1fr))`
             }}
           >
             {/* Render Blocks im Grid System */}
