@@ -44,12 +44,26 @@ The CMS page creation functionality was not working correctly due to missing imp
   - Clear all pending operations and draft changes when switching pages
   - Ensured blocks are properly loaded for each page
 
+### 6. **Layout Settings Integration - Complete Publishing System**
+- **Problem**: Layout changes were not integrated into the draft/publish system and were not saved to database
+- **Fix**:
+  - Added layout state management to CMSContext (`layoutSettings`, `pendingLayoutChanges`)
+  - Implemented proper `loadLayoutSettings()` function to load settings from API
+  - Enhanced `updateLayoutSettings()` to add changes to draft system
+  - Integrated layout changes into `publishDrafts()` function with parallel publishing
+  - Updated auto-save system to include layout changes
+  - Added layout change cleanup in `discardDrafts()`
+  - Layout changes now properly tracked in pending operations count
+  - Automatic loading of layout settings on app initialization
+
 ## Results
 
 ✅ **Page Creation**: Working perfectly - creates new pages with proper validation
 ✅ **Page Updates**: Working - can update both title and slug
 ✅ **Page Deletion**: Working - properly deletes pages and associated blocks
 ✅ **Page Content Switching**: Working - blocks correctly load when switching between pages
+✅ **Layout Settings**: Working - layout changes are tracked in draft system and properly published
+✅ **Draft System**: Working - both block and layout changes are batched and published together
 ✅ **Database Schema**: Up to date with grid system and rows column
 ✅ **Error Handling**: Proper German error messages for duplicate slugs
 ✅ **UI Integration**: CMS context properly integrated with PageManager component
@@ -80,6 +94,16 @@ curl -X PUT http://localhost:3000/api/cms/pages/4
   -d '{"title": "Updated Title", "slug": "updated-slug"}'
 # Response: 200 OK with updated page data
 
+# Get Layout Settings
+curl http://localhost:3000/api/cms/layout
+# Response: Current layout settings object
+
+# Update Layout Settings
+curl -X PUT http://localhost:3000/api/cms/layout
+  -H "Content-Type: application/json"
+  -d '{"primary_color": "#ff6b6b", "secondary_color": "#4ecdc4"}'
+# Response: 200 OK with updated layout settings
+
 # Delete Page
 curl -X DELETE http://localhost:3000/api/cms/pages/4
 # Response: 200 OK with success message and deleted blocks count
@@ -101,5 +125,9 @@ curl -X DELETE http://localhost:3000/api/cms/pages/4
 3. **Performance Optimization**: Used `useCallback` for better function memoization
 4. **Enhanced Logging**: Better debugging information for troubleshooting
 5. **Error Prevention**: Warnings for unsaved changes and proper error handling
+6. **Layout Integration**: Layout settings fully integrated into draft/publish workflow
+7. **Parallel Publishing**: Block and layout changes are published simultaneously
+8. **Auto-Save Enhancement**: Layout changes trigger auto-save functionality
+9. **Complete State Management**: Layout changes tracked in pending operations
 
-The CMS page creation and content switching features are now fully functional and ready for production use.
+The CMS page creation, content switching, and layout management features are now fully functional and ready for production use.

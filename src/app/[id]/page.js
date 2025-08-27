@@ -6,6 +6,12 @@ import {
 } from '@/lib/componentLoaderServer';
 import { notFound } from 'next/navigation';
 
+// Direct imports as fallback
+import DefaultHeader from '@/components/nic/blocks/header/DefaultHeader';
+import NavigationHeader from '@/components/nic/blocks/header/NavigationHeader';
+import DefaultFooter from '@/components/nic/blocks/footer/DefaultFooter';
+import SocialFooter from '@/components/nic/blocks/footer/SocialFooter';
+
 // Database connection
 const connectionString = process.env.NEON_DATABASE_URL;
 
@@ -54,14 +60,47 @@ async function getBlocks(pageId) {
   }
 }
 
-// Layout settings (mock)
+// Layout settings from database
 async function getLayoutSettings() {
-  return {
-    background_color: '#ffffff',
-    background_image: null,
-    header_height: 64,
-    footer_height: 64
-  };
+  try {
+    const sql = neon(connectionString);
+    const result = await sql`
+      SELECT * FROM layout_settings LIMIT 1
+    `;
+
+    if (result.length > 0) {
+      const settings = result[0];
+      return {
+        header_component: settings.header_component || 'default',
+        footer_component: settings.footer_component || 'default',
+        background_color: settings.background_color || '#ffffff',
+        background_image: settings.background_image || null,
+        primary_color: settings.primary_color || '#3b82f6',
+        secondary_color: settings.secondary_color || '#64748b'
+      };
+    }
+
+    // Fallback Default-Einstellungen
+    return {
+      header_component: 'default',
+      footer_component: 'default',
+      background_color: '#ffffff',
+      background_image: null,
+      primary_color: '#3b82f6',
+      secondary_color: '#64748b'
+    };
+  } catch (error) {
+    console.error('Error fetching layout settings:', error);
+    // Fallback bei Fehler
+    return {
+      header_component: 'default',
+      footer_component: 'default',
+      background_color: '#ffffff',
+      background_image: null,
+      primary_color: '#3b82f6',
+      secondary_color: '#64748b'
+    };
+  }
 }
 
 // Dynamische Block-Komponenten - werden automatisch erkannt
@@ -73,16 +112,24 @@ const headerComponents = createDynamicHeaderComponents();
 // Footer Komponenten - werden automatisch erkannt
 const footerComponents = createDynamicFooterComponents();
 
+// Fallback direct mapping
+const directHeaderComponents = {
+  'DefaultHeader': DefaultHeader,
+  'NavigationHeader': NavigationHeader,
+  'default': DefaultHeader,
+  'navigation': NavigationHeader
+};
+
+const directFooterComponents = {
+  'DefaultFooter': DefaultFooter,
+  'SocialFooter': SocialFooter,
+  'default': DefaultFooter,
+  'social': SocialFooter
+};
+
 export default async function PublicPage({ params }) {
   const resolvedParams = await params;
   const { id } = resolvedParams;
-
-  // Debug: Zeige geladene Komponenten in der Konsole
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Geladene Block-Komponenten:', Object.keys(blockComponents));
-    console.log('Geladene Header-Komponenten:', Object.keys(headerComponents));
-    console.log('Geladene Footer-Komponenten:', Object.keys(footerComponents));
-  }
 
   try {
     // Lade Seite und Daten
@@ -96,9 +143,49 @@ export default async function PublicPage({ params }) {
       getLayoutSettings()
     ]);
 
-    // Header und Footer Komponenten
-    const HeaderComponent = headerComponents[layoutSettings.header_component] || headerComponents.default;
-    const FooterComponent = footerComponents[layoutSettings.footer_component] || footerComponents.default;
+    // Header und Footer Komponenten basierend auf Layout-Einstellungen
+    // Mapping der Layout-Einstellung zu Komponenten-Namen
+    const headerMapping = {
+      'default': 'DefaultHeader',
+      'navigation': 'NavigationHeader'
+    };
+
+    const footerMapping = {
+      'default': 'DefaultFooter',
+      'social': 'SocialFooter'
+    };
+
+    const headerComponentName = headerMapping[layoutSettings.header_component] || 'DefaultHeader';
+    const footerComponentName = footerMapping[layoutSettings.footer_component] || 'DefaultFooter';
+
+    const HeaderComponent = directHeaderComponents[headerComponentName] ||
+                           headerComponents[headerComponentName] ||
+                           headerComponents['DefaultHeader'] ||
+                           headerComponents['default'] ||
+                           DefaultHeader;
+    const FooterComponent = directFooterComponents[footerComponentName] ||
+                           footerComponents[footerComponentName] ||
+                           footerComponents['DefaultFooter'] ||
+                           footerComponents['default'] ||
+                           DefaultFooter;
+
+    // Debug: Zeige geladene Komponenten in der Konsole
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 DEBUG: Layout-Einstellungen geladen:', layoutSettings);
+      console.log('🔍 DEBUG: Geladene Block-Komponenten:', Object.keys(blockComponents));
+      console.log('🔍 DEBUG: Geladene Header-Komponenten:', Object.keys(headerComponents));
+      console.log('🔍 DEBUG: Geladene Footer-Komponenten:', Object.keys(footerComponents));
+      console.log('🔍 DEBUG: Gewählter Header-Name:', headerComponentName);
+      console.log('🔍 DEBUG: Gewählter Footer-Name:', footerComponentName);
+      console.log('🔍 DEBUG: Header-Komponente gefunden:', HeaderComponent ? '✅' : '❌');
+      console.log('🔍 DEBUG: Footer-Komponente gefunden:', FooterComponent ? '✅' : '❌');
+
+      // Zeige alle verfügbaren Header-Komponenten
+      console.log('🔍 DEBUG: Alle Header-Komponenten Details:');
+      Object.entries(headerComponents).forEach(([key, comp]) => {
+        console.log(`  - ${key}: ${comp ? '✅' : '❌'}`);
+      });
+    }
 
     return (
       <div
@@ -110,12 +197,21 @@ export default async function PublicPage({ params }) {
             : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          // CSS-Variablen für Farbschema setzen
+          '--primary-color': layoutSettings.primary_color || '#3b82f6',
+          '--secondary-color': layoutSettings.secondary_color || '#64748b'
         }}
       >
         {/* Header */}
         <header className="h-20">
-          <HeaderComponent content={`${page.title} - Header`} />
+          {HeaderComponent && (
+            <HeaderComponent
+              content={`${page.title} - Header`}
+              layoutSettings={layoutSettings}
+              page={page}
+            />
+          )}
         </header>
 
         {/* Main Content */}
@@ -192,7 +288,13 @@ export default async function PublicPage({ params }) {
 
         {/* Footer */}
         <footer className="h-20 mt-auto">
-          <FooterComponent content={`${page.title} - Footer`} />
+          {FooterComponent && (
+            <FooterComponent
+              content={`${page.title} - Footer`}
+              layoutSettings={layoutSettings}
+              page={page}
+            />
+          )}
         </footer>
       </div>
     );

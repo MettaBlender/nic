@@ -2,9 +2,14 @@
 
 import React from 'react'
 
-const NavigationHeader = ({ content = 'Navigation Header' }) => {
+const NavigationHeader = ({ content = 'Navigation Header', layoutSettings, page }) => {
+  const secondaryColor = layoutSettings?.secondary_color || '#64748b';
+
   return (
-    <header className="w-full h-full bg-gray-800 text-white">
+    <header
+      className="w-full h-full text-white"
+      style={{ backgroundColor: secondaryColor }}
+    >
       <nav className="flex items-center justify-between px-6 py-4">
         <div className="text-lg font-bold">
           {content}

@@ -50,6 +50,17 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  // Layout Settings Management
+  const [layoutSettings, setLayoutSettings] = useState({
+    header_component: 'default',
+    footer_component: 'default',
+    background_color: '#ffffff',
+    background_image: null,
+    primary_color: '#3b82f6',
+    secondary_color: '#64748b'
+  });
+  const [pendingLayoutChanges, setPendingLayoutChanges] = useState(null);
+
   // Draft Changes für localStorage-Persistierung
   const [draftChanges, setDraftChanges] = useState([]);
 
@@ -89,28 +100,29 @@ export const CMSProvider = ({ children }) => {
     };
   }, []);
 
-  // Auto-Save wenn Änderungen vorhanden
-  useEffect(() => {
-    if (pendingOperations.size > 0 && saveStatus === 'dirty') {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
+  // Auto-Save wenn Änderungen vorhanden - DEAKTIVIERT für jetzt um Loops zu vermeiden
+  // useEffect(() => {
+  //   const hasChanges = pendingOperations.size > 0 || pendingLayoutChanges !== null;
 
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Auto-saving pending changes...');
-        publishDrafts();
-      }, AUTOSAVE_DELAY);
-    }
+  //   if (hasChanges && saveStatus === 'dirty') {
+  //     if (autoSaveTimeoutRef.current) {
+  //       clearTimeout(autoSaveTimeoutRef.current);
+  //     }
 
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [pendingOperations.size, saveStatus]);
+  //     autoSaveTimeoutRef.current = setTimeout(() => {
+  //       console.log('🔄 Auto-saving pending changes...');
+  //       // Verwende eine separate Funktion um forward reference zu vermeiden
+  //       publishDrafts();
+  //     }, AUTOSAVE_DELAY);
+  //   }
 
-  // Load pages from API
-  const loadPages = async () => {
+  //   return () => {
+  //     if (autoSaveTimeoutRef.current) {
+  //       clearTimeout(autoSaveTimeoutRef.current);
+  //     }
+  //   };
+  // }, [pendingOperations.size, pendingLayoutChanges, saveStatus]); // Entferne publishDrafts dependency  // Load pages from API
+  const loadPages = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/cms/pages');
@@ -119,17 +131,37 @@ export const CMSProvider = ({ children }) => {
         setPages(data);
         console.log('✅ Pages loaded:', data.length);
 
-        // Automatisch Home-Seite auswählen wenn keine Seite ausgewählt ist
+        // Automatisch Home-Seite auswählen wenn keine Seite ausgewählt ist - nur bei Initialisierung
         if (!currentPage && data.length > 0) {
-          // Suche nach Home-Seite (slug: 'home', 'index', oder erste Seite)
           const homePage = data.find(page =>
             page.slug === 'home' ||
             page.slug === 'index' ||
             page.title?.toLowerCase() === 'home'
-          ) || data[0]; // Fallback zur ersten Seite
+          ) || data[0];
 
           console.log('🏠 Auto-selecting home page:', homePage.title);
-          selectPage(homePage);
+          setCurrentPage(homePage);
+
+          // Lade Blöcke direkt ohne selectPage zu verwenden
+          if (homePage && homePage.id) {
+            console.log(`📦 Loading blocks for page: ${homePage.title} (ID: ${homePage.id})`);
+            const blocksResponse = await fetch(`/api/cms/pages/${homePage.id}/blocks`);
+            if (blocksResponse.ok) {
+              const blocksData = await blocksResponse.json();
+              const validBlocks = blocksData.map(block => ({
+                ...block,
+                grid_col: typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0,
+                grid_row: typeof block.grid_row === 'number' && !isNaN(block.grid_row) ? block.grid_row : 0,
+                grid_width: typeof block.grid_width === 'number' && !isNaN(block.grid_width) ? block.grid_width : 2,
+                grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
+                background_color: block.background_color || 'transparent',
+                text_color: block.text_color || '#000000',
+                z_index: typeof block.z_index === 'number' ? block.z_index : 1
+              }));
+              setBlocks(validBlocks);
+              console.log(`✅ Loaded ${validBlocks.length} blocks for page ${homePage.id}`);
+            }
+          }
         }
       } else {
         throw new Error(`HTTP ${response.status}`);
@@ -140,7 +172,26 @@ export const CMSProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Keine Dependencies - wird nur einmal beim Mount aufgerufen
+
+  // Load layout settings from API
+  const loadLayoutSettings = useCallback(async () => {
+    try {
+      console.log('🎨 Loading layout settings...');
+      const response = await fetch('/api/cms/layout');
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setLayoutSettings(data);
+          console.log('✅ Layout settings loaded');
+        }
+      } else {
+        console.warn('⚠️ Could not load layout settings, using defaults');
+      }
+    } catch (error) {
+      console.error('❌ Error loading layout settings:', error);
+    }
+  }, []);
 
   // Load blocks for a specific page
   const loadBlocks = useCallback(async (pageId) => {
@@ -210,7 +261,7 @@ export const CMSProvider = ({ children }) => {
     } else {
       console.log('📦 No page selected, clearing blocks');
     }
-  }, [pendingOperations.size, loadBlocks]);
+  }, [loadBlocks]); // Entferne pendingOperations.size aus Abhängigkeiten
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
@@ -379,98 +430,171 @@ export const CMSProvider = ({ children }) => {
     });
   }, [batchOperation]);
 
-  // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
-  const publishDrafts = async () => {
-    if (pendingOperations.size === 0) {
-      console.log('📄 No changes to publish');
-      return;
-    }
+  // Layout Settings Management
+  const updateLayoutSettings = useCallback((newSettings) => {
+    console.log('🎨 Updating layout settings:', Object.keys(newSettings));
 
-    if (!currentPage) {
-      console.error('❌ No current page selected');
+    // Aktualisiere lokalen State sofort für sofortiges Feedback
+    setLayoutSettings(prev => ({ ...prev, ...newSettings }));
+
+    // Markiere als pending für späteren Batch-Upload
+    setPendingLayoutChanges(newSettings);
+    setSaveStatus('dirty');
+
+    // Speichere Draft-Änderung in localStorage
+    const draftChange = {
+      id: Date.now(),
+      type: 'layout',
+      data: newSettings,
+      timestamp: Date.now()
+    };
+
+    setDraftChanges(prev => {
+      const filtered = prev.filter(change => change.type !== 'layout');
+      const updated = [...filtered, draftChange];
+      saveSingleBlockChange(draftChange);
+      return updated;
+    });
+  }, []);
+
+  // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
+  const publishDrafts = useCallback(async () => {
+    const hasBlockChanges = pendingOperations.size > 0;
+    const hasLayoutChanges = pendingLayoutChanges !== null;
+
+    if (!hasBlockChanges && !hasLayoutChanges) {
+      console.log('📄 No changes to publish');
       return;
     }
 
     try {
       setSaveStatus('saving');
-      console.log(`🚀 Publishing ${pendingOperations.size} batched operations...`);
+      console.log(`🚀 Publishing changes... Blocks: ${pendingOperations.size}, Layout: ${hasLayoutChanges ? 'Yes' : 'No'}`);
 
-      // Konvertiere Map zu Array für API
-      const operations = Array.from(pendingOperations.values());
+      const promises = [];
 
-      const response = await fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operations: operations, rows: currentPage.rows || 12})
-      });
+      // 1. Veröffentliche Block-Änderungen (falls vorhanden)
+      if (hasBlockChanges && currentPage) {
+        console.log(`📦 Publishing ${pendingOperations.size} block operations...`);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Batch operation failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        const operations = Array.from(pendingOperations.values());
+        const blockPromise = fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operations: operations, rows: currentPage.rows || 12})
+        });
+        promises.push({ type: 'blocks', promise: blockPromise });
       }
 
-      const result = await response.json();
-      console.log(`✅ Batch operations completed:`, result);
+      // 2. Veröffentliche Layout-Änderungen (falls vorhanden)
+      if (hasLayoutChanges) {
+        console.log('🎨 Publishing layout changes...');
 
-      // Aktualisiere direkt mit den zurückgegebenen Blöcken
-      if (result.blocks && Array.isArray(result.blocks)) {
-        // Normalisiere die Block-Daten
-        const normalizedBlocks = result.blocks.map(block => ({
-          ...block,
-          grid_col: typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0,
-          grid_row: typeof block.grid_row === 'number' && !isNaN(block.grid_row) ? block.grid_row : 0,
-          grid_width: typeof block.grid_width === 'number' && !isNaN(block.grid_width) ? block.grid_width : 2,
-          grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
-          background_color: block.background_color || 'transparent',
-          text_color: block.text_color || '#000000',
-          z_index: typeof block.z_index === 'number' ? block.z_index : 1,
-          // Parse JSON content falls es als String gespeichert wurde
-          content: typeof block.content === 'string' ?
-            (block.content.startsWith('{') || block.content.startsWith('[') ?
-              (() => { try { return JSON.parse(block.content); } catch { return block.content; } })()
-              : block.content)
-            : block.content
-        }));
-
-        setBlocks(normalizedBlocks);
-        console.log(`✅ Updated UI with ${normalizedBlocks.length} blocks from server`);
-      } else {
-        // Fallback: Lade Blöcke separat
-        await loadBlocks(currentPage.id);
+        const layoutPromise = fetch('/api/cms/layout', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendingLayoutChanges)
+        });
+        promises.push({ type: 'layout', promise: layoutPromise });
       }
 
-      setPendingOperations(new Map());
+      // 3. Warte auf alle Promises
+      const results = await Promise.allSettled(promises.map(p => p.promise));
+
+      // 4. Verarbeite Ergebnisse
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const promiseInfo = promises[i];
+
+        if (result.status === 'fulfilled') {
+          if (!result.value.ok) {
+            const errorData = await result.value.json();
+            throw new Error(`${promiseInfo.type} operation failed: ${result.value.status} - ${errorData.error || 'Unknown error'}`);
+          }
+
+          const data = await result.value.json();
+
+          if (promiseInfo.type === 'blocks') {
+            console.log(`✅ Block operations completed:`, data);
+
+            // Aktualisiere Block-UI
+            if (data.blocks && Array.isArray(data.blocks)) {
+              const normalizedBlocks = data.blocks.map(block => ({
+                ...block,
+                grid_col: typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0,
+                grid_row: typeof block.grid_row === 'number' && !isNaN(block.grid_row) ? block.grid_row : 0,
+                grid_width: typeof block.grid_width === 'number' && !isNaN(block.grid_width) ? block.grid_width : 2,
+                grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
+                background_color: block.background_color || 'transparent',
+                text_color: block.text_color || '#000000',
+                z_index: typeof block.z_index === 'number' ? block.z_index : 1,
+                content: typeof block.content === 'string' ?
+                  (block.content.startsWith('{') || block.content.startsWith('[') ?
+                    (() => { try { return JSON.parse(block.content); } catch { return block.content; } })()
+                    : block.content)
+                  : block.content
+              }));
+              setBlocks(normalizedBlocks);
+              console.log(`✅ Updated UI with ${normalizedBlocks.length} blocks from server`);
+            }
+          } else if (promiseInfo.type === 'layout') {
+            console.log(`✅ Layout settings updated:`, data);
+
+            // Aktualisiere Layout-UI mit Server-Daten
+            if (data) {
+              setLayoutSettings(data);
+            }
+          }
+        } else {
+          throw new Error(`${promiseInfo.type} operation failed: ${result.reason}`);
+        }
+      }
+
+      // 5. Bereinige Pending-States
+      if (hasBlockChanges) {
+        setPendingOperations(new Map());
+      }
+      if (hasLayoutChanges) {
+        setPendingLayoutChanges(null);
+      }
+
       setSaveStatus('saved');
       setLastSaveTime(new Date());
 
-      // Lösche Draft-Änderungen nach erfolgreichem Publishing
+      // 6. Lösche Draft-Änderungen nach erfolgreichem Publishing
       setDraftChanges([]);
       clearDraftChanges();
 
-      console.log(`✅ Successfully published ${operations.length} operations via batch API`);
+      console.log(`✅ Successfully published all changes`);
 
     } catch (error) {
       console.error('❌ Error publishing drafts:', error);
       setSaveStatus('error');
       throw error;
     }
-  };
+  }, [currentPage, pendingOperations, pendingLayoutChanges]);
 
   // Draft-Änderungen verwerfen
   const discardDrafts = useCallback(() => {
     console.log('🗑️ Discarding all draft changes');
 
-    if (currentPage) {
+    // Lade Blöcke neu wenn Seite ausgewählt
+    if (currentPage && currentPage.id) {
       loadBlocks(currentPage.id);
     }
 
+    // Lade Layout-Einstellungen neu
+    loadLayoutSettings();
+
+    // Bereinige alle Pending-Änderungen
     setPendingOperations(new Map());
+    setPendingLayoutChanges(null);
     setSaveStatus('saved');
 
     // Lösche Draft-Änderungen aus localStorage
     setDraftChanges([]);
     clearDraftChanges();
-  }, [currentPage]);
+  }, [currentPage, loadBlocks, loadLayoutSettings]);
 
   // Manuelles Speichern
   const saveNow = useCallback(async () => {
@@ -478,12 +602,14 @@ export const CMSProvider = ({ children }) => {
       clearTimeout(autoSaveTimeoutRef.current);
     }
     await publishDrafts();
-  }, []);
+  }, [publishDrafts]);
 
   // Initialisierung
   useEffect(() => {
+    console.log('🚀 Initializing CMS - ONE TIME ONLY...');
     loadPages();
-  }, []);
+    loadLayoutSettings();
+  }, []); // Nur einmal beim Mount ausführen
 
   const value = {
     pages,
@@ -492,7 +618,7 @@ export const CMSProvider = ({ children }) => {
     isLoading,
     saveStatus,
     lastSaveTime,
-    pendingOperationsCount: pendingOperations.size,
+    pendingOperationsCount: pendingOperations.size + (pendingLayoutChanges ? 1 : 0),
 
     // Sidebar
     sidebarOpen,
@@ -518,7 +644,7 @@ export const CMSProvider = ({ children }) => {
     loadBlocks,
 
     // Legacy compatibility for old components
-    draftChanges: Array.from(pendingOperations.values()),
+    draftChanges,
 
     // Additional properties that might be expected by existing components
     activeBlock: null,
@@ -644,8 +770,10 @@ export const CMSProvider = ({ children }) => {
         throw error;
       }
     },
-    loadLayoutSettings: () => {},
-    updateLayoutSettings: () => {},
+    loadLayoutSettings,
+    updateLayoutSettings,
+    layoutSettings,
+    pendingLayoutChanges,
     snapToGridValue: () => {},
     getSnapLines: () => []
   };

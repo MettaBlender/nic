@@ -21,7 +21,7 @@ const Sidebar = () => {
   const {
     sidebarOpen,
     setSidebarOpen,
-    draftChanges,
+    pendingOperationsCount,
     publishDrafts,
     discardDrafts,
     undo,
@@ -76,7 +76,7 @@ const Sidebar = () => {
             <div className="bg-blue-600 p-4 pt-16 border-b border-blue-500">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white text-sm font-medium">
-                  Draft-Änderungen: {draftChanges.length}
+                  Draft-Änderungen: {pendingOperationsCount}
                 </span>
                 <div className="flex gap-1">
                   <button
@@ -98,7 +98,7 @@ const Sidebar = () => {
                 </div>
               </div>
 
-              {draftChanges.length > 0 && (
+              {pendingOperationsCount > 0 && (
                 <div className="flex gap-2">
                   <button
                     onClick={publishDrafts}
@@ -109,7 +109,7 @@ const Sidebar = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm(`${draftChanges.length} Änderungen verwerfen?`)) {
+                      if (confirm(`${pendingOperationsCount} Änderungen verwerfen?`)) {
                         discardDrafts();
                       }
                     }}

@@ -2,9 +2,14 @@
 
 import React from 'react'
 
-const SocialFooter = ({ content = 'Social Footer' }) => {
+const SocialFooter = ({ content = 'Social Footer', layoutSettings, page }) => {
+  const primaryColor = layoutSettings?.primary_color || '#3b82f6';
+
   return (
-    <footer className="w-full h-full bg-gray-900 text-white">
+    <footer
+      className="w-full h-full text-white"
+      style={{ backgroundColor: primaryColor }}
+    >
       <div className="flex flex-col items-center justify-center h-full px-6">
         <div className="text-lg font-semibold mb-4">
           {content}
