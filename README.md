@@ -135,7 +135,6 @@ src/
 ### Abhängigkeiten
 - **Next.js 15.4.6**: React Framework
 - **React 19.1.0**: UI Library
-- **react-moveable**: Drag & Drop Funktionalität
 - **react-colorful**: Farbauswahl
 - **sqlite3**: Datenbank
 - **lucide-react**: Icons

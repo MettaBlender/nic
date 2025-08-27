@@ -1,7 +1,6 @@
 /**
  * GridCanvas - Hauptkomponente für das Grid-System
  *
- * Ersetzt react-moveable mit eigenem CSS Grid System
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
