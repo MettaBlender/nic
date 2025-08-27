@@ -153,3 +153,9 @@ export async function setCMSSetting(key, value) {
     ON CONFLICT (key) DO UPDATE SET value = ${value}, updated_at = CURRENT_TIMESTAMP
   `;
 }
+
+export async function updatePageRows(pageId, rows) {
+  return await sql`
+    UPDATE pages SET rows = ${rows} WHERE id = ${pageId}
+  `;
+}

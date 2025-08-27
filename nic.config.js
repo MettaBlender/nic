@@ -4,6 +4,8 @@
  * Grid System Konfiguration für das Layout-System
  */
 
+import CustomBlock from "@/components/nic/blocks/Aaron/CustomBlock";
+
 const nicConfig = {
   // Grid System
   grid: {
@@ -66,7 +68,9 @@ const nicConfig = {
 
     // Media Komponenten
     AudioBlock: { width: 6, height: 2 },
-    GalleryBlock: { width: 8, height: 6 }
+    GalleryBlock: { width: 8, height: 6 },
+
+    CustomBlock: { width: 2, height: 2 }
   },
 
   // Sidebar Konfiguration

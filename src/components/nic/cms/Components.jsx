@@ -120,7 +120,9 @@ export default function Components() {
 
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
-  };  const publishChanges = async () => {
+  };
+
+  const publishChanges = async () => {
     if (draftChanges.length === 0) {
       alert('Keine ausstehenden Änderungen zum Veröffentlichen');
       return;

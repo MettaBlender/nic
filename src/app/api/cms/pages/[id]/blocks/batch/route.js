@@ -5,7 +5,8 @@ import {
   updateBlock,
   deleteBlock,
   deleteAllBlocksForPage,
-  createMultipleBlocks
+  createMultipleBlocks,
+  updatePageRows
 } from '@/lib/database';
 
 // POST: Batch-Operations für Blöcke verarbeiten
@@ -13,7 +14,7 @@ export async function POST(request, { params }) {
   try {
     const resolvedParams = await params;
     const pageId = resolvedParams.id;
-    const { operations } = await request.json();
+    const { operations, rows } = await request.json();
 
     if (!Array.isArray(operations) || operations.length === 0) {
       return NextResponse.json(
@@ -149,6 +150,10 @@ export async function POST(request, { params }) {
         });
       }
     }
+
+    // Update Page Rows
+    await updatePageRows(pageId, rows || 12);
+    console.log(`✅ Updated page rows in SQL: ${rows || 12}`);
 
     // Lade aktuelle Blöcke nach den Operationen
     const currentBlocks = await getBlocksForPage(pageId);

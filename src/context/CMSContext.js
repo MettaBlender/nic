@@ -380,7 +380,7 @@ export const CMSProvider = ({ children }) => {
       const response = await fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operations })
+        body: JSON.stringify({ operations: operations, rows: currentPage.rows || 12})
       });
 
       if (!response.ok) {
