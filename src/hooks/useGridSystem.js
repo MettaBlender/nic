@@ -185,8 +185,6 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const getGridContainerStyle = useCallback(() => {
     const { totalWidth, totalHeight } = calculateGridDimensions();
 
-    console.log("mode:", mode)
-
     if( mode === "preview") {
       return {
         position: 'relative',

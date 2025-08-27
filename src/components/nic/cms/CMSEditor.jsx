@@ -287,7 +287,7 @@ const CMSEditor = () => {
       {mode !== 'preview' && <Sidebar />}
 
       {/* Main Editor */}
-      <div className={`flex-1 flex flex-col ${mode !== 'preview' ? 'ml-16' : ''}`}>
+      <div className={`flex-1 flex flex-col`}>
         {/* Editor Toolbar */}
         <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
