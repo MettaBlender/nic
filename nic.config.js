@@ -44,35 +44,6 @@ const nicConfig = {
     }
   },
 
-  // Block Standard-Größen
-  defaultBlockSizes: {
-    Text: { width: 6, height: 2 },
-    ButtonBlock: { width: 3, height: 1 },
-    ImageBlock: { width: 4, height: 3 },
-    VideoBlock: { width: 6, height: 4 },
-    ContainerBlock: { width: 12, height: 6 },
-
-    // Header und Footer Komponenten
-    DefaultHeader: { width: 12, height: 2 },
-    NavigationHeader: { width: 12, height: 2 },
-    DefaultFooter: { width: 12, height: 2 },
-    SocialFooter: { width: 12, height: 2 },
-
-    // Form Komponenten
-    ContactFormBlock: { width: 6, height: 8 },
-    NewsletterBlock: { width: 4, height: 3 },
-
-    // Layout Komponenten
-    ColumnsBlock: { width: 12, height: 6 },
-    GridBlock: { width: 12, height: 8 },
-
-    // Media Komponenten
-    AudioBlock: { width: 6, height: 2 },
-    GalleryBlock: { width: 8, height: 6 },
-
-    CustomBlock: { width: 2, height: 2 }
-  },
-
   // Sidebar Konfiguration
   sidebar: {
     width: 300,

@@ -3,6 +3,8 @@ import React from 'react'
 /**
  * Einfacher Test Block von Aaron
  * @icon 😉
+ * @width 2
+ * @height 1
  */
 
 const TestAaron = ({ content, block, ...props }) => {

@@ -91,7 +91,12 @@ export default function Components() {
     }
 
     try {
-      createBlock(blockType, component);
+      createBlock({
+        block_type: blockType,
+        grid_width: component?.width || 2,
+        grid_height: component?.height || 1,
+        category: categoryName
+      });
     } catch (error) {
       console.error('Fehler beim Hinzufügen des Blocks:', error);
       alert('Fehler beim Hinzufügen des Blocks');
@@ -100,7 +105,7 @@ export default function Components() {
 
   const handleDragStart = (e, blockType, component, categoryName = 'root') => {
     // Importiere Config für Standard-Größen
-    let defaultSize = { width: component.width, height: component.height };
+    let defaultSize = { width: component?.width || 2, height: component?.height || 1 };
 
     const dragData = {
       block_type: blockType,

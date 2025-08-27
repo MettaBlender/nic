@@ -1,5 +1,12 @@
 import React from 'react';
 
+/**
+ * Einfacher Text Block für Inhalte
+ * @icon 🤣
+ * @width 2
+ * @height 2
+ */
+
 const CustomBlock = ({ content = {}, ...props }) => {
   const {
     title = 'Custom Block',

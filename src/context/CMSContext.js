@@ -286,15 +286,38 @@ export const CMSProvider = ({ children }) => {
   }, []);
 
   // Block erstellen mit verbesserter Collision Detection
-  const createBlock = useCallback((blockData, data) => {
+  const createBlock = useCallback((blockData) => {
+    // Validierung: Stelle sicher, dass blockData existiert
+    if (!blockData) {
+      console.error('❌ createBlock: blockData is undefined or null');
+      return null;
+    }
+
+    // Normalisiere blockData zu einem konsistenten Format
+    const normalizedData = typeof blockData === 'string'
+      ? { block_type: blockData }
+      : { ...blockData };
+
+    // Stelle sicher, dass block_type existiert
+    if (!normalizedData.block_type && !normalizedData.blockType) {
+      console.error('❌ createBlock: block_type is missing', normalizedData);
+      return null;
+    }
+
+    // Normalisiere block_type
+    const blockType = normalizedData.block_type || normalizedData.blockType;
+
     const blockId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log("component:", data);
+    console.log("Creating block with data:", { blockType, normalizedData });
 
     // Finde freie Position mit Collision Detection
     const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
-      const blockWidth = typeof data.width === 'number' ? data.width : 2;
-      const blockHeight = typeof data.height === 'number' ? data.height : 1;
+      // Unterstützt sowohl grid_width/grid_height als auch width/height für Flexibilität
+      const blockWidth = typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
+                        typeof normalizedData.width === 'number' ? normalizedData.width : 2;
+      const blockHeight = typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height :
+                         typeof normalizedData.height === 'number' ? normalizedData.height : 1;
 
       // Prüfe die bevorzugte Position zuerst
       const isPositionFree = (col, row) => {
@@ -316,7 +339,7 @@ export const CMSProvider = ({ children }) => {
       }
 
       // Suche freie Position von oben links
-      const maxRows = Math.max(10, Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1))) + 5);
+      const maxRows = Math.max(10, blocks.length > 0 ? Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1))) + 5 : 5);
       for (let row = 0; row < maxRows; row++) {
         for (let col = 0; col <= 12 - blockWidth; col++) {
           if (isPositionFree(col, row)) {
@@ -326,51 +349,58 @@ export const CMSProvider = ({ children }) => {
       }
 
       // Fallback: neue Zeile am Ende
-      const lastRow = Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1)), 0);
+      const lastRow = blocks.length > 0 ? Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1)), 0) : 0;
       return { col: 0, row: lastRow };
     };
 
     const freePosition = findFreePosition(
-      typeof blockData.grid_col === 'number' ? blockData.grid_col : 0,
-      typeof blockData.grid_row === 'number' ? blockData.grid_row : 0
+      typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width : 0,
+      typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height : 0
     );
 
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
-      block_type: typeof blockData === 'string' ? blockData : blockData.block_type,
-      content: blockData.content || (blockData.block_type === 'Text' ? 'Neuer Text' : ''),
+      block_type: blockType,
+      content: normalizedData.content || (blockType === 'Text' ? 'Neuer Text' : ''),
       grid_col: freePosition.col,
       grid_row: freePosition.row,
-      grid_width: typeof data.width === 'number' ? data.width : 2,
-      grid_height: typeof data.height === 'number' ? data.height : 1,
-      background_color: blockData.background_color || 'transparent',
-      text_color: blockData.text_color || '#000000',
-      z_index: typeof blockData.z_index === 'number' ? blockData.z_index : 1,
+      grid_width: typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
+                 typeof normalizedData.width === 'number' ? normalizedData.width : 2,
+      grid_height: typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height :
+                  typeof normalizedData.height === 'number' ? normalizedData.height : 1,
+      background_color: normalizedData.background_color || 'transparent',
+      text_color: normalizedData.text_color || '#000000',
+      z_index: typeof normalizedData.z_index === 'number' ? normalizedData.z_index : 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    setBlocks(prev => [...prev, newBlock]);
-    batchOperation(blockId, 'create', newBlock);
+    try {
+      setBlocks(prev => [...prev, newBlock]);
+      batchOperation(blockId, 'create', newBlock);
 
-    // Speichere Draft-Änderung in localStorage
-    const draftChange = {
-      id: Date.now(),
-      type: 'create',
-      blockId: blockId,
-      data: newBlock,
-      timestamp: Date.now()
-    };
+      // Speichere Draft-Änderung in localStorage
+      const draftChange = {
+        id: Date.now(),
+        type: 'create',
+        blockId: blockId,
+        data: newBlock,
+        timestamp: Date.now()
+      };
 
-    setDraftChanges(prev => {
-      const updated = [...prev, draftChange];
-      saveSingleBlockChange(draftChange);
-      return updated;
-    });
+      setDraftChanges(prev => {
+        const updated = [...prev, draftChange];
+        saveSingleBlockChange(draftChange);
+        return updated;
+      });
 
-    console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row})`);
-    return newBlock;
+      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row})`);
+      return newBlock;
+    } catch (error) {
+      console.error('❌ Error creating block:', error);
+      return null;
+    }
   }, [currentPage, batchOperation, blocks]);
 
   // Block aktualisieren
