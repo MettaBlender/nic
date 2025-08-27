@@ -236,8 +236,8 @@ async function scanAaronComponents() {
   for (const file of knownAaronFiles) {
     const componentName = file.replace('.jsx', '');
     try {
-      const module = await import(`@/components/nic/blocks/Aaron/${componentName}`);
-      const component = module.default || module;
+      const importedModule = await import(`@/components/nic/blocks/Aaron/${componentName}`);
+      const component = importedModule.default || importedModule;
 
       if (component && typeof component === 'function') {
         aaronComponents.push({
@@ -313,8 +313,8 @@ async function loadComponentFromPath(subPath, fileName) {
   // Versuche die Komponente zu laden
   if (componentImports[componentName]) {
     try {
-      const module = await componentImports[componentName]();
-      const component = module.default || module;
+      const importedModule = await componentImports[componentName]();
+      const component = importedModule.default || importedModule;
 
       if (component && typeof component === 'function') {
         console.log(`📦 Loaded component: ${componentName}`);
@@ -339,8 +339,8 @@ async function loadComponentFromPath(subPath, fileName) {
           componentName.includes('Aaron') ||
           aaronComponent.toLowerCase().includes(componentName.toLowerCase())) {
         try {
-          const module = await import(`@/components/nic/blocks/Aaron/${aaronComponent}`);
-          const component = module.default || module;
+          const importedModule = await import(`@/components/nic/blocks/Aaron/${aaronComponent}`);
+          const component = importedModule.default || importedModule;
 
           if (component && typeof component === 'function') {
             console.log(`📦 Loaded Aaron component dynamically: ${aaronComponent} for ${componentName}`);
@@ -354,8 +354,8 @@ async function loadComponentFromPath(subPath, fileName) {
 
     // Letzter Versuch: Direkte Suche nach componentName in Aaron-Ordner
     try {
-      const module = await import(`@/components/nic/blocks/Aaron/${componentName}`);
-      const component = module.default || module;
+      const importedModule = await import(`@/components/nic/blocks/Aaron/${componentName}`);
+      const component = importedModule.default || importedModule;
 
       if (component && typeof component === 'function') {
         console.log(`📦 Loaded Aaron component directly: ${componentName}`);
