@@ -91,7 +91,7 @@ const nicConfig = {
     showGridLines: true,
     showBlockOutlines: true,
     highlightDropZones: true,
-    gridLineColor: 'rgba(99, 102, 241, 0.8)',
+    gridLineColor: '#00000045',
     dropZoneColor: 'rgba(34, 197, 94, 0.3)',
     selectedBlockColor: 'rgba(59, 130, 246, 0.5)'
   }
