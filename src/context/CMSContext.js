@@ -286,13 +286,15 @@ export const CMSProvider = ({ children }) => {
   }, []);
 
   // Block erstellen mit verbesserter Collision Detection
-  const createBlock = useCallback((blockData) => {
+  const createBlock = useCallback((blockData, data) => {
     const blockId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log("component:", data);
 
     // Finde freie Position mit Collision Detection
     const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
-      const blockWidth = typeof blockData.grid_width === 'number' ? blockData.grid_width : 2;
-      const blockHeight = typeof blockData.grid_height === 'number' ? blockData.grid_height : 1;
+      const blockWidth = typeof data.width === 'number' ? data.width : 2;
+      const blockHeight = typeof data.height === 'number' ? data.height : 1;
 
       // Prüfe die bevorzugte Position zuerst
       const isPositionFree = (col, row) => {
@@ -340,8 +342,8 @@ export const CMSProvider = ({ children }) => {
       content: blockData.content || (blockData.block_type === 'Text' ? 'Neuer Text' : ''),
       grid_col: freePosition.col,
       grid_row: freePosition.row,
-      grid_width: typeof blockData.grid_width === 'number' ? blockData.grid_width : 2,
-      grid_height: typeof blockData.grid_height === 'number' ? blockData.grid_height : 1,
+      grid_width: typeof data.width === 'number' ? data.width : 2,
+      grid_height: typeof data.height === 'number' ? data.height : 1,
       background_color: blockData.background_color || 'transparent',
       text_color: blockData.text_color || '#000000',
       z_index: typeof blockData.z_index === 'number' ? blockData.z_index : 1,

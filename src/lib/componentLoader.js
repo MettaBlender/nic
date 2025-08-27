@@ -21,7 +21,9 @@ export const loadAvailableComponents = async () => {
             component: category === 'root' ? comp.file.replace(/\.(jsx?|tsx?)$/, '') : `${category}/${comp.file.replace(/\.(jsx?|tsx?)$/, '')}`,
             icon: comp.icon || '🧩',
             description: comp.description || 'Block-Komponente',
-            category: category
+            category: category,
+            width: comp.width || 2,
+            height: comp.height || 1
           });
         });
       });

@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import nicConfig from '../../nic.config.js';
 import { useCMS } from '@/context/CMSContext.js';
+import { hexToHsl, hslToHex } from '@/utils/colorFunctions.jsx';
 
 export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [gridConfig, setGridConfig] = useState(nicConfig.grid);
@@ -17,6 +18,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [dropZone, setDropZone] = useState(null);
   const {currentPage, setCurrentPage} = useCMS();
   const {mode} = useCMS();
+  const {layoutSettings} = useCMS();
 
   // Berechne Grid-Dimensionen basierend auf Container-Größe
   const calculateGridDimensions = useCallback(() => {
@@ -185,6 +187,8 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const getGridContainerStyle = useCallback(() => {
     const { totalWidth, totalHeight } = calculateGridDimensions();
 
+    const bghsl = hexToHsl(layoutSettings?.background_color || '#ffffff');
+
     if( mode === "preview") {
       return {
         position: 'relative',
@@ -197,10 +201,10 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
         position: 'relative',
         width: `${totalWidth}px`,
         height: `${totalHeight}px`,
-        backgroundColor: '#ffffff',
+        backgroundColor: layoutSettings?.background_color || '#ffffff',
         backgroundImage: nicConfig.visual.showGridLines ? `
-        linear-gradient(to right, ${nicConfig.visual.gridLineColor} 1px, transparent 1px),
-        linear-gradient(to bottom, ${nicConfig.visual.gridLineColor} 1px, transparent 1px)
+        linear-gradient(to right, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px),
+        linear-gradient(to bottom, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px)
         ` : 'none',
         backgroundSize: nicConfig.visual.showGridLines ? `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px` : '100% 100%',
         backgroundPosition: nicConfig.visual.showGridLines ? `4px 4px` : '0 0'

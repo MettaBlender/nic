@@ -22,12 +22,20 @@ function extractComponentInfo(filePath, fileName) {
     const iconMatch = content.match(/@icon\s+(.+)/);
     const icon = iconMatch ? iconMatch[1] : getDefaultIcon(componentName);
 
+    const widthMatch = content.match(/@width\s+(\d+)/);
+    const heightMatch = content.match(/@height\s+(\d+)/);
+
+    const width = widthMatch ? parseInt(widthMatch[1], 10) : 2;
+    const height = heightMatch ? parseInt(heightMatch[1], 10) : 1;
+
     return {
       name: componentName,
       componentName: componentName,
       file: fileName,
       description: description || `${componentName} Block-Komponente`,
-      icon: icon
+      icon: icon,
+      width,
+      height
     };
   } catch (error) {
     console.error(`Fehler beim Lesen der Datei ${fileName}:`, error);
@@ -36,7 +44,9 @@ function extractComponentInfo(filePath, fileName) {
       componentName: fileName.replace(/\.(jsx?|tsx?)$/, ''),
       file: fileName,
       description: 'Block-Komponente',
-      icon: '🧩'
+      icon: '🧩',
+      width,
+      height
     };
   }
 }

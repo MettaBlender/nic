@@ -84,28 +84,23 @@ export default function Components() {
     setIsLoading(false);
   };
 
-  const handleAddBlock = async (blockType, categoryName = 'root') => {
+  const handleAddBlock = async (blockType, component, categoryName = 'root') => {
     if (!currentPage) {
       alert('Bitte wählen Sie zuerst eine Seite aus');
       return;
     }
 
     try {
-      createBlock(blockType);
+      createBlock(blockType, component);
     } catch (error) {
       console.error('Fehler beim Hinzufügen des Blocks:', error);
       alert('Fehler beim Hinzufügen des Blocks');
     }
   };
 
-  const handleDragStart = (e, blockType, categoryName = 'root') => {
+  const handleDragStart = (e, blockType, component, categoryName = 'root') => {
     // Importiere Config für Standard-Größen
-    let defaultSize = { width: 2, height: 1 };
-
-    // Versuche Standard-Größe aus nic.config zu laden
-    if (typeof window !== 'undefined' && window.nicConfig) {
-      defaultSize = window.nicConfig.defaultBlockSizes[blockType] || defaultSize;
-    }
+    let defaultSize = { width: component.width, height: component.height };
 
     const dragData = {
       block_type: blockType,
@@ -273,7 +268,7 @@ export default function Components() {
                         key={component.name}
                         className="bg-white/5 rounded p-2 border border-white/10 cursor-grab active:cursor-grabbing"
                         draggable
-                        onDragStart={(e) => handleDragStart(e, component.componentName || component.name, categoryName)}
+                        onDragStart={(e) => handleDragStart(e, component.componentName || component.name, component, categoryName)}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -289,7 +284,7 @@ export default function Components() {
                               {isPreviewOpen ? <EyeOff size={12} /> : <Eye size={12} />}
                             </button>
                             <button
-                              onClick={() => handleAddBlock(component.componentName || component.name, categoryName)}
+                              onClick={() => handleAddBlock(component.componentName || component.name, component, categoryName)}
                               className="p-1 text-white rounded bg-blue-500 hover:bg-blue-600"
                               title="Block hinzufügen"
                               disabled={!currentPage}
