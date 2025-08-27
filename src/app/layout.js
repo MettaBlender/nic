@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <script dangerouslySetInnerHTML={{
+        {/* <script dangerouslySetInnerHTML={{
           __html: `
             // Lade NIC Config für den Browser
             window.nicConfig = {
@@ -64,7 +64,7 @@ export default function RootLayout({ children }) {
               }
             };
           `
-        }} />
+        }} /> */}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

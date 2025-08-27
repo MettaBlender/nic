@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import nicConfig from '../../nic.config.js';
+import { useCMS } from '@/context/CMSContext.js';
 
 export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [gridConfig, setGridConfig] = useState(nicConfig.grid);
@@ -14,6 +15,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [dropZone, setDropZone] = useState(null);
+  const {currentPage, setCurrentPage} = useCMS();
 
   // Berechne Grid-Dimensionen basierend auf Container-Größe
   const calculateGridDimensions = useCallback(() => {
@@ -26,14 +28,14 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
 
     return {
       columns,
-      rows: gridRows,
+      rows: currentPage.rows,
       cellWidth,
       cellHeight,
       gap,
       totalWidth: containerSize.width,
-      totalHeight: (cellHeight * gridRows) + (gap * (gridRows + 1))
+      totalHeight: (cellHeight * currentPage.rows) + (gap * (currentPage.rows + 1))
     };
-  }, [containerSize, currentBreakpoint, gridRows]);
+  }, [containerSize, currentBreakpoint, currentPage.rows]);
 
   // Ermittle aktuellen Breakpoint
   useEffect(() => {
@@ -128,12 +130,12 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
     }
 
     // Suche von oben nach unten, links nach rechts
-    for (let row = 0; row < gridRows + 10; row++) {
+    for (let row = 0; row < currentPage.rows + 10; row++) {
       for (let col = 0; col <= columns - width; col++) {
         if (isPositionAvailable(col, row, width, height, blocks)) {
           // Erweitere Grid wenn nötig
-          if (row + height > gridRows) {
-            setGridRows(row + height);
+          if (row + height > currentPage.rows) {
+            setCurrentPage(prev => ({ ...prev, rows: row + height }));
           }
           return { col, row };
         }
@@ -141,14 +143,14 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
     }
 
     // Fallback: Füge am Ende hinzu
-    const newRow = gridRows;
-    setGridRows(newRow + height);
+    const newRow = currentPage.rows;
+    setCurrentPage(prev => ({ ...prev, rows: newRow + height }));
     return { col: 0, row: newRow };
-  }, [calculateGridDimensions, gridRows, isPositionAvailable]);
+  }, [calculateGridDimensions, currentPage.rows, isPositionAvailable]);
 
   // Erweitere Grid um Reihen
   const addRows = useCallback((count = 1) => {
-    setGridRows(prev => prev + count);
+    setCurrentPage(prev => ({ ...prev, rows: prev.rows + count }));
   }, []);
 
   // Drag & Drop Funktionen
@@ -243,7 +245,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
     // Grid-Konfiguration
     gridConfig: calculateGridDimensions(),
     currentBreakpoint,
-    gridRows,
+    gridRows: currentPage.rows,
 
     // Utility-Funktionen
     pixelToGrid,
