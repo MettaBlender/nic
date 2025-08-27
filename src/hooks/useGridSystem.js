@@ -16,6 +16,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [dropZone, setDropZone] = useState(null);
   const {currentPage, setCurrentPage} = useCMS();
+  const {mode} = useCMS();
 
   // Berechne Grid-Dimensionen basierend auf Container-Größe
   const calculateGridDimensions = useCallback(() => {
@@ -184,20 +185,30 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const getGridContainerStyle = useCallback(() => {
     const { totalWidth, totalHeight } = calculateGridDimensions();
 
-    return {
-      position: 'relative',
-      width: `${totalWidth}px`,
-      height: `${totalHeight}px`,
-      backgroundColor: '#ffffff',
-      background: nicConfig.visual.showGridLines ? `
-      linear-gradient(to right, ${nicConfig.visual.gridLineColor} 1px, transparent 1px),
-      linear-gradient(to bottom, ${nicConfig.visual.gridLineColor} 1px, transparent 1px),
-      #ffffff
-      ` : '#ffffff',
-      backgroundSize: nicConfig.visual.showGridLines ? `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px` : '100% 100%',
-      backgroundPosition: nicConfig.visual.showGridLines ? `4px 4px` : '0 0'
-    };
-  }, [calculateGridDimensions]);
+    console.log("mode:", mode)
+
+    if( mode === "preview") {
+      return {
+        position: 'relative',
+        width: `${totalWidth}px`,
+        height: `${totalHeight}px`,
+        backgroundColor: '#ffffff',
+      };
+    } else {
+      return {
+        position: 'relative',
+        width: `${totalWidth}px`,
+        height: `${totalHeight}px`,
+        backgroundColor: '#ffffff',
+        backgroundImage: nicConfig.visual.showGridLines ? `
+        linear-gradient(to right, ${nicConfig.visual.gridLineColor} 1px, transparent 1px),
+        linear-gradient(to bottom, ${nicConfig.visual.gridLineColor} 1px, transparent 1px)
+        ` : 'none',
+        backgroundSize: nicConfig.visual.showGridLines ? `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px` : '100% 100%',
+        backgroundPosition: nicConfig.visual.showGridLines ? `4px 4px` : '0 0'
+      };
+    }
+  }, [calculateGridDimensions, mode]);
 
   // Style-Generator für Grid-Blöcke
   const getBlockStyle = useCallback((block) => {
