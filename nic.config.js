@@ -4,8 +4,6 @@
  * Grid System Konfiguration für das Layout-System
  */
 
-import CustomBlock from "@/components/nic/blocks/Aaron/CustomBlock";
-
 const nicConfig = {
   // Grid System
   grid: {
@@ -22,7 +20,7 @@ const nicConfig = {
     gap: 8,
 
     // Mindest-Höhe einer Grid-Reihe in px
-    rowHeight: 60,
+    rowHeight: '60px',
 
     // Responsive Breakpoints
     breakpoints: {
@@ -44,14 +42,6 @@ const nicConfig = {
     }
   },
 
-  // Sidebar Konfiguration
-  sidebar: {
-    width: 300,
-    showCategories: true,
-    showPreview: true,
-    collapsible: true
-  },
-
   // Drag & Drop Konfiguration
   dragDrop: {
     enabled: true,
@@ -61,15 +51,6 @@ const nicConfig = {
     ghostOpacity: 0.5
   },
 
-  // Visual Feedback
-  visual: {
-    showGridLines: true,
-    showBlockOutlines: true,
-    highlightDropZones: true,
-    gridLineColor: '#00000045',
-    dropZoneColor: 'rgba(34, 197, 94, 0.3)',
-    selectedBlockColor: 'rgba(59, 130, 246, 0.5)'
-  }
 };
 
 // Export für Node.js und Browser

@@ -202,12 +202,12 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
         width: `${totalWidth}px`,
         height: `${totalHeight}px`,
         backgroundColor: layoutSettings?.background_color || '#ffffff',
-        backgroundImage: nicConfig.visual.showGridLines ? `
+        backgroundImage:`
         linear-gradient(to right, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px),
         linear-gradient(to bottom, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px)
-        ` : 'none',
-        backgroundSize: nicConfig.visual.showGridLines ? `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px` : '100% 100%',
-        backgroundPosition: nicConfig.visual.showGridLines ? `4px 4px` : '0 0'
+        `,
+        backgroundSize: `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px`,
+        backgroundPosition: `4px 4px`
       };
     }
   }, [calculateGridDimensions, mode]);
@@ -228,7 +228,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
       borderRadius: '6px',
       overflow: 'hidden',
       zIndex: block.z_index || 1,
-      border: nicConfig.visual.showBlockOutlines ? '1px solid rgba(0,0,0,1)' : 'none',
+      border: '1px solid rgba(0,0,0,1)',
       transition: isDragging ? 'none' : 'all 0.2s ease'
     };
   }, [gridToPixel, getBlockPixelSize, isDragging]);
@@ -246,7 +246,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
       top: `${position.y}px`,
       width: `${size.width}px`,
       height: `${size.height}px`,
-      backgroundColor: dropZone.valid ? nicConfig.visual.dropZoneColor : 'rgba(239, 68, 68, 0.3)',
+      backgroundColor: dropZone.valid ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
       border: `2px dashed ${dropZone.valid ? '#10b981' : '#ef4444'}`,
       borderRadius: '6px',
       pointerEvents: 'none',
