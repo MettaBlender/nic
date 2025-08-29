@@ -6,15 +6,15 @@ import CMSEditor from '@/components/nic/cms/CMSEditor';
 import { CMSProvider, useCMS } from '@/context/CMSContext';
 
 const CMSContent = () => {
-  const { sidebarOpen } = useCMS();
+  const { sidebarOpen, mode } = useCMS();
 
   return (
     <div className="h-screen flex">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div
-        className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? 'ml-80' : 'ml-16'
-        }`}
+        className={`flex-1 transition-all duration-300
+          ${mode === 'preview' ? 'ml-0' : sidebarOpen ? 'ml-80' : 'ml-16'}
+        `}
       >
         <CMSEditor />
       </div>

@@ -36,50 +36,6 @@ const getComponentFiles = async () => {
   } catch (error) {
     console.error('Fehler beim Laden der Komponenten-Liste:', error);
   }
-
-  // Fallback zu statischer Liste wenn API nicht verfügbar
-  return [
-    {
-      name: 'Text',
-      componentName: 'Text',
-      component: 'Text',
-      icon: '�',
-      description: 'Einfacher Text Block',
-      category: 'root'
-    },
-    {
-      name: 'ButtonBlock',
-      componentName: 'ButtonBlock',
-      component: 'ButtonBlock',
-      icon: '�',
-      description: 'Interaktiver Button',
-      category: 'root'
-    },
-    {
-      name: 'ImageBlock',
-      componentName: 'ImageBlock',
-      component: 'ImageBlock',
-      icon: '🖼️',
-      description: 'Bild Block',
-      category: 'root'
-    },
-    {
-      name: 'VideoBlock',
-      componentName: 'VideoBlock',
-      component: 'VideoBlock',
-      icon: '🎥',
-      description: 'Video Block',
-      category: 'root'
-    },
-    {
-      name: 'ContainerBlock',
-      componentName: 'ContainerBlock',
-      component: 'ContainerBlock',
-      icon: '�',
-      description: 'Container für andere Blöcke',
-      category: 'root'
-    }
-  ];
 };
 
 const CMSEditor = () => {
@@ -182,64 +138,6 @@ const CMSEditor = () => {
     return () => window.removeEventListener('resize', updateContainerSize);
   }, [setContainerSize]);
 
-  const handleContainerClick = (e) => {
-    if (e.target === containerRef.current) {
-      deselectAllBlocks();
-    }
-  };
-
-  const handleBlockUpdate = async (blockId, updatedData) => {
-    try {
-      await updateBlock(blockId, updatedData);
-    } catch (error) {
-      console.error('Fehler beim Aktualisieren des Blocks:', error);
-    }
-  };
-
-  const handleBlockDelete = async (blockId) => {
-    try {
-      await deleteBlock(blockId);
-    } catch (error) {
-      console.error('Fehler beim Löschen des Blocks:', error);
-    }
-  };
-
-  const handleBlockDuplicate = async (block) => {
-    try {
-      await duplicateBlock(block);
-    } catch (error) {
-      console.error('Fehler beim Duplizieren des Blocks:', error);
-    }
-  };
-
-  const handleBlockSelect = (block) => {
-    selectBlock(block);
-  };
-
-  const renderBlock = (block) => {
-    const Component = blockComponents[block.block_type];
-    if (!Component) {
-      return (
-        <div className="text-red-500 p-4 border border-red-300 rounded bg-red-50">
-          <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
-          <div className="text-sm mt-2">Verfügbare Komponenten: {Object.keys(blockComponents).join(', ')}</div>
-        </div>
-      );
-    }
-
-    const handleContentChange = async (newContent) => {
-      await handleBlockUpdate(block.id, { ...block, content: newContent });
-    };
-
-    return (
-      <Component
-        content={block.content}
-        onContentChange={handleContentChange}
-        editable={mode === 'edit'}
-      />
-    );
-  };
-
   // Funktion um verfügbare Komponenten zu exportieren (für Sidebar etc.)
   const getLoadedComponents = () => {
     return availableComponents.map(comp => ({
@@ -254,14 +152,6 @@ const CMSEditor = () => {
       window.cmsGetAvailableComponents = getLoadedComponents;
     }
   }, [availableComponents, blockComponents]);
-
-  // Funktion um verfügbare Komponenten zu exportieren (für Sidebar etc.)
-  const getAvailableComponents = () => {
-    return getComponentFiles().map(comp => ({
-      ...comp,
-      isLoaded: !!blockComponents[comp.name] || !!blockComponents[comp.component]
-    }));
-  };
 
   if (!currentPage) {
     return (
@@ -338,7 +228,7 @@ const CMSEditor = () => {
         </div>
 
         {/* Grid Canvas */}
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <GridCanvas />
         </div>
 

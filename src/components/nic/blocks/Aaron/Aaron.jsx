@@ -5,6 +5,9 @@ import React from 'react'
  * @icon 🤣
  * @width 3
  * @height 2
+ * @options {
+ *  text: "Lorem ipsum dolor sit amet"
+ * }
  */
 
 const Aaron = () => {

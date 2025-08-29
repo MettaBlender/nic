@@ -496,7 +496,7 @@ const GridCanvas = () => {
   }, [isDragging, pixelToGrid, updateDropZone]);
 
   return (
-    <div className="grid-canvas-wrapper" style={{
+    <div style={{
       width: '100%',
       height: '100%',
       overflow: 'auto',
@@ -528,41 +528,6 @@ const GridCanvas = () => {
         >
           + Zeile hinzufügen
         </button>
-
-        {/* <button
-          onClick={() => {
-            console.log('=== DEBUG: All Blocks ===');
-            blocks.forEach((block, i) => {
-              console.log(`Block ${i}:`, {
-                id: String(block.id),
-                type: String(block.block_type),
-                content: String(block.content),
-                grid_col: block.grid_col,
-                grid_row: block.grid_row,
-                grid_width: block.grid_width,
-                grid_height: block.grid_height
-              });
-            });
-            console.log('=== Component Resolution Test ===');
-            const testComponent = resolveComponentSync('Text');
-            console.log('Text component resolved to:', testComponent);
-            console.log('=== Component Registry Debug ===');
-            const debugInfo = getDebugInfo();
-            console.log('Debug Info:', debugInfo);
-            console.log('=== END DEBUG ===');
-          }}
-          style={{
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
-        >
-          Debug Blocks
-        </button> */}
 
         <button
           onClick={async () => {
@@ -678,7 +643,6 @@ const GridCanvas = () => {
         onClick={handleCanvasClick}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="grid-container"
       >
         {/* Render Blocks */}
         {blocks.map((block) => (

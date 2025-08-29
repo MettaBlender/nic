@@ -28,6 +28,45 @@ function extractComponentInfo(filePath, fileName) {
     const width = widthMatch ? parseInt(widthMatch[1], 10) : 2;
     const height = heightMatch ? parseInt(heightMatch[1], 10) : 1;
 
+    const optionsMatch = content.match(/@options\s+([\s\S]*?)(?=\n\s*\*\/|\n\s*\*\s*@|\n\s*\*\s*$)/);
+
+    let options = {};
+    if (optionsMatch) {
+      try {
+        // Clean the matched content by removing comment syntax
+        let cleanedOptions = optionsMatch[1]
+          .replace(/\r\n/g, '\n')  // Normalize line endings
+          .replace(/\r/g, '')      // Remove carriage returns
+          .replace(/^\s*\*\s*/gm, '') // Remove comment asterisks and leading spaces
+          .replace(/\s*\*\s*$/gm, '') // Remove trailing asterisks
+          .split('\n')             // Split into lines
+          .map(line => line.trim()) // Trim each line
+          .filter(line => line.length > 0) // Remove empty lines
+          .join('\n')              // Rejoin
+          .trim();
+
+        // Only parse if the content looks like valid JSON (starts with { or [)
+        if ((cleanedOptions.startsWith('{') && cleanedOptions.endsWith('}')) ||
+            (cleanedOptions.startsWith('[') && cleanedOptions.endsWith(']'))) {
+          options = JSON.parse(cleanedOptions);
+        } else {
+          // Try to extract JSON from within the text
+          const jsonMatch = cleanedOptions.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+          if (jsonMatch) {
+            options = JSON.parse(jsonMatch[1]);
+          } else {
+            console.warn(`Options content is not valid JSON for ${fileName}: "${cleanedOptions}"`);
+            options = {};
+          }
+        }
+
+        console.log(`Parsed options for ${fileName}:`, options);
+      } catch (error) {
+        console.warn(`Failed to parse options for ${fileName}:`, error.message);
+        options = {};
+      }
+    }
+
     return {
       name: componentName,
       componentName: componentName,
@@ -35,7 +74,8 @@ function extractComponentInfo(filePath, fileName) {
       description: description || `${componentName} Block-Komponente`,
       icon: icon,
       width,
-      height
+      height,
+      options
     };
   } catch (error) {
     console.error(`Fehler beim Lesen der Datei ${fileName}:`, error);
@@ -45,8 +85,9 @@ function extractComponentInfo(filePath, fileName) {
       file: fileName,
       description: 'Block-Komponente',
       icon: '🧩',
-      width,
-      height
+      width: 2,
+      height: 1,
+      options: {}
     };
   }
 }

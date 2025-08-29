@@ -23,7 +23,8 @@ export const loadAvailableComponents = async () => {
             description: comp.description || 'Block-Komponente',
             category: category,
             width: comp.width || 2,
-            height: comp.height || 1
+            height: comp.height || 1,
+            options: comp.options || {}
           });
         });
       });
