@@ -52,6 +52,38 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  // Component Definitions Management
+  const [componentDefinitions, setComponentDefinitions] = useState({});
+
+  // Load component definitions from API
+  const loadComponentDefinitions = useCallback(async () => {
+    try {
+      console.log('🧩 Loading component definitions...');
+      const response = await fetch('/api/cms/components');
+      if (response.ok) {
+        const data = await response.json();
+
+        // Flatten categories to a simple name -> definition mapping
+        const definitions = {};
+        Object.entries(data.categories || {}).forEach(([categoryName, components]) => {
+          components.forEach(component => {
+            definitions[component.name] = {
+              ...component,
+              category: categoryName
+            };
+          });
+        });
+
+        setComponentDefinitions(definitions);
+        console.log(`✅ Loaded ${Object.keys(definitions).length} component definitions`);
+      } else {
+        console.warn('⚠️ Could not load component definitions');
+      }
+    } catch (error) {
+      console.error('❌ Error loading component definitions:', error);
+    }
+  }, []);
+
   // Layout Settings Management
   const [layoutSettings, setLayoutSettings] = useState({
     header_component: 'default',
@@ -287,7 +319,7 @@ export const CMSProvider = ({ children }) => {
     setSaveStatus('dirty');
   }, []);
 
-  // Block erstellen mit verbesserter Collision Detection
+  // Block erstellen mit verbesserter Collision Detection und Default-Options
   const createBlock = useCallback((blockData) => {
     // Validierung: Stelle sicher, dass blockData existiert
     if (!blockData) {
@@ -309,17 +341,25 @@ export const CMSProvider = ({ children }) => {
     // Normalisiere block_type
     const blockType = normalizedData.block_type || normalizedData.blockType;
 
+    // Lade Default-Options aus Component-Definition
+    const componentDef = componentDefinitions[blockType];
+    const defaultOptions = componentDef?.options || {};
+
+    console.log(`🧩 Creating block "${blockType}" with default options:`, defaultOptions);
+
     const blockId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log("Creating block with data:", { blockType, normalizedData });
+    console.log("Creating block with data:", { blockType, normalizedData, componentDef });
 
     // Finde freie Position mit Collision Detection
     const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
       // Unterstützt sowohl grid_width/grid_height als auch width/height für Flexibilität
       const blockWidth = typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
-                        typeof normalizedData.width === 'number' ? normalizedData.width : 2;
+                        typeof normalizedData.width === 'number' ? normalizedData.width :
+                        componentDef?.width || 2;
       const blockHeight = typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height :
-                         typeof normalizedData.height === 'number' ? normalizedData.height : 1;
+                         typeof normalizedData.height === 'number' ? normalizedData.height :
+                         componentDef?.height || 1;
 
       // Prüfe die bevorzugte Position zuerst
       const isPositionFree = (col, row) => {
@@ -360,20 +400,29 @@ export const CMSProvider = ({ children }) => {
       typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height : 0
     );
 
+    // Verwende Default-Options aus Component-Definition und überschreibe mit expliziten Werten
+    const blockContent = normalizedData.content ||
+                        (defaultOptions.text ? defaultOptions.text : '') ||
+                        (blockType === 'Text' ? 'Neuer Text' : '');
+
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
       block_type: blockType,
-      content: normalizedData.content || (blockType === 'Text' ? 'Neuer Text' : ''),
+      content: blockContent,
       grid_col: freePosition.col,
       grid_row: freePosition.row,
       grid_width: typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
-                 typeof normalizedData.width === 'number' ? normalizedData.width : 2,
+                 typeof normalizedData.width === 'number' ? normalizedData.width :
+                 componentDef?.width || 2,
       grid_height: typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height :
-                  typeof normalizedData.height === 'number' ? normalizedData.height : 1,
+                  typeof normalizedData.height === 'number' ? normalizedData.height :
+                  componentDef?.height || 1,
       background_color: normalizedData.background_color || 'transparent',
       text_color: normalizedData.text_color || '#000000',
       z_index: typeof normalizedData.z_index === 'number' ? normalizedData.z_index : 1,
+      // Speichere Default-Options als separates Feld
+      options: defaultOptions,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -397,13 +446,13 @@ export const CMSProvider = ({ children }) => {
         return updated;
       });
 
-      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row})`);
+      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with options:`, newBlock.options);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
       return null;
     }
-  }, [currentPage, batchOperation, blocks]);
+  }, [currentPage, batchOperation, blocks, componentDefinitions]);
 
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
@@ -643,6 +692,7 @@ export const CMSProvider = ({ children }) => {
     console.log('🚀 Initializing CMS - ONE TIME ONLY...');
     loadPages();
     loadLayoutSettings();
+    loadComponentDefinitions();
   }, []); // Nur einmal beim Mount ausführen
 
   const value = {
@@ -712,6 +762,8 @@ export const CMSProvider = ({ children }) => {
 
     // API Methods that might be expected
     loadPages,
+    loadComponentDefinitions,
+    componentDefinitions,
     createPage: async (title, slug) => {
       try {
         console.log(`📝 Creating new page: ${title} (${slug})`);

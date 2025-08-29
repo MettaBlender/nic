@@ -28,43 +28,78 @@ function extractComponentInfo(filePath, fileName) {
     const width = widthMatch ? parseInt(widthMatch[1], 10) : 2;
     const height = heightMatch ? parseInt(heightMatch[1], 10) : 1;
 
-    const optionsMatch = content.match(/@options\s+([\s\S]*?)(?=\n\s*\*\/|\n\s*\*\s*@|\n\s*\*\s*$)/);
-
+    // Verbesserte @options Parsing-Logik - Robuster Ansatz
     let options = {};
+
+    // Suche nach @options Block - erweiterte Regex für besseres Matching
+    const optionsRegex = /@options\s*\{([\s\S]*?)\}\s*(?=\*\/|\*\s*@|\*\s*$)/;
+    const optionsMatch = content.match(optionsRegex);
+
     if (optionsMatch) {
       try {
-        // Clean the matched content by removing comment syntax
-        let cleanedOptions = optionsMatch[1]
-          .replace(/\r\n/g, '\n')  // Normalize line endings
-          .replace(/\r/g, '')      // Remove carriage returns
-          .replace(/^\s*\*\s*/gm, '') // Remove comment asterisks and leading spaces
-          .replace(/\s*\*\s*$/gm, '') // Remove trailing asterisks
-          .split('\n')             // Split into lines
-          .map(line => line.trim()) // Trim each line
-          .filter(line => line.length > 0) // Remove empty lines
-          .join('\n')              // Rejoin
+        // Extrahiere den Inhalt zwischen den geschweiften Klammern
+        let rawOptionsContent = optionsMatch[1];
+
+        // Debug: Zeige den rohen Inhalt
+        console.log(`📋 Raw @options content for ${fileName}:`, JSON.stringify(rawOptionsContent));
+
+        // Bereinige die Kommentar-Syntax systematisch
+        let cleanedContent = rawOptionsContent
+          // Normalisiere Zeilenendings
+          .replace(/\r\n/g, '\n')
+          .replace(/\r/g, '\n')
+          // Entferne Kommentar-Asterisks und führende Leerzeichen
+          .split('\n')
+          .map(line => {
+            // Entferne führende Leerzeichen und optional einen Stern
+            return line.replace(/^\s*\*?\s*/, '').trim();
+          })
+          // Entferne komplett leere Zeilen
+          .filter(line => line.length > 0)
+          .join('\n')
           .trim();
 
-        // Only parse if the content looks like valid JSON (starts with { or [)
-        if ((cleanedOptions.startsWith('{') && cleanedOptions.endsWith('}')) ||
-            (cleanedOptions.startsWith('[') && cleanedOptions.endsWith(']'))) {
-          options = JSON.parse(cleanedOptions);
-        } else {
-          // Try to extract JSON from within the text
-          const jsonMatch = cleanedOptions.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-          if (jsonMatch) {
-            options = JSON.parse(jsonMatch[1]);
-          } else {
-            console.warn(`Options content is not valid JSON for ${fileName}: "${cleanedOptions}"`);
+        console.log(`🧹 Cleaned @options content for ${fileName}:`, JSON.stringify(cleanedContent));
+
+        // Baue valides JSON-Objekt zusammen
+        let jsonString = `{${cleanedContent}}`;
+
+        // Versuche zuerst direktes JSON-Parsing
+        try {
+          options = JSON.parse(jsonString);
+          console.log(`✅ Direct JSON parsing successful for ${fileName}:`, options);
+        } catch (directError) {
+          console.log(`⚠️  Direct parsing failed for ${fileName}, trying relaxed parsing...`);
+
+          // Fallback: Relaxed JSON-Parsing
+          try {
+            // Füge Anführungszeichen um unquoted Property-Namen hinzu
+            let relaxedJson = jsonString
+              // Property names ohne Anführungszeichen zu quoted names
+              .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
+              // Entferne trailing commas vor }
+              .replace(/,(\s*})/g, '$1');
+
+            console.log(`🔧 Relaxed JSON for ${fileName}:`, relaxedJson);
+
+            options = JSON.parse(relaxedJson);
+            console.log(`✅ Relaxed JSON parsing successful for ${fileName}:`, options);
+
+          } catch (relaxedError) {
+            console.warn(`❌ All parsing attempts failed for ${fileName}`);
+            console.warn(`   Direct error:`, directError.message);
+            console.warn(`   Relaxed error:`, relaxedError.message);
+            console.warn(`   Final JSON string:`, jsonString);
             options = {};
           }
         }
 
-        console.log(`Parsed options for ${fileName}:`, options);
-      } catch (error) {
-        console.warn(`Failed to parse options for ${fileName}:`, error.message);
+      } catch (generalError) {
+        console.warn(`❌ General parsing error for ${fileName}:`, generalError.message);
         options = {};
       }
+    } else {
+      console.log(`ℹ️  No @options found for ${fileName}`);
     }
 
     return {

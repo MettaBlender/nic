@@ -10,7 +10,10 @@ import React from 'react'
  * }
  */
 
-const Aaron = () => {
+const Aaron = ({content}) => {
+
+  console.log('Aaron content:', content);
+
   return (
     <div className='w-full h-full bg-white'>Aaron</div>
   )

@@ -159,3 +159,10 @@ export async function updatePageRows(pageId, rows) {
     UPDATE pages SET rows = ${rows} WHERE id = ${pageId}
   `;
 }
+
+export async function updateBlockContent(id, content) {
+  return await sql`
+    UPDATE blocks SET content = ${JSON.stringify(content)}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${id}
+  `;
+}
