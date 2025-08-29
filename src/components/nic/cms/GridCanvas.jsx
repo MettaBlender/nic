@@ -282,6 +282,14 @@ const GridCanvas = () => {
     preloadCommonComponents();
   }, []);
 
+  useEffect(() => {
+    if (mode === 'preview') {
+      setContainerSize({ width: window.innerWidth - 15, height: window.innerHeight });
+    } else {
+      setContainerSize({ width: 1200, height: 800 });
+    }
+  }, [mode]);
+
   // Improved update function with save feedback
   const handleUpdateBlock = useCallback((id, data) => {
     setSaveStatus('Speichere...');
@@ -467,14 +475,14 @@ const GridCanvas = () => {
     // Erstelle Block mit optimaler Position und Standard-Content
     const blockWithPosition = {
       block_type: newBlock.block_type,
-      content: newBlock.content || (newBlock.block_type === 'Text' ? 'Neuer Text Block' : ''),
+      content: newBlock.options || {},
       grid_col: finalCol,
       grid_row: finalRow,
       grid_width: blockWidth,
       grid_height: blockHeight,
       background_color: newBlock.background_color || 'transparent',
       text_color: newBlock.text_color || '#000000',
-      z_index: newBlock.z_index || 1
+      z_index: newBlock.z_index || 1,
     };
 
     // Block über Context hinzufügen
