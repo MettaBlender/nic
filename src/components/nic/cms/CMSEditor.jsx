@@ -6,6 +6,7 @@ import GridCanvas from './GridCanvas';
 import Sidebar from './sidebar';
 import { Play, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import DetailSideBar from './DetailSideBar';
 
 // Dynamische Komponenten-Erkennung über API
 const getComponentFiles = async () => {
@@ -105,7 +106,9 @@ const CMSEditor = () => {
     setGridSize,
     setSnapToGrid,
     setShowGrid,
-    setSnapToElements
+    setSnapToElements,
+    selectedBlock,
+    setSelectedBlock
   } = useCMS();
 
   const containerRef = useRef(null);
@@ -286,8 +289,10 @@ const CMSEditor = () => {
       {/* Sidebar */}
       {mode !== 'preview' && <Sidebar />}
 
+      {selectedBlock && <DetailSideBar/>}
+
       {/* Main Editor */}
-      <div className={`flex-1 flex flex-col`}>
+      <div className={`flex-1 flex flex-col z-10`}>
         {/* Editor Toolbar */}
         <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -12,6 +12,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const blockRef = useRef(null);
+  const {setSelectedBlock} = useCMS();
 
   // Lade die Komponente dynamisch
   const Component = resolveComponentSync(block.block_type);
@@ -174,6 +175,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
       className="grid-block"
       data-block-id={block.id}
       tabIndex={isSelected ? 0 : -1} // Make focusable when selected
+      onClick={() => {setSelectedBlock(block)}}
     >
       {/* Block Controls */}
       {isSelected && mode !== 'preview' && (
@@ -247,7 +249,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
         )}
       </div>
 
-      {/* Resize Handles */}
+      {/* Resize Handles
       {isSelected && (
         <>
           <div className="resize-handle resize-se" style={{
@@ -261,7 +263,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
             borderRadius: '2px'
           }} />
         </>
-      )}
+      )} */}
     </div>
   );
 };
@@ -272,6 +274,8 @@ const GridCanvas = () => {
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
   const containerRef = useRef(null);
+
+  const {setSelectedBlock: setSelectedBlockCMS} = useCMS();
 
   // Preload components on mount
   useEffect(() => {
@@ -302,6 +306,7 @@ const GridCanvas = () => {
     try {
       deleteBlock(id);
       setSelectedBlock(null);
+      setSelectedBlockCMS(null);
       setSaveStatus('✓ Gelöscht');
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (error) {

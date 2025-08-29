@@ -34,6 +34,8 @@ export const CMSProvider = ({ children }) => {
   const [undoHistory, setUndoHistory] = useState([]);
   const [redoHistory, setRedoHistory] = useState([]);
 
+  const [selectedBlock, setSelectedBlock] = useState(null);
+
   const undo = useCallback(() => {
     // Vereinfachte Undo-Funktion - könnte bei Bedarf erweitert werden
     console.log('Undo currently not implemented in new version');
@@ -678,6 +680,8 @@ export const CMSProvider = ({ children }) => {
     // Legacy compatibility for old components
     draftChanges,
 
+    selectedBlock,
+
     // Additional properties that might be expected by existing components
     activeBlock: null,
     mode,
@@ -703,6 +707,8 @@ export const CMSProvider = ({ children }) => {
     setDraggedBlock: () => {},
     isDragging: false,
     setIsDragging: () => {},
+
+    setSelectedBlock,
 
     // API Methods that might be expected
     loadPages,
