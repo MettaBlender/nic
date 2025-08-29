@@ -161,8 +161,9 @@ export async function updatePageRows(pageId, rows) {
 }
 
 export async function updateBlockContent(id, content) {
+  // Content sollte bereits ein JSON-String sein von der API
   return await sql`
-    UPDATE blocks SET content = ${JSON.stringify(content)}, updated_at = CURRENT_TIMESTAMP
+    UPDATE blocks SET content = ${content}, updated_at = CURRENT_TIMESTAMP
     WHERE id = ${id}
   `;
 }

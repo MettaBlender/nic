@@ -400,16 +400,33 @@ export const CMSProvider = ({ children }) => {
       typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height : 0
     );
 
-    // Verwende Default-Options aus Component-Definition und überschreibe mit expliziten Werten
-    const blockContent = normalizedData.content ||
-                        (defaultOptions.text ? defaultOptions.text : '') ||
-                        (blockType === 'Text' ? 'Neuer Text' : '');
+    // Verwende Default-Options aus Component-Definition als Content-Objekt
+    let contentObject = {};
+
+    // Priorisiere explizit übergebenen Content
+    if (normalizedData.content) {
+      if (typeof normalizedData.content === 'object') {
+        contentObject = normalizedData.content;
+      } else if (typeof normalizedData.content === 'string') {
+        try {
+          contentObject = JSON.parse(normalizedData.content);
+        } catch {
+          contentObject = { text: normalizedData.content };
+        }
+      }
+    } else if (defaultOptions && Object.keys(defaultOptions).length > 0) {
+      // Verwende Default-Options als Content
+      contentObject = { ...defaultOptions };
+    } else {
+      // Fallback für Text-Blöcke
+      contentObject = { text: blockType === 'Text' ? 'Neuer Text' : '' };
+    }
 
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
       block_type: blockType,
-      content: blockContent,
+      content: JSON.stringify(contentObject), // Immer als JSON String speichern
       grid_col: freePosition.col,
       grid_row: freePosition.row,
       grid_width: typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
@@ -446,7 +463,7 @@ export const CMSProvider = ({ children }) => {
         return updated;
       });
 
-      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with options:`, newBlock.options);
+      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with content object:`, contentObject);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
