@@ -511,32 +511,13 @@ const GridCanvas = () => {
       position: 'relative'
     }}>
       {/* Grid Toolbar */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        padding: '8px 16px',
-        display: 'flex',
-        gap: '12px',
-        alignItems: 'center'
-      }}>
+      <div className='bg-background sticky top-0 z-100 border-b border-accent px-2 py-6 flex gap-3 items-center'>
         <button
           onClick={() => addRows(1)}
-          style={{
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
+          className='bg-blue-500 text-white rounded-md px-4 py-2'
         >
           + Zeile hinzufügen
         </button>
-
         <button
           onClick={async () => {
             console.log('🔄 Refreshing components...');
@@ -549,15 +530,7 @@ const GridCanvas = () => {
               alert('❌ Fehler beim Neuladen der Komponenten');
             }
           }}
-          style={{
-            background: '#059669',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
+          className='bg-green-500 text-white rounded-md px-4 py-2'
         >
           🔄 Komponenten neu laden
         </button>
@@ -574,15 +547,7 @@ const GridCanvas = () => {
               alert('❌ Fehler beim Vorladen der Komponenten');
             }
           }}
-          style={{
-            background: '#7c3aed',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
+          className='bg-purple-600 text-white rounded-md px-4 py-2'
         >
           📦 Komponenten vorladen
         </button>
@@ -596,15 +561,7 @@ const GridCanvas = () => {
               });
             }
           }}
-          style={{
-            background: '#dc2626',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
+          className='bg-red-600 text-white rounded-md px-4 py-2'
         >
           Alle löschen
         </button>

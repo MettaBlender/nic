@@ -127,12 +127,12 @@ const DetailSideBar = () => {
   };
 
   return (
-    <div className='w-96 h-screen fixed right-0 top-0 z-20 bg-white border-l border-gray-200 overflow-y-auto'>
+    <div className='w-96 h-screen fixed right-0 top-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
       <div className='p-4'>
         <div className='flex items-center justify-between mb-4'>
-          <h2 className='text-xl font-semibold text-black'>Block Details</h2>
+          <h2 className='text-xl font-semibold'>Block Details</h2>
           <button
-            className='text-black hover:text-gray-600 cursor-pointer'
+            className='text-accent hover:text-foreground cursor-pointer'
             onClick={() => setSelectedBlock(null)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

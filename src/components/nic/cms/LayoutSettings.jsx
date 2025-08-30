@@ -65,21 +65,21 @@ const LayoutSettings = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-background text-foreground">
       {/* Header */}
       <div className="border-b border-gray-200 p-4">
         <div className="flex items-center gap-2">
-          <Monitor className="w-5 h-5 text-gray-600" />
-          <h2 className="text-xl font-semibold text-gray-800">Layout-Einstellungen</h2>
+          <Monitor className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">Layout-Einstellungen</h2>
         </div>
       </div>
 
       {/* Settings Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 text-foreground">
 
         {/* Header Component Selection */}
         <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Header Komponente</h3>
+          <h3 className="text-lg font-medium mb-3">Header Komponente</h3>
           <select
             value={localSettings.header_component || 'default'}
             onChange={(e) => handleUpdateSettings({ ...localSettings, header_component: e.target.value })}
@@ -95,7 +95,7 @@ const LayoutSettings = () => {
 
         {/* Footer Component Selection */}
         <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Footer Komponente</h3>
+          <h3 className="text-lg font-medium mb-3">Footer Komponente</h3>
           <select
             value={localSettings.footer_component || 'default'}
             onChange={(e) => handleUpdateSettings({ ...localSettings, footer_component: e.target.value })}
@@ -111,12 +111,12 @@ const LayoutSettings = () => {
 
         {/* Background Settings */}
         <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Hintergrund</h3>
+          <h3 className="text-lg font-medium mb-3">Hintergrund</h3>
 
           {/* Background Color */}
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Hintergrundfarbe
               </label>
               <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ const LayoutSettings = () => {
                   className="w-10 h-10 border-2 border-gray-300 rounded-md flex items-center justify-center hover:border-gray-400"
                   style={{ backgroundColor: localSettings.background_color }}
                 >
-                  <Palette className="w-4 h-4 text-white mix-blend-difference" />
+                  <Palette className="w-4 h-4 mix-blend-difference" />
                 </button>
                 <input
                   type="text"
@@ -149,7 +149,7 @@ const LayoutSettings = () => {
 
             {/* Background Image */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Hintergrundbild
               </label>
 
@@ -193,12 +193,12 @@ const LayoutSettings = () => {
 
         {/* Color Scheme */}
         <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Farbschema</h3>
+          <h3 className="text-lg font-medium mb-3">Farbschema</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {/* Primary Color */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Primärfarbe
               </label>
               <div className="flex items-center gap-3">
@@ -231,7 +231,7 @@ const LayoutSettings = () => {
 
             {/* Secondary Color */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium  mb-2">
                 Sekundärfarbe
               </label>
               <div className="flex items-center gap-3">

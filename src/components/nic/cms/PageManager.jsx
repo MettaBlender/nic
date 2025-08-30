@@ -94,14 +94,14 @@ const PageManager = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">Seiten verwalten</h2>
+      <div className="border-b border-accent p-4">
+        <div className="flex flex-col gap-2 items-center justify-between">
+          <h2 className="text-xl font-semibold text">Seiten verwalten</h2>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center gap-2"
+            className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-background flex items-center gap-2 transition-colors duration-200 ease-in-out"
           >
             <Plus size={16} />
             Neue Seite
@@ -111,37 +111,38 @@ const PageManager = () => {
 
       {/* Create/Edit Form */}
       {(showCreateForm || editingPage) && (
-        <div className="border-b border-gray-200 p-4 bg-gray-50">
+        <div className="border-b border-accent p-4 bg-background">
           <form onSubmit={editingPage ? handleUpdatePage : handleCreatePage}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Titel
                 </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-accent rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                   placeholder="Seiten-Titel eingeben"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className='relative'>
+                <label className="block text-sm font-medium text-foreground mb-1">
                   URL-Slug
                 </label>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 pl-4 py-2 border border-accent rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                   placeholder="url-slug"
                   pattern="[a-z0-9-]+"
                   title="Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt"
                   required
                 />
+                <div className="absolute top-[1.92rem] left-2 text-xl text-foreground">/</div>
               </div>
 
               <div className="flex gap-2">
@@ -171,7 +172,7 @@ const PageManager = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         ) : pages.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray-500">
+          <div className="flex items-center justify-center h-32 text-foreground">
             <div className="text-center">
               <FileText size={48} className="mx-auto mb-2" />
               <p>Noch keine Seiten vorhanden</p>
@@ -185,16 +186,16 @@ const PageManager = () => {
                 key={page.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                   currentPage && currentPage.id === page.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-accent/10 hover:border-2 hover:border-accent'
                 }`}
                 onClick={() => selectPage(page)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{page.title}</h3>
-                    <p className="text-sm text-gray-500">/{page.slug}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                    <h3 className="font-medium">{page.title}</h3>
+                    <p className="text-sm text-foreground/50">/{page.slug}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-foreground/50">
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
                         Erstellt: {formatDate(page.created_at)}

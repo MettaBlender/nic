@@ -58,14 +58,14 @@ const Sidebar = () => {
     <>
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 bg-blue-500 h-full overflow-hidden transition-all duration-300 z-50 ${
+        className={`fixed left-0 top-0 bg-background h-full overflow-hidden transition-all duration-300 z-50 ${
           sidebarOpen ? 'w-80' : 'w-16'
         }`}
       >
         {/* Toggle Button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-4 right-2 bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 z-10"
+          className="absolute top-4 right-2 bg-background text-white p-2 rounded-md hover:bg-accent z-10"
         >
           {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -73,7 +73,7 @@ const Sidebar = () => {
         {sidebarOpen ? (
           <div className="h-full flex flex-col">
             {/* Draft-Status und Aktionen */}
-            <div className="bg-blue-600 p-4 pt-16 border-b border-blue-500">
+            <div className="p-4 pt-16 border-b border-accent">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white text-sm font-medium">
                   Draft-Änderungen: {pendingOperationsCount}
@@ -82,7 +82,7 @@ const Sidebar = () => {
                   <button
                     onClick={undo}
                     disabled={undoHistory.length === 0}
-                    className="p-1 bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
+                    className="p-1 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
                     title="Rückgängig (Ctrl+Z)"
                   >
                     <RotateCcw size={14} />
@@ -90,7 +90,7 @@ const Sidebar = () => {
                   <button
                     onClick={redo}
                     disabled={redoHistory.length === 0}
-                    className="p-1 bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
+                    className="p-1 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
                     title="Wiederholen (Ctrl+Y)"
                   >
                     <RotateCw size={14} />
@@ -123,7 +123,7 @@ const Sidebar = () => {
             </div>
 
             {/* Tabs */}
-            <div className="bg-blue-600 p-4">
+            <div className="p-4">
               <div className="flex space-x-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -133,8 +133,8 @@ const Sidebar = () => {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-blue-500 text-white'
-                          : 'text-blue-100 hover:text-white hover:bg-blue-500/50'
+                          ? 'ring ring-accent bg-accent/10 text-white'
+                          : 'text-white ring ring-transparent hover:ring-accent'
                       }`}
                     >
                       <Icon size={16} />

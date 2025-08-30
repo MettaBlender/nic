@@ -155,8 +155,8 @@ const CMSEditor = () => {
 
   if (!currentPage) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <div className="text-center text-gray-500">
+      <div className="w-full h-full flex items-center justify-center bg-background">
+        <div className="text-center text-foreground">
           <div className="text-4xl mb-4">📄</div>
           <h2 className="text-xl font-semibold mb-2">Keine Seite ausgewählt</h2>
           <p>Wählen Sie eine Seite aus oder erstellen Sie eine neue Seite.</p>
@@ -184,7 +184,7 @@ const CMSEditor = () => {
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>
         {/* Editor Toolbar */}
-        <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <div className="bg-background border-b border-accent p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold">{currentPage.title}</h1>
             <span className="text-sm text-gray-500">({currentPage.slug})</span>
@@ -216,7 +216,7 @@ const CMSEditor = () => {
             </button>
 
             {/* Logout Button */}
-            <div className="h-6 w-px bg-gray-300 mx-2"></div>
+            <div className="h-6 w-px bg-accent mx-2"></div>
             <button
               onClick={handleLogout}
               className='px-3 py-2 rounded-md flex items-center gap-2 bg-red-500 text-white hover:bg-red-600'
@@ -233,7 +233,7 @@ const CMSEditor = () => {
         </div>
 
         {/* Status Bar */}
-        <div className="bg-gray-100 border-t border-gray-200 px-4 py-2 flex items-center justify-between text-sm text-gray-600">
+        <div className="bg-background border-t border-accent px-4 py-2 flex items-center justify-between text-sm text-foreground">
           <div className="flex items-center gap-4">
             <span>Modus: <span className="font-medium capitalize">{mode}</span></span>
             <span>Komponenten geladen: {Object.keys(blockComponents).length}</span>
