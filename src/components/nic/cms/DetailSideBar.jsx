@@ -179,29 +179,13 @@ const DetailSideBar = () => {
 
             {/* Content Editor - Object Properties */}
             <div className='bg-yellow-50 p-3 rounded-lg'>
-              <div className='flex items-center justify-between mb-3'>
-                <h3 className='font-medium text-black'>Content Properties</h3>
-                <button
-                  onClick={addContentProperty}
-                  className='px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600'
-                >
-                  + Add Property
-                </button>
-              </div>
-
+              <h3 className='font-medium text-black mb-2'>Content Properties</h3>
               <div className='space-y-3'>
                 {Object.keys(contentObject).length > 0 ? (
                   Object.entries(contentObject).map(([key, value]) => (
                     <div key={key} className='flex flex-col space-y-1'>
                       <div className='flex items-center justify-between'>
                         <label className='text-sm font-medium text-gray-700'>{key}:</label>
-                        <button
-                          onClick={() => removeContentProperty(key)}
-                          className='text-red-500 hover:text-red-700 text-xs'
-                          title={`Remove ${key}`}
-                        >
-                          ✕
-                        </button>
                       </div>
                       {typeof value === 'string' ? (
                         value.length > 50 ? (

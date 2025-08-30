@@ -422,6 +422,8 @@ export const CMSProvider = ({ children }) => {
       contentObject = { text: blockType === 'Text' ? 'Neuer Text' : '' };
     }
 
+    console.log(`🧩 Creating block "${blockType}" with content object:`, contentObject);
+
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
@@ -438,7 +440,7 @@ export const CMSProvider = ({ children }) => {
       background_color: normalizedData.background_color || 'transparent',
       text_color: normalizedData.text_color || '#000000',
       z_index: typeof normalizedData.z_index === 'number' ? normalizedData.z_index : 1,
-      // Speichere Default-Options als separates Feld
+      // Speichere Default-Options als separates Feld für Debug-Zwecke
       options: defaultOptions,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -447,6 +449,9 @@ export const CMSProvider = ({ children }) => {
     try {
       setBlocks(prev => [...prev, newBlock]);
       batchOperation(blockId, 'create', newBlock);
+
+      // Automatisch den neuen Block auswählen
+      setSelectedBlock(newBlock);
 
       // Speichere Draft-Änderung in localStorage
       const draftChange = {
@@ -463,7 +468,7 @@ export const CMSProvider = ({ children }) => {
         return updated;
       });
 
-      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with content object:`, contentObject);
+      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with content:`, contentObject);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
@@ -475,11 +480,20 @@ export const CMSProvider = ({ children }) => {
   const updateBlock = useCallback((blockId, updates) => {
     console.log(`🔄 Updating block ${blockId}:`, Object.keys(updates));
 
+    // Sofort UI aktualisieren für responsive Feedback
     setBlocks(prev => prev.map(block =>
       block.id === blockId
         ? { ...block, ...updates, updated_at: new Date().toISOString() }
         : block
     ));
+
+    // Aktualisiere selectedBlock falls es das gleiche ist
+    setSelectedBlock(prev => {
+      if (prev && prev.id === blockId) {
+        return { ...prev, ...updates, updated_at: new Date().toISOString() };
+      }
+      return prev;
+    });
 
     const currentBlock = blocks.find(b => b.id === blockId);
     if (currentBlock) {
@@ -617,7 +631,7 @@ export const CMSProvider = ({ children }) => {
           if (promiseInfo.type === 'blocks') {
             console.log(`✅ Block operations completed:`, data);
 
-            // Aktualisiere Block-UI
+            // Aktualisiere Block-UI mit Server-Response
             if (data.blocks && Array.isArray(data.blocks)) {
               const normalizedBlocks = data.blocks.map(block => ({
                 ...block,
@@ -627,13 +641,30 @@ export const CMSProvider = ({ children }) => {
                 grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
                 background_color: block.background_color || 'transparent',
                 text_color: block.text_color || '#000000',
-                z_index: typeof block.z_index === 'number' ? block.z_index : 1,
-                content: typeof block.content === 'string' ?
-                  (block.content.startsWith('{') || block.content.startsWith('[') ?
-                    (() => { try { return JSON.parse(block.content); } catch { return block.content; } })()
-                    : block.content)
-                  : block.content
+                z_index: typeof block.z_index === 'number' ? block.z_index : 1
               }));
+
+              // Erstelle ID-Mapping für neue Blöcke (temp_id -> real_id)
+              const idMapping = new Map();
+              if (data.results) {
+                data.results.forEach(result => {
+                  if (result.operation === 'create' && result.tempId && result.block) {
+                    idMapping.set(result.tempId, result.block.id);
+                    console.log(`🔄 ID Mapping: ${result.tempId} -> ${result.block.id}`);
+                  }
+                });
+              }
+
+              // Aktualisiere selectedBlock falls es eine temp_id hatte
+              if (selectedBlock && selectedBlock.id && idMapping.has(selectedBlock.id)) {
+                const newRealId = idMapping.get(selectedBlock.id);
+                const updatedSelectedBlock = normalizedBlocks.find(b => b.id === newRealId);
+                if (updatedSelectedBlock) {
+                  setSelectedBlock(updatedSelectedBlock);
+                  console.log(`🔄 Updated selectedBlock ID: ${selectedBlock.id} -> ${newRealId}`);
+                }
+              }
+
               setBlocks(normalizedBlocks);
               console.log(`✅ Updated UI with ${normalizedBlocks.length} blocks from server`);
             }

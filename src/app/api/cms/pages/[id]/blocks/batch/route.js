@@ -37,6 +37,18 @@ export async function POST(request, { params }) {
       try {
         switch (opType) {
           case 'create':
+            // Parse content korrekt - es könnte als String oder Object kommen
+            let contentForDB = {};
+            if (typeof data.content === 'string') {
+              try {
+                contentForDB = JSON.parse(data.content);
+              } catch {
+                contentForDB = { text: data.content };
+              }
+            } else if (typeof data.content === 'object' && data.content !== null) {
+              contentForDB = data.content;
+            }
+
             const newBlock = await createBlock(
               pageId,
               data.block_type || 'Text',
@@ -44,27 +56,37 @@ export async function POST(request, { params }) {
               data.grid_row || 0,
               data.grid_width || 2,
               data.grid_height || 1,
-              data.content || {}
+              contentForDB
             );
 
             results.push({
               operation: 'create',
               success: true,
               block: newBlock,
-              tempId: data.id
+              tempId: data.id // Wichtig: Temp-ID für Frontend-Mapping
             });
 
-            console.log(`✅ Created block in SQL: ${newBlock.id} (${data.block_type})`);
+            console.log(`✅ Created block in SQL: ${newBlock.id} (${data.block_type}) - Temp ID: ${data.id}`);
             break;
 
           case 'update':
+            // Parse content korrekt für Updates
+            let updateContentForDB = data.content;
+            if (typeof data.content === 'string') {
+              try {
+                updateContentForDB = JSON.parse(data.content);
+              } catch {
+                updateContentForDB = { text: data.content };
+              }
+            }
+
             const updateSuccess = await updateBlock(
               data.id,
               data.grid_col,
               data.grid_row,
               data.grid_width,
               data.grid_height,
-              data.content
+              updateContentForDB
             );
 
             results.push({
