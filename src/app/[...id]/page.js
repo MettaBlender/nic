@@ -26,7 +26,7 @@ async function getPageBySlug(slug) {
   try {
     const sql = neon(connectionString);
     const result = await sql`
-      SELECT * FROM pages WHERE slug = ${slug} LIMIT 1
+      SELECT * FROM pages WHERE slug = ${slug.join('/')} LIMIT 1
     `;
     return result.length > 0 ? result[0] : null;
   } catch (error) {
@@ -135,6 +135,7 @@ export default async function PublicPage({ params }) {
 
   try {
     // Lade Seite und Daten
+    console.log('🌐 Lade Seite mit Slug:', id);
     const page = await getPageBySlug(id);
     if (!page) {
       notFound();
