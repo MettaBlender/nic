@@ -177,48 +177,11 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
       tabIndex={isSelected ? 0 : -1} // Make focusable when selected
       onClick={() => {setSelectedBlock(block)}}
     >
-      {/* Block Controls */}
-      {isSelected && mode !== 'preview' && (
-        <div className="block-controls" style={{
-          position: 'absolute',
-          top: '-30px',
-          right: '0',
-          display: 'flex',
-          gap: '4px',
-          zIndex: 1001
-        }}>
-          <div style={{
-            background: 'rgba(0,0,0,0.8)',
-            color: 'white',
-            padding: '2px 6px',
-            borderRadius: '3px',
-            fontSize: '10px',
-            whiteSpace: 'nowrap'
-          }}>
-            ↑↓←→ bewegen | Del löschen
-          </div>
-          <button
-            onClick={() => onDelete(block.id)}
-            style={{
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}
-          >
-            Löschen
-          </button>
-        </div>
-      )}
-
       {/* Block Content */}
       <div style={{
         width: '100%',
         height: '100%',
-        padding: '8px',
+        padding: '0px',
         overflow: 'hidden'
       }}>
         {Component ? (
@@ -248,22 +211,6 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
           </div>
         )}
       </div>
-
-      {/* Resize Handles
-      {isSelected && (
-        <>
-          <div className="resize-handle resize-se" style={{
-            position: 'absolute',
-            bottom: '0',
-            right: '0',
-            width: '10px',
-            height: '10px',
-            background: '#3b82f6',
-            cursor: 'se-resize',
-            borderRadius: '2px'
-          }} />
-        </>
-      )} */}
     </div>
   );
 };

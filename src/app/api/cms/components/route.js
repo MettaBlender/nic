@@ -12,7 +12,7 @@ function extractComponentInfo(filePath, fileName) {
 
     // Versuche Komponentenname aus Default Export zu extrahieren
     const defaultExportMatch = content.match(/export\s+default\s+(?:function\s+)?(\w+)/);
-    const componentName = defaultExportMatch ? defaultExportMatch[1] : fileName.replace(/\.(jsx?|tsx?)$/, '');
+    const componentName = defaultExportMatch ? defaultExportMatch[1] : fileName.replace(/\.(jsx?|tsx?|js?|ts?)$/, '');
 
     // Versuche Beschreibung aus Kommentaren zu extrahieren
     const descriptionMatch = content.match(/\/\*\*\s*\n\s*\*\s*(.+?)\s*\n\s*\*\//);
@@ -115,8 +115,8 @@ function extractComponentInfo(filePath, fileName) {
   } catch (error) {
     console.error(`Fehler beim Lesen der Datei ${fileName}:`, error);
     return {
-      name: fileName.replace(/\.(jsx?|tsx?)$/, ''),
-      componentName: fileName.replace(/\.(jsx?|tsx?)$/, ''),
+      name: fileName.replace(/\.(jsx?|tsx?|js?|ts?)$/, ''),
+      componentName: fileName.replace(/\.(jsx?|tsx?|js?|ts?)$/, ''),
       file: fileName,
       description: 'Block-Komponente',
       icon: '🧩',
@@ -177,7 +177,7 @@ function scanDirectory(dirPath, relativePath = '') {
           const subFullPath = path.join(fullPath, subItem);
           const subStat = fs.statSync(subFullPath);
 
-          if (subStat.isFile() && /\.(jsx?|tsx?)$/.test(subItem)) {
+          if (subStat.isFile() && /\.(jsx?|tsx?|js?|ts?)$/.test(subItem)) {
             const componentInfo = extractComponentInfo(subFullPath, subItem);
             categoryComponents.push(componentInfo);
           }
@@ -186,7 +186,7 @@ function scanDirectory(dirPath, relativePath = '') {
         if (categoryComponents.length > 0) {
           categories[categoryName] = categoryComponents;
         }
-      } else if (stat.isFile() && /\.(jsx?|tsx?)$/.test(item)) {
+      } else if (stat.isFile() && /\.(jsx?|tsx?|js?|ts?)$/.test(item)) {
         // React-Komponente gefunden
         const categoryName = relativePath || 'root';
 
