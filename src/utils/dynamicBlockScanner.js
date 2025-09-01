@@ -46,15 +46,15 @@ async function performBlockScan() {
   const blockComponents = new Map();
 
   // Scanne zuerst Aaron-Komponenten automatisch
-  try {
-    const aaronComponents = await scanAaronComponents();
-    aaronComponents.forEach(({ name, component }) => {
-      blockComponents.set(name, component);
-      console.log(`📦 Auto-registered Aaron component: ${name}`);
-    });
-  } catch (error) {
-    console.warn('⚠️ Could not scan Aaron components:', error);
-  }
+  // try {
+  //   const aaronComponents = await scanAaronComponents();
+  //   aaronComponents.forEach(({ name, component }) => {
+  //     blockComponents.set(name, component);
+  //     console.log(`📦 Auto-registered Aaron component: ${name}`);
+  //   });
+  // } catch (error) {
+  //   console.warn('⚠️ Could not scan Aaron components:', error);
+  // }
 
   // Erweiterte Scan-Pfade - jetzt den gesamten blocks/ Ordner
   const scanPaths = [
@@ -221,46 +221,11 @@ async function scanDirectory(subPath) {
 }
 
 /**
- * Scannt Aaron-Verzeichnis für neue Komponenten
- */
-async function scanAaronComponents() {
-  const aaronComponents = [];
-
-  // Liste bekannter Aaron-Komponenten-Dateien
-  const knownAaronFiles = [
-    'Aaron.jsx',
-    'CustomBlock.jsx',
-    'TestAaron.jsx'
-  ];
-
-  for (const file of knownAaronFiles) {
-    const componentName = file.replace('.jsx', '');
-    try {
-      const importedModule = await import(`@/components/nic/blocks/Aaron/${componentName}`);
-      const component = importedModule.default || importedModule;
-
-      if (component && typeof component === 'function') {
-        aaronComponents.push({
-          name: componentName,
-          component: component,
-          file: file
-        });
-        console.log(`🔍 Found Aaron component: ${componentName}`);
-      }
-    } catch (error) {
-      // Silent fail für nicht existierende Dateien
-    }
-  }
-
-  return aaronComponents;
-}
-
-/**
  * Lädt eine Komponente aus einem spezifischen Pfad
  */
 async function loadComponentFromPath(subPath, fileName) {
   // Komponenten-Name ohne .jsx Extension
-  const componentName = fileName.replace('.jsx', '');
+  const componentName = fileName.replace(/\.(jsx|js|ts|tsx)$/, '');
 
   // Statische Import-Map für alle bekannten Komponenten
   const componentImports = {

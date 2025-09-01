@@ -124,7 +124,8 @@ export const preloadCommonComponents = async () => {
     'Header', 'DefaultHeader', 'NavigationHeader',
     'Footer', 'DefaultFooter', 'SocialFooter',
     'Aaron', 'CustomBlock', 'TestAaron', 'Test'
-  ];  const cacheKey = 'preload-common';
+  ];
+  const cacheKey = 'preload-common';
 
   if (preloadPromises.has(cacheKey)) {
     return await preloadPromises.get(cacheKey);
