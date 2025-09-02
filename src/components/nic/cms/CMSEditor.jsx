@@ -195,8 +195,8 @@ const CMSEditor = () => {
               onClick={() => setMode('edit')}
               className={`px-3 py-2 rounded-md flex items-center gap-2 ${
                 mode === 'edit'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-accent/10 text-foreground ring ring-accent'
+                  : 'bg-background text-foreground ring ring-accent/50 hover:ring-accent hover:bg-accent/10 cursor-pointer'
               }`}
             >
               <Edit size={16} />
@@ -207,8 +207,8 @@ const CMSEditor = () => {
               onClick={() => setMode('preview')}
               className={`px-3 py-2 rounded-md flex items-center gap-2 ${
                 mode === 'preview'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-accent/10 hover:bg-background text-white ring ring-accent cursor-pointer'
+                  : 'bg-background text-foreground ring ring-accent/50 hover:ring-accent hover:bg-accent/10 cursor-pointer'
               }`}
             >
               <Eye size={16} />
@@ -219,7 +219,7 @@ const CMSEditor = () => {
             <div className="h-6 w-px bg-accent mx-2"></div>
             <button
               onClick={handleLogout}
-              className='px-3 py-2 rounded-md flex items-center gap-2 bg-red-500 text-white hover:bg-red-600'
+              className='px-3 py-2 rounded-md flex items-center gap-2 bg-background text-foreground ring ring-accent/50 hover:ring-accent-red hover:bg-accent-red/10 cursor-pointer'
             >
               <LogOut size={16} />
               Logout

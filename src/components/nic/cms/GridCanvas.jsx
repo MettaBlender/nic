@@ -478,7 +478,7 @@ const GridCanvas = () => {
       <div className='bg-background sticky top-0 z-100 border-b border-accent px-2 py-6 flex gap-3 items-center'>
         <button
           onClick={() => addRows(1)}
-          className='bg-blue-500 text-white rounded-md px-4 py-2'
+          className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
         >
           + Zeile hinzufügen
         </button>
@@ -493,7 +493,7 @@ const GridCanvas = () => {
               alert('❌ Fehler beim Neuladen der Komponenten');
             }
           }}
-          className='bg-green-500 text-white rounded-md px-4 py-2'
+          className='bg-accent/10 hover:bg-background text-white ring ring-accent cursor-pointer rounded-md px-4 py-2'
         >
           🔄 Komponenten neu laden
         </button>
@@ -507,7 +507,7 @@ const GridCanvas = () => {
               });
             }
           }}
-          className='bg-red-600 text-white rounded-md px-4 py-2'
+          className='bg-accent/10 hover:bg-accent-red/20 text-foreground ring ring-accent hover:ring-accent-red cursor-pointer rounded-md px-4 py-2'
         >
           Alle löschen
         </button>
