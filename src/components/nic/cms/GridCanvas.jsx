@@ -6,7 +6,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
-import { preloadCommonComponents, refreshComponents } from '@/utils/hybridComponentResolver';
 import dynamic from 'next/dynamic';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
@@ -260,12 +259,7 @@ const GridCanvas = () => {
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
   const containerRef = useRef(null);
 
-  const {setSelectedBlock: setSelectedBlockCMS} = useCMS();
-
-  // Preload components on mount
-  useEffect(() => {
-    preloadCommonComponents();
-  }, []);
+  const {setSelectedBlock: setSelectedBlockCMS, loadComponents} = useCMS();
 
   useEffect(() => {
     if (mode === 'preview') {
@@ -370,21 +364,6 @@ const GridCanvas = () => {
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  // Preload components on mount
-  useEffect(() => {
-    const initializeComponents = async () => {
-      console.log('🚀 Initializing GridCanvas components...');
-      try {
-        await preloadCommonComponents();
-        console.log('✅ Common components preloaded successfully');
-      } catch (error) {
-        console.error('❌ Error preloading components:', error);
-      }
-    };
-
-    initializeComponents();
   }, []);
 
   // Handle canvas click (deselect blocks)
@@ -507,9 +486,8 @@ const GridCanvas = () => {
           onClick={async () => {
             console.log('🔄 Refreshing components...');
             try {
-              const components = await refreshComponents();
-              console.log('✅ Refreshed components:', components);
-              alert(`✅ ${components.length} Komponenten neu geladen!`);
+              await loadComponents();
+              alert(`✅ Komponenten neu geladen!`);
             } catch (error) {
               console.error('❌ Error refreshing components:', error);
               alert('❌ Fehler beim Neuladen der Komponenten');
@@ -518,23 +496,6 @@ const GridCanvas = () => {
           className='bg-green-500 text-white rounded-md px-4 py-2'
         >
           🔄 Komponenten neu laden
-        </button>
-
-        <button
-          onClick={async () => {
-            console.log('📦 Preloading common components...');
-            try {
-              await preloadCommonComponents();
-              console.log('✅ Common components preloaded');
-              alert('✅ Häufige Komponenten vorgeladen!');
-            } catch (error) {
-              console.error('❌ Error preloading components:', error);
-              alert('❌ Fehler beim Vorladen der Komponenten');
-            }
-          }}
-          className='bg-purple-600 text-white rounded-md px-4 py-2'
-        >
-          📦 Komponenten vorladen
         </button>
 
         <button

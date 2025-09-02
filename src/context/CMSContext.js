@@ -746,13 +746,12 @@ export const CMSProvider = ({ children }) => {
 
   const [componentFiles, setComponentFiles] = useState([]);
 
-  useEffect(() => {
-    const loadComponents = async () => {
-      const components = await getComponentFiles();
-      console.log('🔍 Available components:', components);
-      setComponentFiles(components);
-    };
+  const loadComponents = async () => {
+    const components = await getComponentFiles();
+    setComponentFiles(components);
+  };
 
+  useEffect(() => {
     loadComponents();
   }, []);
 
@@ -930,6 +929,7 @@ export const CMSProvider = ({ children }) => {
 
     componentFiles,
     setComponentFiles,
+    loadComponents,
   };
 
   return (
