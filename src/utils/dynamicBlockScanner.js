@@ -185,7 +185,7 @@ async function scanDirectory(subPath) {
           }
         });
 
-        console.log(`📦 Found component: ${fileName} in blocks/${subPath}`);
+        // console.log(`📦 Found component: ${fileName} in blocks/${subPath}`);
       }
     } catch (error) {
       // Silent fail für nicht existierende Komponenten
@@ -282,7 +282,7 @@ async function loadComponentFromPath(subPath, fileName) {
       const component = importedModule.default || importedModule;
 
       if (component && typeof component === 'function') {
-        console.log(`📦 Loaded component: ${componentName}`);
+        // console.log(`📦 Loaded component: ${componentName}`);
         return component;
       }
     } catch (error) {
@@ -332,7 +332,7 @@ async function loadComponentFromPath(subPath, fileName) {
   }
 
   // Fallback für nicht-registrierte Komponenten
-  console.warn(`⚠️ Component not registered: ${componentName} in ${subPath || 'root'}`);
+  // console.warn(`⚠️ Component not registered: ${componentName} in ${subPath || 'root'}`);
   return null;
 }
 

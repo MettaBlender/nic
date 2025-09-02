@@ -6,7 +6,7 @@ import { useCMS } from '@/context/CMSContext';
 import { Plus, Eye, EyeOff, ChevronDown, ChevronRight, Save, Upload } from 'lucide-react';
 
 // Hilfsfunktion für dynamisches Laden der Komponenten
-async function getComponentFiles() {
+export async function getComponentFiles() {
   try {
     // API-Route aufrufen, die die Komponenten-Struktur zurückgibt
     const response = await fetch('/api/cms/components');

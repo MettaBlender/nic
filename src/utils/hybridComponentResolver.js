@@ -63,7 +63,7 @@ export const resolveComponentSync = (componentName) => {
     return component;
   }
 
-  console.warn(`⚠️ Component "${componentName}" not found in sync cache`);
+  // console.warn(`⚠️ Component "${componentName}" not found in sync cache`);
   return null;
 };
 

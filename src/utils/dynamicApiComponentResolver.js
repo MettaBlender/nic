@@ -158,8 +158,8 @@ export const resolveComponent = async (componentName) => {
   }
 
   // Fallback
-  console.warn(`⚠️ Component "${componentName}" not found in registry, using fallback`);
-  console.log('📋 Available components:', Array.from(componentRegistry.keys()));
+  // console.warn(`⚠️ Component "${componentName}" not found in registry, using fallback`);
+  // console.log('📋 Available components:', Array.from(componentRegistry.keys()));
 
   const AsyncFallback = (props) => <FallbackComponent {...props} componentName={componentName} />;
   AsyncFallback.displayName = `AsyncFallback_${componentName}`;

@@ -7,12 +7,54 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
 import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '@/utils/hybridComponentResolver';
+import { getComponentFiles } from './Components';
+import { loadComponent } from '@/lib/componentLoader';
+import dynamic from 'next/dynamic';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const blockRef = useRef(null);
-  const {setSelectedBlock} = useCMS();
+  const {setSelectedBlock, componentFiles} = useCMS();
+  const [component, setComponent] = useState(null);
+
+  // Preload component files
+  useEffect(() => {
+    const processedCategories = {};
+
+    Object.entries(componentFiles).forEach(([categoryName, components]) => {
+      processedCategories[categoryName] = components.map(comp => ({
+        ...comp,
+        Component: dynamic(() =>
+          import(`@/components/nic/blocks/${categoryName === 'root' ? '' : categoryName + '/'}${comp.file}`)
+            .catch(() => import('@/components/nic/blocks/fallback')), // Fallback bei Fehlern
+          {
+            ssr: false,
+            loading: () => (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '32px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '4px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }}>
+                <span style={{ fontSize: '12px', color: '#6b7280' }}>Lädt...</span>
+              </div>
+            )
+          }
+        )
+      }));
+    });
+
+    const allItems = Object.values(processedCategories).flat();
+    const filteredComponent= allItems.filter(item => item.name === block.block_type)[0];
+
+    console.log("filteredComponent", filteredComponent)
+
+    setComponent(filteredComponent || null);
+  }, [componentFiles]);
 
   // Lade die Komponente dynamisch
   const Component = resolveComponentSync(block.block_type);
@@ -184,15 +226,17 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
         padding: '0px',
         overflow: 'hidden'
       }}>
-        {Component ? (
-          <Component
-            content={block.content || ''}
-            block_type={block.block_type || ''}
-            background_color={block.background_color || 'transparent'}
-            text_color={block.text_color || '#000000'}
-            editable={true}
-            onContentChange={(newContent) => onUpdate(block.id, { content: newContent })}
-          />
+        {component ? (
+          <React.Suspense fallback={<div className="animate-pulse bg-gray-200 h-full rounded"></div>}>
+            <component.Component
+              content={block.content || ''}
+              block_type={block.block_type || ''}
+              background_color={block.background_color || 'transparent'}
+              text_color={block.text_color || '#000000'}
+              editable={true}
+              onContentChange={(newContent) => onUpdate(block.id, { content: newContent })}
+            />
+          </React.Suspense>
         ) : (
           <div style={{
             display: 'flex',

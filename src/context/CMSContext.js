@@ -10,6 +10,7 @@ import {
   saveSingleBlockChange,
   cleanupOldDrafts
 } from '../utils/localStorageManager.js';
+import { getComponentFiles } from '@/components/nic/cms/Components.jsx';
 
 const CMSContext = createContext();
 
@@ -743,6 +744,18 @@ export const CMSProvider = ({ children }) => {
     loadComponentDefinitions();
   }, []); // Nur einmal beim Mount ausführen
 
+  const [componentFiles, setComponentFiles] = useState([]);
+
+  useEffect(() => {
+    const loadComponents = async () => {
+      const components = await getComponentFiles();
+      console.log('🔍 Available components:', components);
+      setComponentFiles(components);
+    };
+
+    loadComponents();
+  }, []);
+
   const value = {
     pages,
     currentPage,
@@ -913,7 +926,10 @@ export const CMSProvider = ({ children }) => {
     layoutSettings,
     pendingLayoutChanges,
     snapToGridValue: () => {},
-    getSnapLines: () => []
+    getSnapLines: () => [],
+
+    componentFiles,
+    setComponentFiles,
   };
 
   return (
