@@ -6,9 +6,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
-import { resolveComponentSync, preloadCommonComponents, refreshComponents, getDebugInfo } from '@/utils/hybridComponentResolver';
-import { getComponentFiles } from './Components';
-import { loadComponent } from '@/lib/componentLoader';
+import { preloadCommonComponents, refreshComponents } from '@/utils/hybridComponentResolver';
 import dynamic from 'next/dynamic';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
@@ -51,13 +49,9 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
     const allItems = Object.values(processedCategories).flat();
     const filteredComponent= allItems.filter(item => item.name === block.block_type)[0];
 
-    console.log("filteredComponent", filteredComponent)
-
     setComponent(filteredComponent || null);
   }, [componentFiles]);
 
-  // Lade die Komponente dynamisch
-  const Component = resolveComponentSync(block.block_type);
 
   // Keyboard Navigation
   const handleKeyDown = useCallback((e) => {
