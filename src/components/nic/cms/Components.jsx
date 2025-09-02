@@ -173,8 +173,8 @@ export default function Components() {
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+        <div className="text-foreground text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-2"></div>
           <p>Lade Komponenten...</p>
         </div>
       </div>
@@ -184,8 +184,8 @@ export default function Components() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-white text-center">
+      <div className="p-4 border-b border-accent">
+        <h2 className="text-xl font-semibold text-foreground text-center">
           Block Bibliothek
         </h2>
         {currentPage && (
@@ -201,7 +201,7 @@ export default function Components() {
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               isDraftMode
                 ? 'bg-yellow-500 text-black'
-                : 'bg-green-500 text-white'
+                : 'bg-green-500 text-foreground'
             }`}
           >
             {isDraftMode ? '📝 Draft Modus' : '🔴 Live Modus'}
@@ -218,14 +218,14 @@ export default function Components() {
               <div className="flex gap-1">
                 <button
                   onClick={publishChanges}
-                  className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 flex items-center gap-1"
+                  className="px-2 py-1 bg-green-500 text-foreground rounded text-xs hover:bg-green-600 flex items-center gap-1"
                 >
                   <Upload size={12} />
                   Veröffentlichen
                 </button>
                 <button
                   onClick={discardChanges}
-                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                  className="px-2 py-1 bg-red-500 text-foreground rounded text-xs hover:bg-red-600"
                 >
                   Verwerfen
                 </button>
@@ -242,11 +242,11 @@ export default function Components() {
           const displayName = getCategoryDisplayName(categoryName);
 
           return (
-            <div key={categoryName} className="bg-white/10 rounded-lg border border-white/20">
+            <div key={categoryName} className="bg-foreground/10 rounded-lg border border-accent/20">
               {/* Category Header */}
               <button
                 onClick={() => toggleCategory(categoryName)}
-                className="w-full flex items-center justify-between p-3 text-white hover:bg-white/5 rounded-t-lg"
+                className="w-full flex items-center justify-between p-3 text-foreground hover:bg-foreground/5 rounded-t-lg"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-lg">
@@ -263,7 +263,7 @@ export default function Components() {
 
               {/* Category Content */}
               {isExpanded && (
-                <div className="border-t border-white/10 p-3 space-y-2">
+                <div className="border-t border-foreground/10 p-3 space-y-2">
                   {components.map((component) => {
                     const blockKey = `${categoryName}-${component.name}`;
                     const isPreviewOpen = previewBlocks[blockKey];
@@ -271,26 +271,26 @@ export default function Components() {
                     return (
                       <div
                         key={component.name}
-                        className="bg-white/5 rounded p-2 border border-white/10 cursor-grab active:cursor-grabbing"
+                        className="bg-foreground/5 rounded p-2 border border-foreground/10 cursor-grab active:cursor-grabbing"
                         draggable
                         onDragStart={(e) => handleDragStart(e, component.componentName || component.name, component, categoryName)}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">{component.icon || '🧩'}</span>
-                            <span className="text-white text-sm font-medium">{component.name}</span>
+                            <span className="text-foreground text-sm font-medium">{component.name}</span>
                           </div>
                           <div className="flex gap-1">
                             <button
                               onClick={() => togglePreview(blockKey)}
-                              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded"
+                              className="p-1 text-foreground/70 hover:text-foreground hover:bg-foreground/10 rounded"
                               title={isPreviewOpen ? 'Vorschau ausblenden' : 'Vorschau anzeigen'}
                             >
                               {isPreviewOpen ? <EyeOff size={12} /> : <Eye size={12} />}
                             </button>
                             <button
                               onClick={() => handleAddBlock(component.componentName || component.name, component, categoryName)}
-                              className="p-1 text-white rounded bg-blue-500 hover:bg-blue-600"
+                              className="p-1 text-foreground rounded bg-blue-500 hover:bg-blue-600"
                               title="Block hinzufügen"
                               disabled={!currentPage}
                             >
@@ -300,7 +300,7 @@ export default function Components() {
                         </div>
 
                         {/* Drag Indicator */}
-                        <div className="text-xs text-white/50 mb-2 text-center">
+                        <div className="text-xs text-foreground/50 mb-2 text-center">
                           🔄 Ziehen zum Hinzufügen
                         </div>
 
@@ -311,7 +311,7 @@ export default function Components() {
 
                         {/* Component Preview */}
                         {isPreviewOpen && component.Component && (
-                          <div className="bg-white rounded p-2 h-16 overflow-hidden">
+                          <div className="bg-foreground rounded p-2 h-16 overflow-hidden">
                             <div className="w-full h-full transform scale-75 origin-top-left">
                               <React.Suspense fallback={<div className="animate-pulse bg-gray-200 h-full rounded"></div>}>
                                 <component.Component />
@@ -329,7 +329,7 @@ export default function Components() {
         })}
 
         {Object.keys(componentCategories).length === 0 && (
-          <div className="text-center text-white/70 py-8">
+          <div className="text-center text-foreground/70 py-8">
             <p>Keine Komponenten gefunden.</p>
             <p className="text-sm mt-2">Fügen Sie Komponenten im /components/nic/blocks Ordner hinzu.</p>
           </div>

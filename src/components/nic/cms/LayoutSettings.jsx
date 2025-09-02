@@ -67,7 +67,7 @@ const LayoutSettings = () => {
   return (
     <div className="h-full flex flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
+      <div className="border-b border-accent p-4">
         <div className="flex items-center gap-2">
           <Monitor className="w-5 h-5" />
           <h2 className="text-xl font-semibold">Layout-Einstellungen</h2>
@@ -78,7 +78,7 @@ const LayoutSettings = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-6 text-foreground">
 
         {/* Header Component Selection */}
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-accent rounded-lg p-4">
           <h3 className="text-lg font-medium mb-3">Header Komponente</h3>
           <select
             value={localSettings.header_component || 'default'}
@@ -94,7 +94,7 @@ const LayoutSettings = () => {
         </div>
 
         {/* Footer Component Selection */}
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-accent rounded-lg p-4">
           <h3 className="text-lg font-medium mb-3">Footer Komponente</h3>
           <select
             value={localSettings.footer_component || 'default'}
@@ -110,7 +110,7 @@ const LayoutSettings = () => {
         </div>
 
         {/* Background Settings */}
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-accent rounded-lg p-4">
           <h3 className="text-lg font-medium mb-3">Hintergrund</h3>
 
           {/* Background Color */}
@@ -137,7 +137,7 @@ const LayoutSettings = () => {
               </div>
 
               {activeColorPicker === 'background' && (
-                <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
                     color={localSettings.background_color}
                     onChange={(color) => handleColorChange('background_color', color)}
@@ -192,7 +192,7 @@ const LayoutSettings = () => {
         </div>
 
         {/* Color Scheme */}
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-accent rounded-lg p-4">
           <h3 className="text-lg font-medium mb-3">Farbschema</h3>
 
           <div className="flex flex-col gap-4">
@@ -219,7 +219,7 @@ const LayoutSettings = () => {
               </div>
 
               {activeColorPicker === 'primary' && (
-                <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
                     color={localSettings.primary_color}
                     onChange={(color) => handleColorChange('primary_color', color)}
@@ -252,7 +252,7 @@ const LayoutSettings = () => {
               </div>
 
               {activeColorPicker === 'secondary' && (
-                <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
                     color={localSettings.secondary_color}
                     onChange={(color) => handleColorChange('secondary_color', color)}
@@ -265,7 +265,7 @@ const LayoutSettings = () => {
         </div>
 
         {/* Preview */}
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-accent rounded-lg p-4">
           <h3 className="text-lg font-medium text-gray-800 mb-3">Vorschau</h3>
           <div
             className="w-full h-32 rounded-md border border-gray-300 relative overflow-hidden"

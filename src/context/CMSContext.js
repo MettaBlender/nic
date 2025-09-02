@@ -481,6 +481,48 @@ export const CMSProvider = ({ children }) => {
   const updateBlock = useCallback((blockId, updates) => {
     console.log(`🔄 Updating block ${blockId}:`, Object.keys(updates));
 
+    // Prüfe ob Position-Updates vorgenommen wurden, die zur ursprünglichen Position zurückführen
+    if (updates.grid_col !== undefined || updates.grid_row !== undefined) {
+      const currentBlock = blocks.find(b => b.id === blockId);
+      if (currentBlock) {
+        // Finde die ursprüngliche Position aus pending operations oder dem aktuellen Block
+        const pendingOp = pendingOperations.get(blockId);
+        const originalBlock = pendingOp?.operation === 'update' ?
+          blocks.find(b => b.id === blockId) : currentBlock;
+
+        const originalCol = originalBlock?.grid_col || 0;
+        const originalRow = originalBlock?.grid_row || 0;
+        const newCol = updates.grid_col !== undefined ? updates.grid_col : currentBlock.grid_col;
+        const newRow = updates.grid_row !== undefined ? updates.grid_row : currentBlock.grid_row;
+
+        // Wenn Block zur ursprünglichen Position zurück verschoben wurde
+        if (newCol === originalCol && newRow === originalRow && pendingOp) {
+            console.log(`↩️ Block ${blockId} moved back to original position, removing pending updates`);
+
+            // Aktualisiere UI zur ursprünglichen Position zurück
+            setBlocks(prev => prev.map(block =>
+            block.id === blockId
+              ? { ...block, grid_col: originalCol, grid_row: originalRow, updated_at: new Date().toISOString() }
+              : block
+            ));
+          setPendingOperations(prev => {
+            const newOps = new Map(prev);
+            newOps.delete(blockId);
+            return newOps;
+          });
+
+          // Entferne auch Draft-Änderungen für diesen Block
+          setDraftChanges(prev => prev.filter(change => change.blockId !== blockId));
+
+          // Prüfe ob noch Änderungen vorhanden sind
+          const hasOtherChanges = Array.from(pendingOperations.keys()).some(id => id !== blockId) || pendingLayoutChanges !== null;
+          if (!hasOtherChanges) {
+            setSaveStatus('saved');
+          }
+          return;
+        }
+      }
+    }
     // Sofort UI aktualisieren für responsive Feedback
     setBlocks(prev => prev.map(block =>
       block.id === blockId
