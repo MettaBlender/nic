@@ -342,6 +342,7 @@ const GridCanvas = () => {
     isDragging,
     dropZone,
     addRows,
+    removeRows,
     startDrag,
     getBlockStyle
   } = useGridSystem(containerSize);
@@ -486,6 +487,17 @@ const GridCanvas = () => {
           className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
         >
           + Zeile hinzufügen
+        </button>
+        <button
+          onClick={() => {
+            const success = removeRows(blocks);
+            if (!success) {
+              alert('Die unterste Zeile kann nur gelöscht werden, wenn sie leer ist und mindestens eine Zeile übrig bleibt.');
+            }
+          }}
+          className='bg-accent/10 hover:bg-accent-red/20 text-foreground ring ring-accent hover:ring-accent-red cursor-pointer rounded-md px-4 py-2'
+        >
+          - Zeile löschen
         </button>
         <button
           onClick={async () => {
