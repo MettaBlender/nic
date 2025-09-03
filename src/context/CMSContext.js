@@ -31,21 +31,12 @@ export const CMSProvider = ({ children }) => {
   // Sidebar Management
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Undo/Redo System (vereinfacht)
+  // Undo/Redo System
   const [undoHistory, setUndoHistory] = useState([]);
   const [redoHistory, setRedoHistory] = useState([]);
+  const MAX_HISTORY_SIZE = 50;
 
   const [selectedBlock, setSelectedBlock] = useState(null);
-
-  const undo = useCallback(() => {
-    // Vereinfachte Undo-Funktion - könnte bei Bedarf erweitert werden
-    console.log('Undo currently not implemented in new version');
-  }, []);
-
-  const redo = useCallback(() => {
-    // Vereinfachte Redo-Funktion - könnte bei Bedarf erweitert werden
-    console.log('Redo currently not implemented in new version');
-  }, []);
 
   // Blöcke Management mit intelligentem Batching
   const [blocks, setBlocks] = useState(() => {
@@ -63,6 +54,72 @@ export const CMSProvider = ({ children }) => {
   const [pendingOperations, setPendingOperations] = useState(new Map());
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
+
+  // Hilfsfunktion zum Speichern des aktuellen Zustands - NACH blocks Deklaration
+  const saveStateToHistory = useCallback(() => {
+    const currentState = {
+      blocks: [...blocks],
+      timestamp: Date.now()
+    };
+    setUndoHistory(prev => {
+      const newHistory = [...prev, currentState];
+      // Begrenze die Historie auf MAX_HISTORY_SIZE
+      return newHistory.length > MAX_HISTORY_SIZE ? newHistory.slice(-MAX_HISTORY_SIZE) : newHistory;
+    });
+    // Leere Redo-Historie bei neuer Aktion
+    setRedoHistory([]);
+  }, [blocks]);
+
+  // Undo/Redo Funktionen - NACH blocks Deklaration
+  const undo = useCallback(() => {
+    if (undoHistory.length === 0) {
+      console.log('No actions to undo');
+      return;
+    }
+
+    const lastState = undoHistory[undoHistory.length - 1];
+    const currentState = {
+      blocks: [...blocks],
+      timestamp: Date.now()
+    };
+
+    // Setze den Zustand zurück
+    setBlocks(lastState.blocks);
+    setSelectedBlock(null); // Deselektiere Block bei Undo
+
+    // Entferne den letzten Zustand aus Undo-Historie
+    setUndoHistory(prev => prev.slice(0, -1));
+
+    // Füge den aktuellen Zustand zur Redo-Historie hinzu
+    setRedoHistory(prev => [...prev, currentState]);
+
+    console.log('Undo performed');
+  }, [undoHistory, blocks]);
+
+  const redo = useCallback(() => {
+    if (redoHistory.length === 0) {
+      console.log('No actions to redo');
+      return;
+    }
+
+    const nextState = redoHistory[redoHistory.length - 1];
+    const currentState = {
+      blocks: [...blocks],
+      timestamp: Date.now()
+    };
+
+    // Setze den Zustand vorwärts
+    setBlocks(nextState.blocks);
+    setSelectedBlock(null); // Deselektiere Block bei Redo
+
+    // Entferne den letzten Zustand aus Redo-Historie
+    setRedoHistory(prev => prev.slice(0, -1));
+
+    // Füge den aktuellen Zustand zur Undo-Historie hinzu
+    setUndoHistory(prev => [...prev, currentState]);
+
+    console.log('Redo performed');
+  }, [redoHistory, blocks]);
 
   // Component Definitions Management
   const [componentDefinitions, setComponentDefinitions] = useState({});
@@ -462,6 +519,7 @@ export const CMSProvider = ({ children }) => {
     };
 
     try {
+      saveStateToHistory(); // Speichere Zustand für Undo
       setBlocks(prev => [...prev, newBlock]);
       batchOperation(blockId, 'create', newBlock);
 
@@ -489,7 +547,7 @@ export const CMSProvider = ({ children }) => {
       console.error('❌ Error creating block:', error);
       return null;
     }
-  }, [currentPage, batchOperation, blocks, componentDefinitions]);
+  }, [currentPage, batchOperation, blocks, componentDefinitions, saveStateToHistory]);
 
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
@@ -538,6 +596,7 @@ export const CMSProvider = ({ children }) => {
       }
     }
     // Sofort UI aktualisieren für responsive Feedback
+    saveStateToHistory(); // Speichere Zustand für Undo
     setBlocks(prev => prev.map(block =>
       block.id === blockId
         ? { ...block, ...updates, updated_at: new Date().toISOString() }
@@ -577,12 +636,12 @@ export const CMSProvider = ({ children }) => {
         return updated;
       });
     }
-  }, [blocks, batchOperation]);
+  }, [blocks, batchOperation, saveStateToHistory]);
 
-  // Block löschen
   const deleteBlock = useCallback((blockId) => {
     console.log(`🗑️ Deleting block ${blockId}`);
 
+    saveStateToHistory(); // Speichere Zustand für Undo
     setBlocks(prev => prev.filter(block => block.id !== blockId));
     batchOperation(blockId, 'delete', { id: blockId });
 
@@ -599,7 +658,7 @@ export const CMSProvider = ({ children }) => {
       saveSingleBlockChange(draftChange);
       return updated;
     });
-  }, [batchOperation]);
+  }, [batchOperation, saveStateToHistory]);
 
   // Layout Settings Management
   const updateLayoutSettings = useCallback((newSettings) => {
@@ -842,7 +901,8 @@ export const CMSProvider = ({ children }) => {
     isLoading,
     saveStatus,
     lastSaveTime,
-    pendingOperationsCount: pendingOperations.size + (pendingLayoutChanges ? 1 : 0),
+    // Verbesserte Berechnung der ausstehenden Änderungen
+    pendingOperationsCount: pendingOperations.size + (pendingLayoutChanges ? 1 : 0) + draftChanges.length,
 
     // Sidebar
     sidebarOpen,

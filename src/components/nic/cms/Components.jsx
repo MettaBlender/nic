@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import React, { useState, useEffect } from 'react';
 import { useCMS } from '@/context/CMSContext';
-import { Plus, Eye, EyeOff, ChevronDown, ChevronRight, Save, Upload } from 'lucide-react';
+import { Plus, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 
 // Hilfsfunktion für dynamisches Laden der Komponenten
 export async function getComponentFiles() {
@@ -24,15 +24,11 @@ export async function getComponentFiles() {
 export default function Components() {
   const {
     createBlock,
-    currentPage,
-    draftChanges,
-    publishDrafts,
-    discardDrafts
+    currentPage
   } = useCMS();
   const [componentCategories, setComponentCategories] = useState({});
   const [previewBlocks, setPreviewBlocks] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
-  const [isDraftMode, setIsDraftMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Lade Komponenten beim Mount
@@ -122,35 +118,6 @@ export default function Components() {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  const publishChanges = async () => {
-    if (draftChanges.length === 0) {
-      alert('Keine ausstehenden Änderungen zum Veröffentlichen');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await publishDrafts();
-      alert(`${draftChanges.length} Änderungen erfolgreich veröffentlicht!`);
-    } catch (error) {
-      console.error('Fehler beim Veröffentlichen:', error);
-      alert('Fehler beim Veröffentlichen der Änderungen');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const discardChanges = () => {
-    if (draftChanges.length === 0) {
-      alert('Keine ausstehenden Änderungen zum Verwerfen');
-      return;
-    }
-
-    if (confirm(`${draftChanges.length} ausstehende Änderungen verwerfen?`)) {
-      discardDrafts();
-    }
-  };
-
   const togglePreview = (blockKey) => {
     setPreviewBlocks(prev => ({
       ...prev,
@@ -192,46 +159,6 @@ export default function Components() {
           <p className="text-sm text-gray-300 text-center mt-1">
             Aktuelle Seite: {currentPage.title}
           </p>
-        )}
-
-        {/* Draft/Live Toggle */}
-        <div className="flex items-center justify-center mt-3 gap-2">
-          <button
-            onClick={() => setIsDraftMode(!isDraftMode)}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-              isDraftMode
-                ? 'bg-yellow-500 text-black'
-                : 'bg-green-500 text-foreground'
-            }`}
-          >
-            {isDraftMode ? '📝 Draft Modus' : '🔴 Live Modus'}
-          </button>
-        </div>
-
-        {/* Pending Changes */}
-        {draftChanges.length > 0 && (
-          <div className="mt-3 bg-yellow-500/20 border border-yellow-500/40 rounded p-2">
-            <div className="flex items-center justify-between">
-              <span className="text-yellow-300 text-sm">
-                {draftChanges.length} ausstehende Änderung(en)
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={publishChanges}
-                  className="px-2 py-1 bg-green-500 text-foreground rounded text-xs hover:bg-green-600 flex items-center gap-1"
-                >
-                  <Upload size={12} />
-                  Veröffentlichen
-                </button>
-                <button
-                  onClick={discardChanges}
-                  className="px-2 py-1 bg-red-500 text-foreground rounded text-xs hover:bg-red-600"
-                >
-                  Verwerfen
-                </button>
-              </div>
-            </div>
-          </div>
         )}
       </div>
 

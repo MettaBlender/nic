@@ -74,7 +74,7 @@ const Sidebar = () => {
 
         {sidebarOpen ? (
           <div className="h-full flex flex-col">
-            {/* Draft-Status und Aktionen */}
+            {/* Draft-Status und Aktionen - IMMER SICHTBAR */}
             <div className="p-4 pt-16 border-b border-accent">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-foreground text-sm font-medium">
@@ -100,28 +100,30 @@ const Sidebar = () => {
                 </div>
               </div>
 
-              {pendingOperationsCount > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={publishDrafts}
-                    className="flex-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 flex items-center justify-center gap-1"
-                  >
-                    <Upload size={12} />
-                    Veröffentlichen
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`${pendingOperationsCount} Änderungen verwerfen?`)) {
-                        discardDrafts();
-                      }
-                    }}
-                    className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 flex items-center justify-center gap-1"
-                  >
-                    <X size={12} />
-                    Verwerfen
-                  </button>
-                </div>
-              )}
+              {/* Buttons IMMER anzeigen */}
+              <div className="flex gap-2">
+                <button
+                  onClick={publishDrafts}
+                  disabled={pendingOperationsCount === 0}
+                  className="flex-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  <Upload size={12} />
+                  Veröffentlichen
+                </button>
+                <button
+                  onClick={() => {
+                    if (pendingOperationsCount === 0) return;
+                    if (confirm(`${pendingOperationsCount} Änderungen verwerfen?`)) {
+                      discardDrafts();
+                    }
+                  }}
+                  disabled={pendingOperationsCount === 0}
+                  className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  <X size={12} />
+                  Verwerfen
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
