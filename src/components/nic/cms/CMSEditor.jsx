@@ -45,26 +45,8 @@ const CMSEditor = () => {
     activeBlock,
     mode,
     setMode,
-    selectBlock,
-    deselectAllBlocks,
-    updateBlock,
-    deleteBlock,
-    duplicateBlock,
-    containerSize,
     setContainerSize,
-    layoutSettings,
-    gridEnabled,
-    gridSize,
-    snapToGrid,
-    showGrid,
-    snapToElements,
-    setGridEnabled,
-    setGridSize,
-    setSnapToGrid,
-    setShowGrid,
-    setSnapToElements,
     selectedBlock,
-    setSelectedBlock
   } = useCMS();
 
   const containerRef = useRef(null);
@@ -179,7 +161,7 @@ const CMSEditor = () => {
       {/* Sidebar */}
       {mode !== 'preview' && <Sidebar />}
 
-      {selectedBlock && <DetailSideBar/>}
+      {selectedBlock && mode !== 'preview' && <DetailSideBar />}
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>

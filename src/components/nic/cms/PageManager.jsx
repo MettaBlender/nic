@@ -8,7 +8,6 @@ const PageManager = () => {
   const {
     pages,
     currentPage,
-    setCurrentPage,
     selectPage,
     createPage,
     updatePage,

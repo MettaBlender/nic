@@ -48,7 +48,18 @@ export const CMSProvider = ({ children }) => {
   }, []);
 
   // Blöcke Management mit intelligentem Batching
-  const [blocks, setBlocks] = useState([]);
+  const [blocks, setBlocks] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('blocks');
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [pendingOperations, setPendingOperations] = useState(new Map());
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
@@ -193,7 +204,7 @@ export const CMSProvider = ({ children }) => {
                 text_color: block.text_color || '#000000',
                 z_index: typeof block.z_index === 'number' ? block.z_index : 1
               }));
-              setBlocks(validBlocks);
+              // setBlocks(validBlocks);
               console.log(`✅ Loaded ${validBlocks.length} blocks for page ${homePage.id}`);
             }
           }
@@ -280,6 +291,8 @@ export const CMSProvider = ({ children }) => {
       console.warn(`⚠️ Switching pages with ${pendingOperations.size} unsaved changes. Consider saving first.`);
     }
 
+    console.log('Clearing current blocks and pending operations', blocks);
+
     // Clear current state
     setBlocks([]);
     setPendingOperations(new Map());
@@ -287,6 +300,7 @@ export const CMSProvider = ({ children }) => {
     setDraftChanges([]);
 
     // Set new page
+    console.log('Setting current page to:', page);
     setCurrentPage(page);
 
     // Load blocks for new page
@@ -796,6 +810,30 @@ export const CMSProvider = ({ children }) => {
   useEffect(() => {
     loadComponents();
   }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (typeof window === 'undefined') return;
+
+      switch (e.key) {
+        case 'blocks':
+          setBlocks(e.newValue ? JSON.parse(e.newValue) : []);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Synchronisiere States mit localStorage bei Änderungen
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('blocks', JSON.stringify(blocks));
+    }
+  }, [blocks]);
 
   const value = {
     pages,
