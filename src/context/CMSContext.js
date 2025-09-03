@@ -281,28 +281,12 @@ export const CMSProvider = ({ children }) => {
   const loadLayoutSettings = useCallback(async () => {
     try {
       console.log('🎨 Loading layout settings...');
-
-      // Versuche zuerst aus localStorage zu laden (ungespeicherte Änderungen)
-      if (typeof window !== 'undefined') {
-        const layoutKey = `layout_settings_${currentPage?.id || 'global'}`;
-        const storedLayout = localStorage.getItem(layoutKey);
-        if (storedLayout) {
-          const parsedLayout = JSON.parse(storedLayout);
-          setLayoutSettings(parsedLayout);
-          setPendingLayoutChanges(parsedLayout);
-          setSaveStatus('dirty');
-          console.log('✅ Layout settings loaded from localStorage');
-          return;
-        }
-      }
-
-      // Fallback: Lade von API
       const response = await fetch('/api/cms/layout');
       if (response.ok) {
         const data = await response.json();
         if (data) {
           setLayoutSettings(data);
-          console.log('✅ Layout settings loaded from API');
+          console.log('✅ Layout settings loaded');
         }
       } else {
         console.warn('⚠️ Could not load layout settings, using defaults');
@@ -310,7 +294,7 @@ export const CMSProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Error loading layout settings:', error);
     }
-  }, [currentPage]);
+  }, []);
 
   // Load blocks for a specific page
   const loadBlocks = useCallback(async (pageId) => {
@@ -680,9 +664,6 @@ export const CMSProvider = ({ children }) => {
   const updateLayoutSettings = useCallback((newSettings) => {
     console.log('🎨 Updating layout settings:', Object.keys(newSettings));
 
-    // Speichere aktuelle Layout-Einstellungen für Undo
-    saveStateToHistory();
-
     // Aktualisiere lokalen State sofort für sofortiges Feedback
     setLayoutSettings(prev => ({ ...prev, ...newSettings }));
 
@@ -690,7 +671,7 @@ export const CMSProvider = ({ children }) => {
     setPendingLayoutChanges(newSettings);
     setSaveStatus('dirty');
 
-    // Speichere Layout-Änderung in localStorage
+    // Speichere Draft-Änderung in localStorage
     const draftChange = {
       id: Date.now(),
       type: 'layout',
@@ -704,13 +685,7 @@ export const CMSProvider = ({ children }) => {
       saveSingleBlockChange(draftChange);
       return updated;
     });
-
-    // Speichere Layout-Änderungen sofort im localStorage
-    if (typeof window !== 'undefined') {
-      const layoutKey = `layout_settings_${currentPage?.id || 'global'}`;
-      localStorage.setItem(layoutKey, JSON.stringify(newSettings));
-    }
-  }, [currentPage, saveStateToHistory]);
+  }, []);
 
   // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
   const publishDrafts = useCallback(async () => {
@@ -837,12 +812,6 @@ export const CMSProvider = ({ children }) => {
       setDraftChanges([]);
       clearDraftChanges();
 
-      // Lösche gespeicherte Layout-Änderungen aus localStorage
-      if (typeof window !== 'undefined' && hasLayoutChanges) {
-        const layoutKey = `layout_settings_${currentPage?.id || 'global'}`;
-        localStorage.removeItem(layoutKey);
-      }
-
       console.log(`✅ Successfully published all changes`);
 
     } catch (error) {
@@ -861,19 +830,13 @@ export const CMSProvider = ({ children }) => {
       loadBlocks(currentPage.id);
     }
 
-    // Lade Layout-Einstellungen neu (löscht ungespeicherte Änderungen)
+    // Lade Layout-Einstellungen neu
     loadLayoutSettings();
 
     // Bereinige alle Pending-Änderungen
     setPendingOperations(new Map());
     setPendingLayoutChanges(null);
     setSaveStatus('saved');
-
-    // Lösche Layout-Änderungen aus localStorage
-    if (typeof window !== 'undefined') {
-      const layoutKey = `layout_settings_${currentPage?.id || 'global'}`;
-      localStorage.removeItem(layoutKey);
-    }
 
     // Lösche Draft-Änderungen aus localStorage
     setDraftChanges([]);

@@ -222,7 +222,7 @@ export default async function PublicPage({ params }) {
           <div
             className="w-full h-full relative grid grid-rows-12 gap-2 p-4"
             style={{
-              gridTemplateRows: `repeat(${page.rows || nicConfig.grid.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
+              gridTemplateRows: `repeat(${nicConfig.grid.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
               gridTemplateColumns: `repeat(${nicConfig.grid.columns}, minmax(0, 1fr))`
             }}
           >

@@ -150,6 +150,17 @@ export default function Components() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-accent">
+        <h2 className="text-xl font-semibold text-foreground text-center">
+          Block Bibliothek
+        </h2>
+        {currentPage && (
+          <p className="text-sm text-gray-300 text-center mt-1">
+            Aktuelle Seite: {currentPage.title}
+          </p>
+        )}
+      </div>
 
       {/* Component Categories */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">

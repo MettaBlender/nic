@@ -4,7 +4,7 @@
  * Verwaltet das Grid-Layout, Drag & Drop und Block-Positionierung
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import nicConfig from '../../nic.config.js';
 import { useCMS } from '@/context/CMSContext.js';
 import { hexToHsl, hslToHex } from '@/utils/colorFunctions.jsx';
@@ -156,37 +156,6 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
     setCurrentPage(prev => ({ ...prev, rows: prev.rows + count }));
   }, []);
 
-  // Reduziere Grid um Reihen (nur die unterste Zeile, nur wenn leer)
-  const removeRows = useCallback((blocks = []) => {
-    const { columns } = calculateGridDimensions();
-
-    // Prüfe ob die unterste Zeile leer ist
-    const lastRow = currentPage.rows - 1;
-    const isLastRowEmpty = !blocks.some(block => {
-      const blockRow = block.grid_row || 0;
-      const blockHeight = block.grid_height || 1;
-      return blockRow <= lastRow && blockRow + blockHeight > lastRow;
-    });
-
-    if (isLastRowEmpty && currentPage.rows > 1) {
-      const newRows = Math.max(1, currentPage.rows - 1);
-      setCurrentPage(prev => ({ ...prev, rows: newRows }));
-
-      // Aktualisiere die Zeilenanzahl in der Datenbank
-      if (typeof window !== 'undefined') {
-        fetch(`/api/cms/pages/${currentPage.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: currentPage.title, slug: currentPage.slug, rows: newRows })
-        }).catch(error => console.error('Fehler beim Aktualisieren der Zeilenanzahl:', error));
-      }
-
-      return true;
-    }
-
-    return false;
-  }, [calculateGridDimensions, currentPage.rows, currentPage.id, currentPage.title, currentPage.slug]);
-
   // Drag & Drop Funktionen
   const startDrag = useCallback((block, sourceType = 'grid') => {
     setIsDragging(true);
@@ -298,7 +267,6 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
     isPositionAvailable,
     findAvailablePosition,
     addRows,
-    removeRows,
 
     // Drag & Drop
     isDragging,
