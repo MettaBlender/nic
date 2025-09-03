@@ -664,28 +664,42 @@ export const CMSProvider = ({ children }) => {
   const updateLayoutSettings = useCallback((newSettings) => {
     console.log('🎨 Updating layout settings:', Object.keys(newSettings));
 
+    // Check if settings actually changed to prevent unnecessary updates
+    const hasChanges = Object.keys(newSettings).some(key =>
+      layoutSettings[key] !== newSettings[key]
+    );
+
+    if (!hasChanges) {
+      console.log('No layout changes detected, skipping update');
+      return;
+    }
+
     // Aktualisiere lokalen State sofort für sofortiges Feedback
-    setLayoutSettings(prev => ({ ...prev, ...newSettings }));
+    setLayoutSettings(prev => {
+      const updated = { ...prev, ...newSettings };
 
-    // Markiere als pending für späteren Batch-Upload
-    setPendingLayoutChanges(newSettings);
-    setSaveStatus('dirty');
+      // Markiere als pending für späteren Batch-Upload nur wenn sich was geändert hat
+      setPendingLayoutChanges(newSettings);
+      setSaveStatus('dirty');
 
-    // Speichere Draft-Änderung in localStorage
-    const draftChange = {
-      id: Date.now(),
-      type: 'layout',
-      data: newSettings,
-      timestamp: Date.now()
-    };
+      // Speichere Draft-Änderung in localStorage
+      const draftChange = {
+        id: Date.now(),
+        type: 'layout',
+        data: newSettings,
+        timestamp: Date.now()
+      };
 
-    setDraftChanges(prev => {
-      const filtered = prev.filter(change => change.type !== 'layout');
-      const updated = [...filtered, draftChange];
-      saveSingleBlockChange(draftChange);
+      setDraftChanges(prev => {
+        const filtered = prev.filter(change => change.type !== 'layout');
+        const updatedDrafts = [...filtered, draftChange];
+        saveSingleBlockChange(draftChange);
+        return updatedDrafts;
+      });
+
       return updated;
     });
-  }, []);
+  }, [layoutSettings]);
 
   // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
   const publishDrafts = useCallback(async () => {

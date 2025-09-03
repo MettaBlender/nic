@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import { HexAlphaColorPicker } from 'react-colorful';
 import { Palette, Upload, Monitor } from 'lucide-react';
@@ -16,6 +16,7 @@ const LayoutSettings = () => {
     secondary_color: '#64748b'
   });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
+  const debounceTimeoutsRef = useRef({});
 
   // Verfügbare Header/Footer Komponenten
   const headerComponents = [
@@ -29,7 +30,7 @@ const LayoutSettings = () => {
   ];
 
   useEffect(() => {
-    if (layoutSettings) {
+    if (layoutSettings && JSON.stringify(layoutSettings) !== JSON.stringify(localSettings)) {
       setLocalSettings(layoutSettings);
     }
   }, [layoutSettings]);
@@ -44,9 +45,35 @@ const LayoutSettings = () => {
   };
 
   const handleColorChange = (key, color) => {
-    const updatedSettings = { ...localSettings, [key]: color };
-    handleUpdateSettings(updatedSettings);
+    // Validate color value
+    if (!color || typeof color !== 'string') {
+      console.warn('Invalid color value provided:', color);
+      return;
+    }
+
+    // Update local state immediately for responsive UI
+    setLocalSettings(prev => ({ ...prev, [key]: color }));
+
+    // Clear existing timeout for this key
+    if (debounceTimeoutsRef.current[key]) {
+      clearTimeout(debounceTimeoutsRef.current[key]);
+    }
+
+    // Debounce the API call to prevent too many updates
+    debounceTimeoutsRef.current[key] = setTimeout(() => {
+      updateLayoutSettings({ [key]: color });
+      delete debounceTimeoutsRef.current[key];
+    }, 300); // 300ms debounce
   };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimeoutsRef.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
+    };
+  }, []);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -123,7 +150,7 @@ const LayoutSettings = () => {
                 <button
                   onClick={() => setActiveColorPicker(activeColorPicker === 'background' ? null : 'background')}
                   className="w-10 h-10 border-2 border-gray-300 rounded-md flex items-center justify-center hover:border-gray-400"
-                  style={{ backgroundColor: localSettings.background_color }}
+                  style={{ backgroundColor: localSettings.background_color || '#ffffff' }}
                 >
                   <Palette className="w-4 h-4 mix-blend-difference" />
                 </button>
@@ -139,7 +166,7 @@ const LayoutSettings = () => {
               {activeColorPicker === 'background' && (
                 <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
-                    color={localSettings.background_color}
+                    color={localSettings.background_color || '#ffffff'}
                     onChange={(color) => handleColorChange('background_color', color)}
                     className="w-full h-48"
                   />
@@ -205,7 +232,7 @@ const LayoutSettings = () => {
                 <button
                   onClick={() => setActiveColorPicker(activeColorPicker === 'primary' ? null : 'primary')}
                   className="w-10 h-10 border-2 border-gray-300 rounded-md flex items-center justify-center hover:border-gray-400"
-                  style={{ backgroundColor: localSettings.primary_color }}
+                  style={{ backgroundColor: localSettings.primary_color || '#3b82f6' }}
                 >
                   <Palette className="w-4 h-4 text-white mix-blend-difference" />
                 </button>
@@ -221,7 +248,7 @@ const LayoutSettings = () => {
               {activeColorPicker === 'primary' && (
                 <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
-                    color={localSettings.primary_color}
+                    color={localSettings.primary_color || '#3b82f6'}
                     onChange={(color) => handleColorChange('primary_color', color)}
                     className="w-full h-48"
                   />
@@ -238,7 +265,7 @@ const LayoutSettings = () => {
                 <button
                   onClick={() => setActiveColorPicker(activeColorPicker === 'secondary' ? null : 'secondary')}
                   className="w-10 h-10 border-2 border-gray-300 rounded-md flex items-center justify-center hover:border-gray-400"
-                  style={{ backgroundColor: localSettings.secondary_color }}
+                  style={{ backgroundColor: localSettings.secondary_color || '#64748b' }}
                 >
                   <Palette className="w-4 h-4 text-white mix-blend-difference" />
                 </button>
@@ -254,7 +281,7 @@ const LayoutSettings = () => {
               {activeColorPicker === 'secondary' && (
                 <div className="mt-3 p-3 border border-accent rounded-lg bg-gray-50">
                   <HexAlphaColorPicker
-                    color={localSettings.secondary_color}
+                    color={localSettings.secondary_color || '#64748b'}
                     onChange={(color) => handleColorChange('secondary_color', color)}
                     className="w-full h-48"
                   />
@@ -270,7 +297,7 @@ const LayoutSettings = () => {
           <div
             className="w-full h-32 rounded-md border border-gray-300 relative overflow-hidden"
             style={{
-              backgroundColor: localSettings.background_color,
+              backgroundColor: localSettings.background_color || '#ffffff',
               backgroundImage: localSettings.background_image ? `url(${localSettings.background_image})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
@@ -279,13 +306,13 @@ const LayoutSettings = () => {
             <div className="absolute top-2 left-2 right-2 flex justify-between">
               <div
                 className="px-3 py-1 rounded text-white text-sm"
-                style={{ backgroundColor: localSettings.primary_color }}
+                style={{ backgroundColor: localSettings.primary_color || '#3b82f6' }}
               >
                 Primär
               </div>
               <div
                 className="px-3 py-1 rounded text-white text-sm"
-                style={{ backgroundColor: localSettings.secondary_color }}
+                style={{ backgroundColor: localSettings.secondary_color || '#64748b' }}
               >
                 Sekundär
               </div>

@@ -1,5 +1,11 @@
 // Funktion zum Konvertieren eines Hex-Codes in RGB
 export function hexToRgb(hex) {
+  // Handle null, undefined, or invalid hex values
+  if (!hex || typeof hex !== 'string') {
+    console.warn('Invalid hex color provided to hexToRgb:', hex);
+    return { r: 255, g: 255, b: 255 }; // Default to white
+  }
+
   // Entferne # und konvertiere Kurzform (z. B. #FFF) in Langform
   hex = hex.replace(/^#/, '');
   if (hex.length === 3) {
@@ -8,6 +14,13 @@ export function hexToRgb(hex) {
       .map((c) => c + c)
       .join('');
   }
+
+  // Validate hex format
+  if (hex.length !== 6 || !/^[0-9A-Fa-f]{6}$/.test(hex)) {
+    console.warn('Invalid hex format provided to hexToRgb:', hex);
+    return { r: 255, g: 255, b: 255 }; // Default to white
+  }
+
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
@@ -85,6 +98,12 @@ export function rgbToHsl(r, g, b) {
 
 // Konvertiert Hex in HSL
 export function hexToHsl(hex) {
+  // Handle null, undefined, or invalid hex values
+  if (!hex || typeof hex !== 'string') {
+    console.warn('Invalid hex color provided to hexToHsl:', hex);
+    return { h: 0, s: 0, l: 100 }; // Default to white in HSL
+  }
+
   const { r, g, b } = hexToRgb(hex);
   return rgbToHsl(r, g, b);
 }

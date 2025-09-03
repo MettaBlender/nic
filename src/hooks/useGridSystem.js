@@ -9,7 +9,7 @@ import nicConfig from '../../nic.config.js';
 import { useCMS } from '@/context/CMSContext.js';
 import { hexToHsl, hslToHex } from '@/utils/colorFunctions.jsx';
 
-export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
+export const useGridSystem = (containerSize = { width: 1200, height: 800 }, externalLayoutSettings = null) => {
   const [gridConfig, setGridConfig] = useState(nicConfig.grid);
   const [currentBreakpoint, setCurrentBreakpoint] = useState('desktop');
   const [gridRows, setGridRows] = useState(nicConfig.grid.minRows);
@@ -18,7 +18,10 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
   const [dropZone, setDropZone] = useState(null);
   const {currentPage, setCurrentPage} = useCMS();
   const {mode} = useCMS();
-  const {layoutSettings} = useCMS();
+  const {layoutSettings: contextLayoutSettings} = useCMS();
+
+  // Use external layout settings if provided, otherwise use context
+  const layoutSettings = externalLayoutSettings || contextLayoutSettings;
 
   // Berechne Grid-Dimensionen basierend auf Container-Größe
   const calculateGridDimensions = useCallback(() => {
@@ -210,7 +213,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
         backgroundPosition: `4px 4px`
       };
     }
-  }, [calculateGridDimensions, mode]);
+  }, [calculateGridDimensions, mode, layoutSettings]);
 
   // Style-Generator für Grid-Blöcke
   const getBlockStyle = useCallback((block) => {

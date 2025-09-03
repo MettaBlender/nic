@@ -254,7 +254,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 };
 
 const GridCanvas = () => {
-  const { blocks, updateBlock, deleteBlock, createBlock, mode } = useCMS();
+  const { blocks, updateBlock, deleteBlock, createBlock, mode, layoutSettings } = useCMS();
   const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
@@ -344,7 +344,7 @@ const GridCanvas = () => {
     addRows,
     startDrag,
     getBlockStyle
-  } = useGridSystem(containerSize);
+  } = useGridSystem(containerSize, layoutSettings);
 
   // Create gridSystem object to pass to components
   const gridSystem = {

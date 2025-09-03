@@ -141,10 +141,15 @@ export default async function PublicPage({ params }) {
       notFound();
     }
 
+    console.log('📊 Seite geladen:', { title: page.title, rows: page.rows });
+
     const [blocks, layoutSettings] = await Promise.all([
       getBlocks(page.id),
       getLayoutSettings()
     ]);
+
+    console.log('🎨 Layout-Einstellungen geladen:', layoutSettings);
+    console.log('📦 Blöcke geladen:', blocks.length, 'für', page.rows || 12, 'Zeilen');
 
     // Header und Footer Komponenten basierend auf Layout-Einstellungen
     // Mapping der Layout-Einstellung zu Komponenten-Namen
@@ -175,6 +180,8 @@ export default async function PublicPage({ params }) {
     // Debug: Zeige geladene Komponenten in der Konsole
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 DEBUG: Layout-Einstellungen geladen:', layoutSettings);
+      console.log('🔍 DEBUG: Seiten-Zeilen:', page.rows || 12, '(Fallback: 12)');
+      console.log('🔍 DEBUG: Hintergrundfarbe:', layoutSettings.background_color || '#ffffff');
       console.log('🔍 DEBUG: Geladene Block-Komponenten:', Object.keys(blockComponents));
       console.log('🔍 DEBUG: Geladene Header-Komponenten:', Object.keys(headerComponents));
       console.log('🔍 DEBUG: Geladene Footer-Komponenten:', Object.keys(footerComponents));
@@ -203,7 +210,8 @@ export default async function PublicPage({ params }) {
           backgroundAttachment: 'fixed',
           // CSS-Variablen für Farbschema setzen
           '--primary-color': layoutSettings.primary_color || '#3b82f6',
-          '--secondary-color': layoutSettings.secondary_color || '#64748b'
+          '--secondary-color': layoutSettings.secondary_color || '#64748b',
+          '--background-color': layoutSettings.background_color || '#ffffff'
         }}
       >
         {/* Header */}
@@ -220,10 +228,13 @@ export default async function PublicPage({ params }) {
         {/* Main Content */}
         <main className="flex-1 relative">
           <div
-            className="w-full h-full relative grid grid-rows-12 gap-2 p-4"
+            className="w-full h-full relative"
             style={{
-              gridTemplateRows: `repeat(${nicConfig.grid.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
-              gridTemplateColumns: `repeat(${nicConfig.grid.columns}, minmax(0, 1fr))`
+              display: 'grid',
+              gridTemplateRows: `repeat(${page.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
+              gridTemplateColumns: `repeat(${nicConfig.grid.columns}, minmax(0, 1fr))`,
+              gap: `${nicConfig.grid.gap || 8}px`,
+              padding: '16px'
             }}
           >
             {/* Render Blocks im Grid System */}
