@@ -7,6 +7,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGridSystem } from '../../../hooks/useGridSystem';
 import { useCMS } from '../../../context/CMSContext';
 import dynamic from 'next/dynamic';
+import { remToPixels } from '@/utils/cmsFunctions';
 
 const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerRef, gridSystem, mode }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -54,7 +55,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   // Keyboard Navigation
   const handleKeyDown = useCallback((e) => {
-    if (!isSelected || mode === 'preview') return;
+    if (!isSelected || mode !== 'move') return;
 
     // Ensure current position values are valid numbers
     const currentCol = typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0;
@@ -101,14 +102,14 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   // Event Listener für Keyboard
   useEffect(() => {
-    if (isSelected && mode !== 'preview') {
+    if (isSelected && mode === 'move') {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
   }, [isSelected, handleKeyDown, mode]);
 
   const handleMouseDown = useCallback((e) => {
-    if (mode === 'preview') return; // Disable dragging in preview mode
+    if (mode !== 'move') return; // Disable dragging when not in move mode
     if (e.target.closest('.block-controls') || e.target.closest('button')) return;
 
     e.preventDefault();
@@ -194,7 +195,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
   const blockStyle = {
     ...gridSystem.getBlockStyle(block),
-    cursor: mode === 'preview' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+    cursor: mode !== 'move' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
     opacity: isDragging ? 0.7 : 1,
     border: (isSelected && mode !== 'preview') ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)',
     boxShadow: (isSelected && mode !== 'preview') ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
@@ -206,7 +207,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
     <div
       ref={blockRef}
       style={blockStyle}
-      onMouseDown={mode === 'preview' ? undefined : handleMouseDown}
+      onMouseDown={mode !== 'move' ? undefined : handleMouseDown}
       className="grid-block"
       data-block-id={block.id}
       tabIndex={isSelected ? 0 : -1} // Make focusable when selected
@@ -259,15 +260,23 @@ const GridCanvas = () => {
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
   const containerRef = useRef(null);
 
-  const {setSelectedBlock: setSelectedBlockCMS, loadComponents} = useCMS();
+  const {setSelectedBlock: setSelectedBlockCMS, selectedBlock: selectedBlockCMS, loadComponents, sidebarOpen} = useCMS();
 
   useEffect(() => {
     if (mode === 'preview') {
-      setContainerSize({ width: window.innerWidth - 15, height: window.innerHeight });
+      if(selectedBlockCMS != null) {
+        setContainerSize({ width: window.innerWidth - remToPixels(25), height: window.innerHeight });
+      } else {
+        setContainerSize({ width: window.innerWidth - remToPixels(1), height: window.innerHeight });
+      }
     } else {
-      setContainerSize({ width: 1200, height: 800 });
+      if(selectedBlockCMS != null) {
+        setContainerSize({ width: window.innerWidth - remToPixels(sidebarOpen ? 45 : 29), height: 800 });
+      } else {
+        setContainerSize({ width: window.innerWidth - remToPixels(sidebarOpen ? 21 : 5), height: 800 });
+      }
     }
-  }, [mode]);
+  }, [mode, selectedBlockCMS, sidebarOpen]);
 
   // Improved update function with save feedback
   const handleUpdateBlock = useCallback((id, data) => {

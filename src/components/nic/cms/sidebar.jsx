@@ -63,26 +63,28 @@ const Sidebar = () => {
         }`}
       >
         {/* Toggle Button */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-4 right-2 bg-background text-white p-2 rounded-md hover:bg-accent z-10"
-        >
-          {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-        </button>
+        <div className={`absolute top-4 left-0 flex items-center ${sidebarOpen ? 'w-80 justify-end pr-2' : 'w-16 justify-center'}`}>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="bg-background text-foreground p-2 rounded-md ring ring-transparent hover:bg-accent/10 hover:ring-accent z-10"
+          >
+            {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </button>
+        </div>
 
         {sidebarOpen ? (
           <div className="h-full flex flex-col">
             {/* Draft-Status und Aktionen */}
             <div className="p-4 pt-16 border-b border-accent">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-white text-sm font-medium">
+                <span className="text-foreground text-sm font-medium">
                   Draft-Änderungen: {pendingOperationsCount}
                 </span>
                 <div className="flex gap-1">
                   <button
                     onClick={undo}
                     disabled={undoHistory.length === 0}
-                    className="p-1 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
+                    className="p-1 text-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/20"
                     title="Rückgängig (Ctrl+Z)"
                   >
                     <RotateCcw size={14} />
@@ -90,7 +92,7 @@ const Sidebar = () => {
                   <button
                     onClick={redo}
                     disabled={redoHistory.length === 0}
-                    className="p-1 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800"
+                    className="p-1 text-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/20"
                     title="Wiederholen (Ctrl+Y)"
                   >
                     <RotateCw size={14} />
@@ -133,8 +135,8 @@ const Sidebar = () => {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === tab.id
-                          ? 'ring ring-accent bg-accent/10 text-white'
-                          : 'text-white ring ring-transparent hover:ring-accent'
+                          ? 'ring ring-accent bg-accent/10 text-foreground'
+                          : 'text-foreground ring ring-transparent hover:ring-accent'
                       }`}
                     >
                       <Icon size={16} />
@@ -165,8 +167,8 @@ const Sidebar = () => {
                     }}
                     className={`p-3 rounded-md transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-blue-600 text-white'
-                        : 'text-blue-100 hover:text-white hover:bg-blue-600'
+                        ? 'bg-accent/10 ring ring-accent text-foreground'
+                        : 'text-foreground ring ring-transparent hover:ring-accent cursor-pointer'
                     }`}
                     title={tab.label}
                   >
@@ -182,7 +184,7 @@ const Sidebar = () => {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-transparent bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import GridCanvas from './GridCanvas';
 import Sidebar from './sidebar';
-import { Play, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Settings } from 'lucide-react';
+import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DetailSideBar from './DetailSideBar';
 
@@ -191,6 +191,17 @@ const CMSEditor = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMode('move')}
+              className={`px-3 py-2 rounded-md flex items-center gap-2 ${
+                mode === 'move'
+                  ? 'bg-accent/10 text-foreground ring ring-accent'
+                  : 'bg-background text-foreground ring ring-accent/50 hover:ring-accent hover:bg-accent/10 cursor-pointer'
+              }`}
+            >
+              <Move size={16} />
+              Bewegen
+            </button>
             <button
               onClick={() => setMode('edit')}
               className={`px-3 py-2 rounded-md flex items-center gap-2 ${
