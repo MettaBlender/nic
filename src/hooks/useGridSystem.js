@@ -241,7 +241,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }) => {
         backgroundPosition: `4px 4px`
       };
     }
-  }, [calculateGridDimensions, mode]);
+  }, [calculateGridDimensions, mode, layoutSettings?.background_color]); // Nur background_color als Dependency
 
   // Style-Generator für Grid-Blöcke
   const getBlockStyle = useCallback((block) => {

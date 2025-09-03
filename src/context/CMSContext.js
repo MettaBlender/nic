@@ -55,6 +55,9 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  // Ursprüngliche Block-Positionen aus der Datenbank (für Vergleich)
+  const [originalBlockPositions, setOriginalBlockPositions] = useState(new Map());
+
   // Hilfsfunktion zum Speichern des aktuellen Zustands - NACH blocks Deklaration
   const saveStateToHistory = useCallback(() => {
     const currentState = {
@@ -306,11 +309,31 @@ export const CMSProvider = ({ children }) => {
         }
       } else {
         console.warn('⚠️ Could not load layout settings, using defaults');
+        // Setze Default-Werte wenn nichts geladen werden kann
+        const defaultSettings = {
+          header_component: 'default',
+          footer_component: 'default',
+          background_color: '#ffffff',
+          background_image: null,
+          primary_color: '#3b82f6',
+          secondary_color: '#64748b'
+        };
+        setLayoutSettings(defaultSettings);
       }
     } catch (error) {
       console.error('❌ Error loading layout settings:', error);
+      // Bei Fehler auch Default-Werte setzen
+      const defaultSettings = {
+        header_component: 'default',
+        footer_component: 'default',
+        background_color: '#ffffff',
+        background_image: null,
+        primary_color: '#3b82f6',
+        secondary_color: '#64748b'
+      };
+      setLayoutSettings(defaultSettings);
     }
-  }, [currentPage]);
+  }, []); // Entferne currentPage Abhängigkeit um Loops zu vermeiden
 
   // Load blocks for a specific page
   const loadBlocks = useCallback(async (pageId) => {
@@ -341,6 +364,23 @@ export const CMSProvider = ({ children }) => {
         setBlocks(validBlocks);
         setPendingOperations(new Map());
         setSaveStatus('saved');
+
+        // Speichere ursprüngliche Positionen für Vergleich
+        const originalPositions = new Map();
+        validBlocks.forEach(block => {
+          originalPositions.set(block.id, {
+            grid_col: block.grid_col,
+            grid_row: block.grid_row,
+            grid_width: block.grid_width,
+            grid_height: block.grid_height,
+            background_color: block.background_color,
+            text_color: block.text_color,
+            z_index: block.z_index,
+            content: block.content
+          });
+        });
+        setOriginalBlockPositions(originalPositions);
+
         console.log(`✅ Loaded ${validBlocks.length} blocks for page ${pageId}`);
       } else {
         throw new Error(`HTTP ${response.status}`);
@@ -371,6 +411,7 @@ export const CMSProvider = ({ children }) => {
     setPendingOperations(new Map());
     setSaveStatus('saved');
     setDraftChanges([]);
+    setOriginalBlockPositions(new Map()); // Ursprüngliche Positionen zurücksetzen
 
     // Set new page
     console.log('Setting current page to:', page);
@@ -383,7 +424,11 @@ export const CMSProvider = ({ children }) => {
     } else {
       console.log('📦 No page selected, clearing blocks');
     }
-  }, [loadBlocks]); // Entferne pendingOperations.size aus Abhängigkeiten
+
+    // Load layout settings for new page
+    console.log(`🎨 Loading layout settings for page: ${page ? page.title : 'global'}`);
+    loadLayoutSettings();
+  }, [loadBlocks]); // Entferne loadLayoutSettings aus Dependencies um Loops zu vermeiden
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
@@ -558,6 +603,19 @@ export const CMSProvider = ({ children }) => {
       });
 
       console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with content:`, contentObject);
+
+      // Aktualisiere ursprüngliche Positionen für den neuen Block
+      setOriginalBlockPositions(prev => new Map(prev).set(blockId, {
+        grid_col: freePosition.col,
+        grid_row: freePosition.row,
+        grid_width: newBlock.grid_width,
+        grid_height: newBlock.grid_height,
+        background_color: newBlock.background_color,
+        text_color: newBlock.text_color,
+        z_index: newBlock.z_index,
+        content: newBlock.content
+      }));
+
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
@@ -569,50 +627,66 @@ export const CMSProvider = ({ children }) => {
   const updateBlock = useCallback((blockId, updates) => {
     console.log(`🔄 Updating block ${blockId}:`, Object.keys(updates));
 
-    // Prüfe ob Position-Updates vorgenommen wurden, die zur ursprünglichen Position zurückführen
-    if (updates.grid_col !== undefined || updates.grid_row !== undefined) {
-      const currentBlock = blocks.find(b => b.id === blockId);
-      if (currentBlock) {
-        // Finde die ursprüngliche Position aus pending operations oder dem aktuellen Block
-        const pendingOp = pendingOperations.get(blockId);
-        const originalBlock = pendingOp?.operation === 'update' ?
-          blocks.find(b => b.id === blockId) : currentBlock;
-
-        const originalCol = originalBlock?.grid_col || 0;
-        const originalRow = originalBlock?.grid_row || 0;
-        const newCol = updates.grid_col !== undefined ? updates.grid_col : currentBlock.grid_col;
-        const newRow = updates.grid_row !== undefined ? updates.grid_row : currentBlock.grid_row;
-
-        // Wenn Block zur ursprünglichen Position zurück verschoben wurde
-        if (newCol === originalCol && newRow === originalRow && pendingOp) {
-            console.log(`↩️ Block ${blockId} moved back to original position, removing pending updates`);
-
-            // Aktualisiere UI zur ursprünglichen Position zurück
-            setBlocks(prev => prev.map(block =>
-            block.id === blockId
-              ? { ...block, grid_col: originalCol, grid_row: originalRow, updated_at: new Date().toISOString() }
-              : block
-            ));
-          setPendingOperations(prev => {
-            const newOps = new Map(prev);
-            newOps.delete(blockId);
-            return newOps;
-          });
-
-          // Entferne auch Draft-Änderungen für diesen Block
-          setDraftChanges(prev => prev.filter(change => change.blockId !== blockId));
-
-          // Prüfe ob noch Änderungen vorhanden sind
-          const hasOtherChanges = Array.from(pendingOperations.keys()).some(id => id !== blockId) || pendingLayoutChanges !== null;
-          if (!hasOtherChanges) {
-            setSaveStatus('saved');
-          }
-          return;
-        }
-      }
+    const currentBlock = blocks.find(b => b.id === blockId);
+    if (!currentBlock) {
+      console.warn(`Block ${blockId} not found`);
+      return;
     }
-    // Sofort UI aktualisieren für responsive Feedback
+
+    // Hole ursprüngliche Position aus der Datenbank
+    const originalPosition = originalBlockPositions.get(blockId);
+    if (!originalPosition) {
+      console.warn(`No original position found for block ${blockId}`);
+      return;
+    }
+
+    // Prüfe ob alle Updates die ursprünglichen Werte wiederherstellen
+    const isReturningToOriginal = Object.keys(updates).every(key => {
+      if (key === 'updated_at') return true; // updated_at ignorieren
+      return updates[key] === originalPosition[key];
+    });
+
+    // Wenn alle Änderungen zur ursprünglichen Position zurückführen
+    if (isReturningToOriginal) {
+      console.log(`↩️ Block ${blockId} moved back to original position, removing pending updates`);
+
+      // Entferne aus pending operations
+      setPendingOperations(prev => {
+        const newOps = new Map(prev);
+        newOps.delete(blockId);
+        return newOps;
+      });
+
+      // Entferne aus draft changes
+      setDraftChanges(prev => prev.filter(change => change.blockId !== blockId));
+
+      // Setze Block auf ursprüngliche Position zurück
+      setBlocks(prev => prev.map(block =>
+        block.id === blockId
+          ? { ...block, ...originalPosition, updated_at: new Date().toISOString() }
+          : block
+      ));
+
+      // Aktualisiere selectedBlock falls es das gleiche ist
+      setSelectedBlock(prev => {
+        if (prev && prev.id === blockId) {
+          return { ...prev, ...originalPosition, updated_at: new Date().toISOString() };
+        }
+        return prev;
+      });
+
+      // Prüfe ob noch Änderungen vorhanden sind
+      const hasOtherChanges = Array.from(pendingOperations.keys()).some(id => id !== blockId) || pendingLayoutChanges !== null;
+      if (!hasOtherChanges) {
+        setSaveStatus('saved');
+      }
+      return;
+    }
+
+    // Normale Aktualisierung
     saveStateToHistory(); // Speichere Zustand für Undo
+
+    // Sofort UI aktualisieren für responsive Feedback
     setBlocks(prev => prev.map(block =>
       block.id === blockId
         ? { ...block, ...updates, updated_at: new Date().toISOString() }
@@ -627,32 +701,29 @@ export const CMSProvider = ({ children }) => {
       return prev;
     });
 
-    const currentBlock = blocks.find(b => b.id === blockId);
-    if (currentBlock) {
-      const updatedBlock = {
-        ...currentBlock,
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-      batchOperation(blockId, 'update', updatedBlock);
+    const updatedBlock = {
+      ...currentBlock,
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+    batchOperation(blockId, 'update', updatedBlock);
 
-      // Speichere Draft-Änderung in localStorage
-      const draftChange = {
-        id: Date.now(),
-        type: 'update',
-        blockId: blockId,
-        data: updates,
-        timestamp: Date.now()
-      };
+    // Speichere Draft-Änderung in localStorage
+    const draftChange = {
+      id: Date.now(),
+      type: 'update',
+      blockId: blockId,
+      data: updates,
+      timestamp: Date.now()
+    };
 
-      setDraftChanges(prev => {
-        const filtered = prev.filter(change => !(change.blockId === blockId && change.type === 'update'));
-        const updated = [...filtered, draftChange];
-        saveSingleBlockChange(draftChange);
-        return updated;
-      });
-    }
-  }, [blocks, batchOperation, saveStateToHistory]);
+    setDraftChanges(prev => {
+      const filtered = prev.filter(change => !(change.blockId === blockId && change.type === 'update'));
+      const updated = [...filtered, draftChange];
+      saveSingleBlockChange(draftChange);
+      return updated;
+    });
+  }, [blocks, batchOperation, saveStateToHistory, originalBlockPositions, pendingOperations, pendingLayoutChanges]);
 
   const deleteBlock = useCallback((blockId) => {
     console.log(`🗑️ Deleting block ${blockId}`);
@@ -660,6 +731,13 @@ export const CMSProvider = ({ children }) => {
     saveStateToHistory(); // Speichere Zustand für Undo
     setBlocks(prev => prev.filter(block => block.id !== blockId));
     batchOperation(blockId, 'delete', { id: blockId });
+
+    // Entferne ursprüngliche Position
+    setOriginalBlockPositions(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(blockId);
+      return newMap;
+    });
 
     // Speichere Draft-Änderung in localStorage
     const draftChange = {
@@ -679,12 +757,17 @@ export const CMSProvider = ({ children }) => {
   // Layout Settings Management
   const updateLayoutSettings = useCallback((newSettings) => {
     console.log('🎨 Updating layout settings:', Object.keys(newSettings));
+    console.log('🎨 New settings:', newSettings);
 
     // Speichere aktuelle Layout-Einstellungen für Undo
     saveStateToHistory();
 
     // Aktualisiere lokalen State sofort für sofortiges Feedback
-    setLayoutSettings(prev => ({ ...prev, ...newSettings }));
+    setLayoutSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      console.log('🎨 Updated layoutSettings state:', updated);
+      return updated;
+    });
 
     // Markiere als pending für späteren Batch-Upload
     setPendingLayoutChanges(newSettings);
@@ -709,6 +792,7 @@ export const CMSProvider = ({ children }) => {
     if (typeof window !== 'undefined') {
       const layoutKey = `layout_settings_${currentPage?.id || 'global'}`;
       localStorage.setItem(layoutKey, JSON.stringify(newSettings));
+      console.log('🎨 Saved to localStorage:', layoutKey, newSettings);
     }
   }, [currentPage, saveStateToHistory]);
 
@@ -808,6 +892,22 @@ export const CMSProvider = ({ children }) => {
 
               setBlocks(normalizedBlocks);
               console.log(`✅ Updated UI with ${normalizedBlocks.length} blocks from server`);
+
+              // Aktualisiere ursprüngliche Positionen nach erfolgreichem Publishing
+              const updatedOriginalPositions = new Map();
+              normalizedBlocks.forEach(block => {
+                updatedOriginalPositions.set(block.id, {
+                  grid_col: block.grid_col,
+                  grid_row: block.grid_row,
+                  grid_width: block.grid_width,
+                  grid_height: block.grid_height,
+                  background_color: block.background_color,
+                  text_color: block.text_color,
+                  z_index: block.z_index,
+                  content: block.content
+                });
+              });
+              setOriginalBlockPositions(updatedOriginalPositions);
             }
           } else if (promiseInfo.type === 'layout') {
             console.log(`✅ Layout settings updated:`, data);
@@ -878,7 +978,7 @@ export const CMSProvider = ({ children }) => {
     // Lösche Draft-Änderungen aus localStorage
     setDraftChanges([]);
     clearDraftChanges();
-  }, [currentPage, loadBlocks, loadLayoutSettings]);
+  }, [currentPage, loadBlocks]); // Entferne loadLayoutSettings aus Dependencies
 
   // Manuelles Speichern
   const saveNow = useCallback(async () => {
@@ -938,8 +1038,15 @@ export const CMSProvider = ({ children }) => {
     isLoading,
     saveStatus,
     lastSaveTime,
-    // Verbesserte Berechnung der ausstehenden Änderungen
-    pendingOperationsCount: pendingOperations.size + (pendingLayoutChanges ? 1 : 0) + draftChanges.length,
+    // Verbesserte Berechnung der ausstehenden Änderungen (vermeidet Doppelzählung)
+    pendingOperationsCount: (() => {
+      const blockChanges = new Set(pendingOperations.keys());
+      const layoutChanges = pendingLayoutChanges ? 1 : 0;
+      const otherDraftChanges = draftChanges.filter(change =>
+        change.type !== 'update' || !blockChanges.has(change.blockId)
+      ).length;
+      return blockChanges.size + layoutChanges + otherDraftChanges;
+    })(),
 
     // Sidebar
     sidebarOpen,
@@ -978,7 +1085,7 @@ export const CMSProvider = ({ children }) => {
     duplicateBlock: () => {},
     containerSize: { width: 0, height: 0 },
     setContainerSize: () => {},
-    layoutSettings: {},
+    layoutSettings,
     gridEnabled: true,
     gridSize: 20,
     snapToGrid: true,
