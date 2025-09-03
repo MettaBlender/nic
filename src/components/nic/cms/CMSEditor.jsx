@@ -47,7 +47,6 @@ const CMSEditor = () => {
     setMode,
     setContainerSize,
     selectedBlock,
-    layoutSettings
   } = useCMS();
 
   const containerRef = useRef(null);
@@ -159,10 +158,6 @@ const CMSEditor = () => {
 
   return (
     <div className="w-full h-full flex">
-      {/* Debug: Layout Settings */}
-      {console.log('🎨 CMSEditor - Layout Settings:', layoutSettings)}
-      {console.log('🎨 CMSEditor - Background Color:', layoutSettings?.background_color)}
-
       {/* Sidebar */}
       {mode !== 'preview' && <Sidebar />}
 
@@ -226,19 +221,8 @@ const CMSEditor = () => {
         </div>
 
         {/* Grid Canvas */}
-        <div className="flex-1 w-full overflow-hidden">
-          <div
-            className="w-full h-full overflow-auto"
-            style={{
-              backgroundColor: layoutSettings?.background_color || '#ffffff',
-              backgroundImage: layoutSettings?.background_image ? `url(${layoutSettings.background_image})` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          >
-            <GridCanvas />
-          </div>
+        <div className="flex-1 w-full">
+          <GridCanvas />
         </div>
 
         {/* Status Bar */}

@@ -30,37 +30,22 @@ const LayoutSettings = () => {
 
   useEffect(() => {
     if (layoutSettings) {
-      console.log('🎨 LayoutSettings: Received layout settings:', layoutSettings);
       setLocalSettings(layoutSettings);
-    } else {
-      // Setze Default-Werte wenn keine Settings vorhanden
-      const defaultSettings = {
-        header_component: 'default',
-        footer_component: 'default',
-        background_color: '#ffffff',
-        background_image: null,
-        primary_color: '#3b82f6',
-        secondary_color: '#64748b'
-      };
-      console.log('🎨 LayoutSettings: Using default settings:', defaultSettings);
-      setLocalSettings(defaultSettings);
     }
   }, [layoutSettings]);
 
-  const handleColorChange = (key, color) => {
-    console.log(`🎨 Changing ${key} to ${color}`);
-    console.log('🎨 Current layoutSettings:', layoutSettings);
-
-    // Erstelle neue Settings ohne async/await um Loops zu vermeiden
-    const updatedSettings = { ...localSettings, [key]: color };
-
-    // Aktualisiere lokalen State sofort für UI-Feedback
+  const handleUpdateSettings = async (updatedSettings) => {
     setLocalSettings(updatedSettings);
+    try {
+      await updateLayoutSettings(updatedSettings);
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Einstellungen:', error);
+    }
+  };
 
-    // Aktualisiere globalen State - das löst automatisch Re-renders aus
-    updateLayoutSettings(updatedSettings);
-
-    console.log('🎨 Updated localSettings:', updatedSettings);
+  const handleColorChange = (key, color) => {
+    const updatedSettings = { ...localSettings, [key]: color };
+    handleUpdateSettings(updatedSettings);
   };
 
   const handleImageUpload = async (e) => {
@@ -71,14 +56,12 @@ const LayoutSettings = () => {
     // Für dieses Beispiel verwenden wir eine lokale URL
     const imageUrl = URL.createObjectURL(file);
     const updatedSettings = { ...localSettings, background_image: imageUrl };
-    setLocalSettings(updatedSettings);
-    updateLayoutSettings(updatedSettings);
+    handleUpdateSettings(updatedSettings);
   };
 
   const removeBackgroundImage = () => {
     const updatedSettings = { ...localSettings, background_image: null };
-    setLocalSettings(updatedSettings);
-    updateLayoutSettings(updatedSettings);
+    handleUpdateSettings(updatedSettings);
   };
 
   return (
@@ -99,11 +82,7 @@ const LayoutSettings = () => {
           <h3 className="text-lg font-medium mb-3">Header Komponente</h3>
           <select
             value={localSettings.header_component || 'default'}
-            onChange={(e) => {
-              const updatedSettings = { ...localSettings, header_component: e.target.value };
-              setLocalSettings(updatedSettings);
-              updateLayoutSettings(updatedSettings);
-            }}
+            onChange={(e) => handleUpdateSettings({ ...localSettings, header_component: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {headerComponents.map((comp) => (
@@ -119,11 +98,7 @@ const LayoutSettings = () => {
           <h3 className="text-lg font-medium mb-3">Footer Komponente</h3>
           <select
             value={localSettings.footer_component || 'default'}
-            onChange={(e) => {
-              const updatedSettings = { ...localSettings, footer_component: e.target.value };
-              setLocalSettings(updatedSettings);
-              updateLayoutSettings(updatedSettings);
-            }}
+            onChange={(e) => handleUpdateSettings({ ...localSettings, footer_component: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {footerComponents.map((comp) => (

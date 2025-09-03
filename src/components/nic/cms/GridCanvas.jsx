@@ -254,18 +254,13 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 };
 
 const GridCanvas = () => {
-  const { blocks, updateBlock, deleteBlock, createBlock, mode, layoutSettings } = useCMS();
+  const { blocks, updateBlock, deleteBlock, createBlock, mode } = useCMS();
   const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
   const containerRef = useRef(null);
 
   const {setSelectedBlock: setSelectedBlockCMS, selectedBlock: selectedBlockCMS, loadComponents, sidebarOpen} = useCMS();
-
-  // Force re-render when layout settings change (especially background color)
-  useEffect(() => {
-    console.log('🎨 GridCanvas: Layout settings changed, forcing re-render');
-  }, [layoutSettings?.background_color, layoutSettings?.background_image]);
 
   useEffect(() => {
     if (mode === 'preview') {
@@ -483,12 +478,7 @@ const GridCanvas = () => {
       width: '100%',
       height: '100%',
       overflow: 'auto',
-      position: 'relative',
-      backgroundColor: layoutSettings?.background_color || '#ffffff',
-      backgroundImage: layoutSettings?.background_image ? `url(${layoutSettings.background_image})` : 'none',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
+      position: 'relative'
     }}>
       {/* Grid Toolbar */}
       {mode !== 'preview' && <div className='bg-background sticky top-0 z-100 border-b border-accent px-2 py-6 flex gap-3 items-center'>
