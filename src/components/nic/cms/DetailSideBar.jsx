@@ -213,7 +213,7 @@ const DetailSideBar = () => {
             )}
 
             {/* Content Editor - Object Properties */}
-            <div className='bg-accent/10 p-3 rounded-lg'>
+            {componentDef?.options && Object.keys(componentDef.options).length > 0 && <div className='bg-accent/10 p-3 rounded-lg'>
               <div className='flex items-center justify-between mb-3'>
                 <h3 className='font-medium text-foreground'>Content Properties</h3>
                 {componentDef?.options && Object.keys(componentDef.options).length > 0 && (
@@ -391,7 +391,7 @@ const DetailSideBar = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         ) : (
           <div className='text-center text-gray-500 mt-8'>
