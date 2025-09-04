@@ -3,12 +3,14 @@ import { useCMS } from '@/context/CMSContext';
 
 const DetailSideBar = () => {
 
-  const {selectedBlock, setSelectedBlock, componentDefinitions, updateBlock, publishDrafts} = useCMS();
+  const {selectedBlock, setSelectedBlock, componentDefinitions, updateBlock} = useCMS();
 
   // State für Content als Objekt
   const [contentObject, setContentObject] = useState({});
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'success', 'error'
   const [saveMessage, setSaveMessage] = useState('');
+  const [newPropertyName, setNewPropertyName] = useState('');
+  const [newPropertyValue, setNewPropertyValue] = useState('');
 
   // Hole die Component-Definition für den ausgewählten Block
   const componentDef = selectedBlock ? componentDefinitions[selectedBlock.block_type] : null;
@@ -30,16 +32,25 @@ const DetailSideBar = () => {
         } else if (typeof selectedBlock.content === 'object' && selectedBlock.content !== null) {
           parsedContent = selectedBlock.content;
         } else {
-          // Fallback: verwende Default-Options als Basis
-          parsedContent = componentDef?.options || { text: '' };
+          // Fallback: leeres Objekt
+          parsedContent = {};
         }
       } catch (error) {
         console.warn('Could not parse content, using defaults:', error);
-        // Fallback: verwende Default-Options als Basis
-        parsedContent = componentDef?.options || { text: selectedBlock.content || '' };
+        // Bei Parsing-Fehlern: versuche als text zu interpretieren oder leeres Objekt
+        parsedContent = selectedBlock.content ? { text: selectedBlock.content } : {};
       }
 
-      setContentObject(parsedContent);
+      // Merge mit Default-Options aus Component-Definition
+      const defaultOptions = componentDef?.options || {};
+      const mergedContent = { ...defaultOptions, ...parsedContent };
+
+      // Entferne undefined/null Werte um sauberes Objekt zu haben
+      const cleanContent = Object.fromEntries(
+        Object.entries(mergedContent).filter(([key, value]) => value !== undefined && value !== null)
+      );
+
+      setContentObject(cleanContent);
     } else {
       setContentObject({});
     }
@@ -53,16 +64,18 @@ const DetailSideBar = () => {
     }));
   };
 
-  // Neue Property hinzufügen
-  const addContentProperty = () => {
-    const key = prompt('Property name:');
-    if (key && key.trim()) {
-      updateContentProperty(key.trim(), '');
+  // Property hinzufügen
+  const addProperty = (key, defaultValue = '') => {
+    if (key && !contentObject.hasOwnProperty(key)) {
+      setContentObject(prev => ({
+        ...prev,
+        [key]: defaultValue
+      }));
     }
   };
 
   // Property entfernen
-  const removeContentProperty = (key) => {
+  const removeProperty = (key) => {
     setContentObject(prev => {
       const newObj = { ...prev };
       delete newObj[key];
@@ -70,33 +83,55 @@ const DetailSideBar = () => {
     });
   };
 
+  // Erkennung des Input-Typs basierend auf Wert und Key-Name
+  const getInputType = (key, value) => {
+    // Farb-Felder
+    if (key.toLowerCase().includes('color') || key.toLowerCase().includes('colour')) {
+      return 'color';
+    }
+
+    // URL/Link-Felder
+    if (key.toLowerCase().includes('url') || key.toLowerCase().includes('link') || key.toLowerCase().includes('href')) {
+      return 'url';
+    }
+
+    // E-Mail-Felder
+    if (key.toLowerCase().includes('email') || key.toLowerCase().includes('mail')) {
+      return 'email';
+    }
+
+    // Nummer-Felder
+    if ((key.toLowerCase().includes('width') || key.toLowerCase().includes('height') ||
+         key.toLowerCase().includes('size') || key.toLowerCase().includes('count') ||
+         key.toLowerCase().includes('number')) && !isNaN(value)) {
+      return 'number';
+    }
+
+    // Boolean-Felder (Checkbox)
+    if (typeof value === 'boolean' || value === 'true' || value === 'false') {
+      return 'checkbox';
+    }
+
+    // Lange Texte (Textarea)
+    if (typeof value === 'string' && (value.length > 50 || value.includes('\n') ||
+        key.toLowerCase().includes('text') || key.toLowerCase().includes('content') ||
+        key.toLowerCase().includes('description') || key.toLowerCase().includes('message'))) {
+      return 'textarea';
+    }
+
+    // Standard Text-Input
+    return 'text';
+  };
+
   // Content speichern
   const updateContent = async () => {
     if (!selectedBlock) return;
 
     setSaveStatus('saving');
-    setSaveMessage('Speichere in Datenbank...');
+    setSaveMessage('Speichere...');
 
     try {
       console.log('💾 Saving content to database...', contentObject);
-
-      // Option 1: Direkte API für Block-Update verwenden
-      const response = await fetch('/api/cms/update-block', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: JSON.stringify(contentObject),
-          id: selectedBlock.id
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Database update response:', result);
 
       // Aktualisiere auch lokalen State über CMSContext
       await updateBlock(selectedBlock.id, {
@@ -104,7 +139,7 @@ const DetailSideBar = () => {
       });
 
       setSaveStatus('success');
-      setSaveMessage('Erfolgreich in Datenbank gespeichert!');
+      setSaveMessage('Erfolgreich gespeichert!');
       console.log('✅ Content saved successfully to database:', contentObject);
 
       // Status nach 3 Sekunden zurücksetzen
@@ -127,7 +162,7 @@ const DetailSideBar = () => {
   };
 
   return (
-    <div className='w-96 h-[90dvh] fixed right-0 bottom-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
+    <div className='w-96 h-screen fixed right-0 bottom-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
       <div className='p-4'>
         <div className='flex items-center justify-between mb-4'>
           <h2 className='text-xl font-semibold'>Block Details</h2>
@@ -178,54 +213,119 @@ const DetailSideBar = () => {
             )}
 
             {/* Content Editor - Object Properties */}
-            {componentDef?.options && Object.keys(componentDef.options).length > 0 && <div className='bg-accent/10 p-3 rounded-lg'>
-              <h3 className='font-medium text-foreground mb-2'>Content Properties</h3>
+            <div className='bg-accent/10 p-3 rounded-lg'>
+              <div className='flex items-center justify-between mb-3'>
+                <h3 className='font-medium text-foreground'>Content Properties</h3>
+                {componentDef?.options && Object.keys(componentDef.options).length > 0 && (
+                  <div className='text-xs text-gray-400'>
+                    ({Object.keys(contentObject).length} von {Object.keys(componentDef.options).length} Feldern)
+                  </div>
+                )}
+              </div>
+
               <div className='space-y-3'>
                 {Object.keys(contentObject).length > 0 ? (
-                  Object.entries(contentObject).map(([key, value]) => (
-                    <div key={key} className='flex flex-col space-y-1'>
-                      <div className='flex items-center justify-between'>
-                        <label className='text-sm font-medium text-foreground'>{key}:</label>
-                      </div>
-                      {typeof value === 'string' ? (
-                        value.length > 50 ? (
+                  Object.entries(contentObject).map(([key, value]) => {
+                    const inputType = getInputType(key, value);
+                    const isFromOptions = componentDef?.options && componentDef.options.hasOwnProperty(key);
+
+                    return (
+                      <div key={key} className='flex flex-col space-y-1'>
+                        <div className='flex items-center justify-between'>
+                          <label className='text-sm font-medium text-foreground flex items-center gap-2'>
+                            {key}
+                            {isFromOptions && (
+                              <span className='text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded' title='Aus @options'>
+                                📋
+                              </span>
+                            )}
+                          </label>
+                          {!isFromOptions && (
+                            <button
+                              onClick={() => removeProperty(key)}
+                              className='text-xs text-red-500 hover:text-red-700'
+                              title='Property entfernen'
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {inputType === 'textarea' ? (
                           <textarea
-                            value={value}
+                            value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
                             onChange={(e) => updateContentProperty(key, e.target.value)}
                             className='w-full p-2 text-sm border border-gray-300 rounded resize-none'
                             rows={3}
                             placeholder={`Enter ${key}...`}
                           />
+                        ) : inputType === 'color' ? (
+                          <div className='flex items-center gap-2'>
+                            <input
+                              type="color"
+                              value={typeof value === 'string' ? value : '#ffffff'}
+                              onChange={(e) => updateContentProperty(key, e.target.value)}
+                              className='w-12 h-8 border border-gray-300 rounded cursor-pointer'
+                            />
+                            <input
+                              type="text"
+                              value={typeof value === 'string' ? value : ''}
+                              onChange={(e) => updateContentProperty(key, e.target.value)}
+                              className='flex-1 p-2 text-sm border border-gray-300 rounded'
+                              placeholder='#ffffff'
+                            />
+                          </div>
+                        ) : inputType === 'checkbox' ? (
+                          <label className='flex items-center gap-2 cursor-pointer'>
+                            <input
+                              type="checkbox"
+                              checked={value === true || value === 'true'}
+                              onChange={(e) => updateContentProperty(key, e.target.checked)}
+                              className='w-4 h-4'
+                            />
+                            <span className='text-sm text-gray-600'>
+                              {value === true || value === 'true' ? 'Aktiviert' : 'Deaktiviert'}
+                            </span>
+                          </label>
+                        ) : inputType === 'number' ? (
+                          <input
+                            type="number"
+                            value={typeof value === 'number' ? value : (parseFloat(value) || '')}
+                            onChange={(e) => updateContentProperty(key, parseFloat(e.target.value) || 0)}
+                            className='w-full p-2 text-sm border border-gray-300 rounded'
+                            placeholder={`Enter ${key}...`}
+                          />
+                        ) : typeof value === 'object' ? (
+                          <textarea
+                            value={JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              try {
+                                const parsed = JSON.parse(e.target.value);
+                                updateContentProperty(key, parsed);
+                              } catch {
+                                // Ungültiges JSON - lasse es als String
+                                updateContentProperty(key, e.target.value);
+                              }
+                            }}
+                            className='w-full p-2 text-sm border border-gray-300 rounded resize-none font-mono'
+                            rows={3}
+                            placeholder={`Enter ${key} (JSON)...`}
+                          />
                         ) : (
                           <input
-                            type="text"
-                            value={value}
+                            type={inputType}
+                            value={typeof value === 'string' ? value : String(value)}
                             onChange={(e) => updateContentProperty(key, e.target.value)}
                             className='w-full p-2 text-sm border border-gray-300 rounded'
                             placeholder={`Enter ${key}...`}
                           />
-                        )
-                      ) : (
-                        <textarea
-                          value={typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                          onChange={(e) => {
-                            try {
-                              const parsed = JSON.parse(e.target.value);
-                              updateContentProperty(key, parsed);
-                            } catch {
-                              updateContentProperty(key, e.target.value);
-                            }
-                          }}
-                          className='w-full p-2 text-sm border border-gray-300 rounded resize-none font-mono'
-                          rows={3}
-                          placeholder={`Enter ${key} (JSON)...`}
-                        />
-                      )}
-                    </div>
-                  ))
+                        )}
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className='text-gray-500 text-sm italic text-center py-4'>
-                    No content properties. Click "Add Property" to create one.
+                    Keine Content-Properties vorhanden.
                   </div>
                 )}
               </div>
@@ -265,7 +365,7 @@ const DetailSideBar = () => {
                         <span>Speichert...</span>
                       </div>
                     ) : (
-                      '💾 Save to Database'
+                      '💾 Save'
                     )}
                   </button>
                   <button
@@ -291,7 +391,7 @@ const DetailSideBar = () => {
                   </button>
                 </div>
               </div>
-            </div>}
+            </div>
           </div>
         ) : (
           <div className='text-center text-gray-500 mt-8'>

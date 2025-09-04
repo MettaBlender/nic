@@ -3,16 +3,16 @@ import React from 'react'
 /**
  * Einfacher Text Block für Inhalte
  * @icon 🤣
- * @width 3
- * @height 2
+ * @width 2
+ * @height 1
  * @options {
- *  text: "Lorem ipsum dolor sit amet"
+ *  text: "Lorem ipsum dolor sit amet",
+ *  background_color: "#ffffff",
+ *  Aaron: "Aaron Component"
  * }
  */
 
 const Aaron = ({content}) => {
-
-  console.log('Aaron content:', content);
 
   // Parse content zu Objekt falls es ein String ist
   let contentObj = {};
@@ -32,7 +32,7 @@ const Aaron = ({content}) => {
       <div className='text-lg font-semibold text-gray-800 mb-2'>
         🤣 Aaron Component
       </div>
-      <div className='text-gray-600'>
+      <div className='text-gray-600' style={{backgroundColor: contentObj.background_color || 'transparent'}}>
         {contentObj.text || 'No text content'}
       </div>
       {/* Debug Info */}
