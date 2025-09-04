@@ -127,7 +127,7 @@ const DetailSideBar = () => {
   };
 
   return (
-    <div className='w-96 h-screen fixed right-0 top-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
+    <div className='w-96 h-[90dvh] fixed right-0 bottom-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
       <div className='p-4'>
         <div className='flex items-center justify-between mb-4'>
           <h2 className='text-xl font-semibold'>Block Details</h2>
@@ -142,9 +142,9 @@ const DetailSideBar = () => {
         {selectedBlock ? (
           <div className='space-y-6'>
             {/* Block Info */}
-            <div className='bg-gray-50 p-3 rounded-lg'>
-              <h3 className='font-medium text-black mb-2'>Block Information</h3>
-              <div className='text-sm text-gray-700 space-y-1'>
+            <div className='bg-accent/10   p-3 rounded-lg'>
+              <h3 className='font-medium text-foreground mb-2'>Block Information</h3>
+              <div className='text-sm text-foreground space-y-1'>
                 <div><strong>Type:</strong> {selectedBlock.block_type}</div>
                 <div><strong>ID:</strong> {selectedBlock.id}</div>
                 <div><strong>Position:</strong> ({selectedBlock.grid_col}, {selectedBlock.grid_row})</div>
@@ -154,9 +154,9 @@ const DetailSideBar = () => {
 
             {/* Component Definition */}
             {componentDef && (
-              <div className='bg-blue-50 p-3 rounded-lg'>
-                <h3 className='font-medium text-black mb-2'>Component Definition</h3>
-                <div className='text-sm text-gray-700 space-y-1'>
+              <div className='bg-accent/10 p-3 rounded-lg'>
+                <h3 className='font-medium text-foreground mb-2'>Component Definition</h3>
+                <div className='text-sm text-foreground space-y-1'>
                   <div><strong>Name:</strong> {componentDef.name}</div>
                   <div><strong>Icon:</strong> {componentDef.icon}</div>
                   <div><strong>Category:</strong> {componentDef.category}</div>
@@ -169,23 +169,23 @@ const DetailSideBar = () => {
 
             {/* Default Options from Component Definition */}
             {componentDef?.options && Object.keys(componentDef.options).length > 0 && (
-              <div className='bg-green-50 p-3 rounded-lg'>
-                <h3 className='font-medium text-black mb-2'>Default Options (from @options)</h3>
-                <pre className='text-xs text-gray-700 bg-white p-2 rounded border overflow-x-auto'>
+              <div className='bg-accent/10 p-3 rounded-lg'>
+                <h3 className='font-medium text-foreground mb-2'>Default Options (from @options)</h3>
+                <pre className='text-xs text-foreground bg-background p-2 rounded border overflow-x-auto'>
                   {JSON.stringify(componentDef.options, null, 2)}
                 </pre>
               </div>
             )}
 
             {/* Content Editor - Object Properties */}
-            <div className='bg-yellow-50 p-3 rounded-lg'>
-              <h3 className='font-medium text-black mb-2'>Content Properties</h3>
+            {componentDef?.options && Object.keys(componentDef.options).length > 0 && <div className='bg-accent/10 p-3 rounded-lg'>
+              <h3 className='font-medium text-foreground mb-2'>Content Properties</h3>
               <div className='space-y-3'>
                 {Object.keys(contentObject).length > 0 ? (
                   Object.entries(contentObject).map(([key, value]) => (
                     <div key={key} className='flex flex-col space-y-1'>
                       <div className='flex items-center justify-between'>
-                        <label className='text-sm font-medium text-gray-700'>{key}:</label>
+                        <label className='text-sm font-medium text-foreground'>{key}:</label>
                       </div>
                       {typeof value === 'string' ? (
                         value.length > 50 ? (
@@ -291,32 +291,7 @@ const DetailSideBar = () => {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Full Block Data (Debug) */}
-            <details className='bg-gray-100 p-3 rounded-lg'>
-              <summary className='font-medium text-black cursor-pointer'>Full Block Data (Debug)</summary>
-              <div className='mt-2 space-y-2'>
-                <div>
-                  <strong>Original Content:</strong>
-                  <pre className='text-xs text-gray-700 bg-white p-2 rounded border overflow-x-auto'>
-                    {JSON.stringify(selectedBlock.content, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <strong>Parsed Content Object:</strong>
-                  <pre className='text-xs text-gray-700 bg-white p-2 rounded border overflow-x-auto'>
-                    {JSON.stringify(contentObject, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <strong>Full Block:</strong>
-                  <pre className='text-xs text-gray-700 bg-white p-2 rounded border overflow-x-auto'>
-                    {JSON.stringify(selectedBlock, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            </details>
+            </div>}
           </div>
         ) : (
           <div className='text-center text-gray-500 mt-8'>

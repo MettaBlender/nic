@@ -5,8 +5,6 @@ import {
   saveDraftChanges,
   loadDraftChanges,
   clearDraftChanges,
-  savePageBlockState,
-  loadPageBlockState,
   saveSingleBlockChange,
   cleanupOldDrafts
 } from '../utils/localStorageManager.js';
@@ -203,28 +201,6 @@ export const CMSProvider = ({ children }) => {
     };
   }, []);
 
-  // Auto-Save wenn Änderungen vorhanden - DEAKTIVIERT für jetzt um Loops zu vermeiden
-  // useEffect(() => {
-  //   const hasChanges = pendingOperations.size > 0 || pendingLayoutChanges !== null;
-
-  //   if (hasChanges && saveStatus === 'dirty') {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-
-  //     autoSaveTimeoutRef.current = setTimeout(() => {
-  //       console.log('🔄 Auto-saving pending changes...');
-  //       // Verwende eine separate Funktion um forward reference zu vermeiden
-  //       publishDrafts();
-  //     }, AUTOSAVE_DELAY);
-  //   }
-
-  //   return () => {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //   };
-  // }, [pendingOperations.size, pendingLayoutChanges, saveStatus]); // Entferne publishDrafts dependency  // Load pages from API
   const loadPages = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -310,6 +286,8 @@ export const CMSProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
 
+        console.log(`📦 Fetched ${JSON.stringify(data)} blocks from server for page ${pageId}`);
+
         // Validiere und normalisiere Block-Daten
         const validBlocks = data.map(block => ({
           ...block,
@@ -319,7 +297,16 @@ export const CMSProvider = ({ children }) => {
           grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
           background_color: block.background_color || 'transparent',
           text_color: block.text_color || '#000000',
-          z_index: typeof block.z_index === 'number' ? block.z_index : 1
+          z_index: typeof block.z_index === 'number' ? block.z_index : 1,
+          content: typeof block.content === 'string' ?
+            (() => {
+              try {
+          return JSON.parse(block.content);
+              } catch {
+          return {};
+              }
+            })() :
+            block.content || {},
         }));
 
         setBlocks(validBlocks);
