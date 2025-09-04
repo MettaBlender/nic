@@ -172,7 +172,7 @@ const CMSEditor = () => {
             <span className="text-sm text-gray-500">({currentPage.slug})</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${selectedBlock && mode !== 'preview' ? 'mr-96' : ''}`}>
             <button
               onClick={() => setMode('move')}
               className={`px-3 py-2 rounded-md flex items-center gap-2 ${

@@ -162,7 +162,7 @@ const DetailSideBar = () => {
   };
 
   return (
-    <div className='w-96 h-screen fixed right-0 bottom-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
+    <div className='w-96 h-screen fixed right-0 top-0 z-20 bg-background text-foreground border-3 border-r-0 rounded-l-xl  overflow-y-auto border-accent'>
       <div className='p-4'>
         <div className='flex items-center justify-between mb-4'>
           <h2 className='text-xl font-semibold'>Block Details</h2>
