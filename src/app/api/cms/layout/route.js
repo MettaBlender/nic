@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getLayoutSettings, updateLayoutSettings } from '@/lib/database';
 
+// Force dynamic API routes
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const settings = await getLayoutSettings();

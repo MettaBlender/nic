@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getPages, createPage } from '@/lib/database';
 
+// Force dynamic API routes
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     console.log('📄 Loading pages from SQL database...');

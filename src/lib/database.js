@@ -75,16 +75,60 @@ export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth
   return result[0]; // Vollständiges Block-Objekt zurückgeben
 }
 
-export async function updateBlock(id, gridCol, gridRow, gridWidth, gridHeight, content) {
-  const result = await sql`
-    UPDATE blocks SET
-      grid_col = ${gridCol}, grid_row = ${gridRow},
-      grid_width = ${gridWidth}, grid_height = ${gridHeight},
-      content = ${JSON.stringify(content)}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${id}
-    RETURNING *
-  `;
-  return result.length > 0;
+export async function updateBlock(id, blockData) {
+  console.log(`🔄 Updating block ${id} with data:`, blockData);
+
+  try {
+    // Extrahiere alle möglichen Felder aus blockData
+    const {
+      grid_col,
+      grid_row,
+      grid_width,
+      grid_height,
+      content,
+      block_type,
+      background_color,
+      text_color,
+      z_index
+    } = blockData;
+
+    // Alle Updates in einer Query mit NULL-safe updates
+    const result = await sql`
+      UPDATE blocks SET
+        grid_col = COALESCE(${grid_col}, grid_col),
+        grid_row = COALESCE(${grid_row}, grid_row),
+        grid_width = COALESCE(${grid_width}, grid_width),
+        grid_height = COALESCE(${grid_height}, grid_height),
+        content = COALESCE(${content ? JSON.stringify(content) : null}, content),
+        block_type = COALESCE(${block_type}, block_type),
+        background_color = COALESCE(${background_color}, background_color),
+        text_color = COALESCE(${text_color}, text_color),
+        z_index = COALESCE(${z_index}, z_index),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `;
+
+    if (result.length > 0) {
+      console.log(`✅ Block ${id} updated successfully in database:`, {
+        id: result[0].id,
+        position: `${result[0].grid_col},${result[0].grid_row}`,
+        size: `${result[0].grid_width}x${result[0].grid_height}`,
+        type: result[0].block_type,
+        background: result[0].background_color,
+        text_color: result[0].text_color,
+        z_index: result[0].z_index,
+        updated_at: result[0].updated_at
+      });
+      return result[0]; // Gib das aktualisierte Block-Objekt zurück
+    } else {
+      console.warn(`⚠️ No block found with ID ${id} to update`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`❌ Error updating block ${id}:`, error);
+    return null;
+  }
 }
 
 export async function deleteBlock(id) {

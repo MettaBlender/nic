@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getBlocksForPage, createBlock, deleteAllBlocksForPage } from '@/lib/database';
 
+// Force dynamic API routes
+export const dynamic = 'force-dynamic';
+
 // GET: Blöcke für eine bestimmte Seite laden
 export async function GET(request, { params }) {
   try {
