@@ -17,7 +17,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [dropZone, setDropZone] = useState(null);
   const {currentPage, setCurrentPage} = useCMS();
-  const {mode} = useCMS();
+  const {mode, blocks} = useCMS();
   const {layoutSettings: contextLayoutSettings} = useCMS();
 
   // Use external layout settings if provided, otherwise use context
@@ -159,6 +159,17 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
     setCurrentPage(prev => ({ ...prev, rows: prev.rows + count }));
   }, []);
 
+  const deleteLastRow = (count = 1) => {
+    const linecount = currentPage.rows;
+    for (let i in blocks) {
+      if (blocks[i].grid_row + blocks[i].grid_height -1 >= linecount - count) {
+        return;
+      }
+    }
+
+    setCurrentPage(prev => ({ ...prev, rows: Math.max(prev.rows - count, nicConfig.grid.minRows) }) );
+  };
+
   // Drag & Drop Funktionen
   const startDrag = useCallback((block, sourceType = 'grid') => {
     setIsDragging(true);
@@ -270,6 +281,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
     isPositionAvailable,
     findAvailablePosition,
     addRows,
+    deleteLastRow,
 
     // Drag & Drop
     isDragging,

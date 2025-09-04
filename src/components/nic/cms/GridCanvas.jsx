@@ -343,7 +343,8 @@ const GridCanvas = () => {
     dropZone,
     addRows,
     startDrag,
-    getBlockStyle
+    getBlockStyle,
+    deleteLastRow
   } = useGridSystem(containerSize, layoutSettings);
 
   // Create gridSystem object to pass to components
@@ -486,6 +487,12 @@ const GridCanvas = () => {
           className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
         >
           + Zeile hinzufügen
+        </button>
+        <button
+          onClick={() => deleteLastRow()}
+          className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
+        >
+          - letzte Zeile entfernen
         </button>
         <button
           onClick={async () => {
