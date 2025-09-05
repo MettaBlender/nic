@@ -47,8 +47,8 @@ const CMSEditor = () => {
     setMode,
     setContainerSize,
     selectedBlock,
-    deviceSize,
-    setDeviceSize,
+    currentBreakpoint,
+    setCurrentBreakpoint,
   } = useCMS();
 
   const containerRef = useRef(null);
@@ -175,8 +175,8 @@ const CMSEditor = () => {
           </div>
 
           <div className={`flex items-center gap-2 ${selectedBlock && mode !== 'preview' ? 'mr-96' : ''}`}>
-            <select className='px-3 py-2 rounded-md bg-background text-foreground ring ring-accent/50 hover:ring-accent cursor-pointer' onChange={(e) => setDeviceSize(e.target.value)} value={deviceSize}>
-              <option value="mobile">Mobil</option>
+            <select className='px-3 py-2 rounded-md bg-background text-foreground ring ring-accent/50 hover:ring-accent cursor-pointer' onChange={(e) => setCurrentBreakpoint(e.target.value)} value={currentBreakpoint}>
+              <option value="mobile">Mobile</option>
               <option value="tablet">Tablet</option>
               <option value="desktop">Desktop</option>
             </select>

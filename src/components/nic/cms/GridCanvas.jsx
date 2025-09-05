@@ -218,7 +218,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
         overflow: 'hidden'
       }}>
         {component ? (
-          <React.Suspense fallback={<div className="animate-pulse bg-gray-200 h-full rounded"></div>}>
+          <React.Suspense fallback={<div className="animate-pulse bg-background h-full rounded"></div>}>
             <component.Component
               content={block.content || ''}
               block_type={block.block_type || ''}
@@ -251,7 +251,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 };
 
 const GridCanvas = () => {
-  const { blocks, updateBlock, deleteBlock, createBlock, mode, layoutSettings } = useCMS();
+  const { blocks, updateBlock, deleteBlock, createBlock, mode, layoutSettings, currentBreakpoint } = useCMS();
   const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [saveStatus, setSaveStatus] = useState(''); // Status für Speicher-Feedback
@@ -260,15 +260,31 @@ const GridCanvas = () => {
   const {setSelectedBlock: setSelectedBlockCMS, selectedBlock: selectedBlockCMS, loadComponents, sidebarOpen} = useCMS();
 
   useEffect(() => {
+
+    let newContainer = {width: 0, height: 0};
+
     if (mode === 'preview') {
-      setContainerSize({ width: window.innerWidth - remToPixels(1), height: window.innerHeight });
+      newContainer = { width: window.innerWidth - remToPixels(1), height: window.innerHeight };
     } else {
       if(selectedBlockCMS != null) {
-        setContainerSize({ width: window.innerWidth - remToPixels(sidebarOpen ? 45 : 29), height: 800 });
+        newContainer = { width: window.innerWidth - remToPixels(sidebarOpen ? 45 : 29), height: 800 };
       } else {
-        setContainerSize({ width: window.innerWidth - remToPixels(sidebarOpen ? 21 : 5), height: 800 });
+        newContainer = { width: window.innerWidth - remToPixels(sidebarOpen ? 21 : 5), height: 800 };
       }
     }
+
+    switch (currentBreakpoint) {
+      case 'mobile':
+        newContainer = { ...newContainer, width: newContainer.width / 3 };
+        break;
+      case 'tablet':
+        newContainer = { ...newContainer, width: newContainer.width / 2 };
+        break;
+      default:
+        break;
+    }
+
+    setContainerSize(newContainer);
   }, [mode, selectedBlockCMS, sidebarOpen]);
 
   // Improved update function with save feedback
@@ -493,9 +509,9 @@ const GridCanvas = () => {
               alert('❌ Fehler beim Neuladen der Komponenten');
             }
           }}
-          className='bg-accent/10 hover:bg-background text-white ring ring-accent cursor-pointer rounded-md px-4 py-2'
+          className='bg-accent/10 hover:bg-background text-foreground ring ring-accent cursor-pointer rounded-md px-4 py-2'
         >
-          🔄 Komponenten neu laden
+          Komponenten neu laden
         </button>
 
         <button
