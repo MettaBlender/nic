@@ -40,9 +40,6 @@ function extractComponentInfo(filePath, fileName) {
         // Extrahiere den Inhalt zwischen den geschweiften Klammern
         let rawOptionsContent = optionsMatch[1];
 
-        // Debug: Zeige den rohen Inhalt
-        console.log(`📋 Raw @options content for ${fileName}:`, JSON.stringify(rawOptionsContent));
-
         // Bereinige die Kommentar-Syntax systematisch
         let cleanedContent = rawOptionsContent
           // Normalisiere Zeilenendings
@@ -59,17 +56,13 @@ function extractComponentInfo(filePath, fileName) {
           .join('\n')
           .trim();
 
-        console.log(`🧹 Cleaned @options content for ${fileName}:`, JSON.stringify(cleanedContent));
-
         // Baue valides JSON-Objekt zusammen
         let jsonString = `{${cleanedContent}}`;
 
         // Versuche zuerst direktes JSON-Parsing
         try {
           options = JSON.parse(jsonString);
-          console.log(`✅ Direct JSON parsing successful for ${fileName}:`, options);
         } catch (directError) {
-          console.log(`⚠️  Direct parsing failed for ${fileName}, trying relaxed parsing...`);
 
           // Fallback: Relaxed JSON-Parsing
           try {
@@ -80,26 +73,16 @@ function extractComponentInfo(filePath, fileName) {
               // Entferne trailing commas vor }
               .replace(/,(\s*})/g, '$1');
 
-            console.log(`🔧 Relaxed JSON for ${fileName}:`, relaxedJson);
-
             options = JSON.parse(relaxedJson);
-            console.log(`✅ Relaxed JSON parsing successful for ${fileName}:`, options);
 
           } catch (relaxedError) {
-            console.warn(`❌ All parsing attempts failed for ${fileName}`);
-            console.warn(`   Direct error:`, directError.message);
-            console.warn(`   Relaxed error:`, relaxedError.message);
-            console.warn(`   Final JSON string:`, jsonString);
             options = {};
           }
         }
 
       } catch (generalError) {
-        console.warn(`❌ General parsing error for ${fileName}:`, generalError.message);
         options = {};
       }
-    } else {
-      console.log(`ℹ️  No @options found for ${fileName}`);
     }
 
     return {

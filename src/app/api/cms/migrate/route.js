@@ -5,7 +5,6 @@ const sql = neon(process.env.NEON_DATABASE_URL);
 
 export async function POST() {
   try {
-    console.log('🔄 Starting database migration to grid schema...');
 
     // Schritt 1: Prüfe aktuellen Zustand
     const columnsCheck = await sql`
@@ -22,8 +21,6 @@ export async function POST() {
 
     const existingColumns = columnsCheck.map(row => row.column_name);
     const hasRowsColumn = pagesColumnsCheck.length > 0;
-    console.log('📊 Existing grid columns:', existingColumns);
-    console.log('📊 Pages has rows column:', hasRowsColumn);
 
     const migrations = [];
 
@@ -61,8 +58,6 @@ export async function POST() {
       WHERE (grid_col IS NULL OR grid_row IS NULL OR grid_col = 0 AND grid_row = 0)
       AND (position_x IS NOT NULL OR position_y IS NOT NULL)
     `;
-
-    console.log(`📦 Found ${blocksToMigrate.length} blocks to migrate`);
 
     for (const block of blocksToMigrate) {
       const gridCol = Math.max(0, Math.min(11, Math.floor((block.position_x || 0) / 8.33)));
@@ -127,10 +122,6 @@ export async function POST() {
       SELECT COUNT(*) as total_pages, COUNT(rows) as pages_with_rows
       FROM pages
     `;
-
-    console.log('✅ Migration completed successfully');
-    console.log('📊 Final validation:', finalCheck[0]);
-    console.log('📊 Pages validation:', pagesCheck[0]);
 
     return NextResponse.json({
       success: true,

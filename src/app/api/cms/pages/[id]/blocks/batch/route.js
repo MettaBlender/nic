@@ -26,8 +26,6 @@ export async function POST(request, { params }) {
       );
     }
 
-    console.log(`🔄 Processing ${operations.length} batch operations for page ${pageId} in SQL`);
-
     // Sortiere Operations nach Timestamp für konsistente Reihenfolge
     const sortedOps = operations.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -69,7 +67,6 @@ export async function POST(request, { params }) {
               tempId: data.id // Wichtig: Temp-ID für Frontend-Mapping
             });
 
-            console.log(`✅ Created block in SQL: ${newBlock.id} (${data.block_type}) - Temp ID: ${data.id}`);
             break;
 
           case 'update':
@@ -82,19 +79,6 @@ export async function POST(request, { params }) {
                 updateContentForDB = { text: data.content };
               }
             }
-
-            console.log(`🔄 Updating block ${data.id} with full data:`, {
-              id: data.id,
-              grid_col: data.grid_col,
-              grid_row: data.grid_row,
-              grid_width: data.grid_width,
-              grid_height: data.grid_height,
-              content: updateContentForDB,
-              block_type: data.block_type,
-              background_color: data.background_color,
-              text_color: data.text_color,
-              z_index: data.z_index
-            });
 
             // Übergebe alle Daten als ein Object an updateBlock
             const updatedBlock = await updateBlock(data.id, {
@@ -127,17 +111,6 @@ export async function POST(request, { params }) {
               }
             });
 
-            if (updatedBlock) {
-              console.log(`✅ Updated block in SQL: ${data.id} with all properties - DB confirms:`, {
-                position: `${updatedBlock.grid_col},${updatedBlock.grid_row}`,
-                size: `${updatedBlock.grid_width}x${updatedBlock.grid_height}`,
-                type: updatedBlock.block_type,
-                colors: `bg:${updatedBlock.background_color}, text:${updatedBlock.text_color}`,
-                z_index: updatedBlock.z_index
-              });
-            } else {
-              console.warn(`⚠️ Block not found for update: ${data.id}`);
-            }
             break;
 
           case 'delete':
@@ -149,11 +122,6 @@ export async function POST(request, { params }) {
               id: data.id
             });
 
-            if (deleteSuccess) {
-              console.log(`✅ Deleted block from SQL: ${data.id}`);
-            } else {
-              console.warn(`⚠️ Block not found for deletion: ${data.id}`);
-            }
             break;
 
           case 'replace_all':
@@ -182,19 +150,16 @@ export async function POST(request, { params }) {
                 created: newBlocks.length
               });
 
-              console.log(`✅ Replaced all blocks in SQL: ${newBlocks.length} new blocks`);
             } else {
               results.push({
                 operation: 'replace_all',
                 success: true,
                 created: 0
               });
-              console.log(`✅ Cleared all blocks in SQL for page ${pageId}`);
             }
             break;
 
           default:
-            console.warn(`⚠️ Unknown operation type: ${opType}`);
             results.push({
               operation: opType,
               success: false,
@@ -213,7 +178,6 @@ export async function POST(request, { params }) {
 
     // Update Page Rows
     await updatePageRows(pageId, rows || 12);
-    console.log(`✅ Updated page rows in SQL: ${rows || 12}`);
 
     // Lade aktuelle Blöcke nach den Operationen
     const currentBlocks = await getBlocksForPage(pageId);
@@ -221,28 +185,11 @@ export async function POST(request, { params }) {
     // Zusätzliche Validierung: Prüfe ob alle Updates korrekt gespeichert wurden
     const updateOperations = results.filter(r => r.operation === 'update' && r.success);
     if (updateOperations.length > 0) {
-      console.log(`🔍 Verifying ${updateOperations.length} successful update operations in database...`);
 
       for (const updateResult of updateOperations) {
         const blockInDB = currentBlocks.find(b => b.id === updateResult.id);
-        if (blockInDB) {
-          console.log(`✅ Verified block ${updateResult.id} in database:`, {
-            position: `${blockInDB.grid_col},${blockInDB.grid_row}`,
-            size: `${blockInDB.grid_width}x${blockInDB.grid_height}`,
-            type: blockInDB.block_type,
-            background: blockInDB.background_color,
-            text_color: blockInDB.text_color,
-            z_index: blockInDB.z_index,
-            updated_at: blockInDB.updated_at
-          });
-        } else {
-          console.warn(`⚠️ Updated block ${updateResult.id} not found in database after update`);
-        }
       }
     }
-
-    console.log(`✅ Batch operations completed in SQL: ${operations.length} operations processed`);
-    console.log(`📊 Final block count in database: ${currentBlocks.length}`);
 
     return NextResponse.json({
       success: true,

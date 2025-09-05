@@ -9,11 +9,9 @@ export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
     const pageId = resolvedParams.id;
-    console.log(`📦 Loading blocks for page ${pageId} from SQL...`);
 
     const blocks = await getBlocksForPage(pageId);
 
-    console.log(`✅ Found ${blocks.length} blocks for page ${pageId} in SQL`);
     return NextResponse.json(blocks);
   } catch (error) {
     console.error('❌ Error loading blocks:', error);
@@ -33,8 +31,6 @@ export async function POST(request, { params }) {
     const resolvedParams = await params;
     const pageId = resolvedParams.id;
     const blockData = await request.json();
-
-    console.log(`📝 Creating block for page: ${pageId} in SQL`, blockData);
 
     const blockId = await createBlock(
       pageId,
@@ -67,7 +63,6 @@ export async function POST(request, { params }) {
       updated_at: new Date().toISOString()
     };
 
-    console.log(`✅ Created block in SQL: ${blockId}`);
     return NextResponse.json(newBlock, { status: 201 });
   } catch (error) {
     console.error('❌ Error creating block:', error);
@@ -86,11 +81,9 @@ export async function DELETE(request, { params }) {
   try {
     const resolvedParams = await params;
     const pageId = resolvedParams.id;
-    console.log(`🗑️ Deleting all blocks for page: ${pageId} from SQL`);
 
     const deletedCount = await deleteAllBlocksForPage(pageId);
 
-    console.log(`✅ Deleted ${deletedCount} blocks for page ${pageId} from SQL`);
     return NextResponse.json({
       success: true,
       deletedCount

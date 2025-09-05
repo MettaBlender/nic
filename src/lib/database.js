@@ -76,7 +76,6 @@ export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth
 }
 
 export async function updateBlock(id, blockData) {
-  console.log(`🔄 Updating block ${id} with data:`, blockData);
 
   try {
     // Extrahiere alle möglichen Felder aus blockData
@@ -110,16 +109,6 @@ export async function updateBlock(id, blockData) {
     `;
 
     if (result.length > 0) {
-      console.log(`✅ Block ${id} updated successfully in database:`, {
-        id: result[0].id,
-        position: `${result[0].grid_col},${result[0].grid_row}`,
-        size: `${result[0].grid_width}x${result[0].grid_height}`,
-        type: result[0].block_type,
-        background: result[0].background_color,
-        text_color: result[0].text_color,
-        z_index: result[0].z_index,
-        updated_at: result[0].updated_at
-      });
       return result[0]; // Gib das aktualisierte Block-Objekt zurück
     } else {
       console.warn(`⚠️ No block found with ID ${id} to update`);

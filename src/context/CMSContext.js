@@ -86,6 +86,8 @@ export const CMSProvider = ({ children }) => {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
+  const [deviceSize, setDeviceSize] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
+
   // Hilfsfunktion zum Speichern des aktuellen Zustands - NACH blocks Deklaration
   const saveStateToHistory = useCallback(() => {
     const currentState = {
@@ -104,7 +106,6 @@ export const CMSProvider = ({ children }) => {
   // Undo/Redo Funktionen - NACH blocks Deklaration
   const undo = useCallback(() => {
     if (undoHistory.length === 0) {
-      console.log('No actions to undo');
       return;
     }
 
@@ -123,13 +124,10 @@ export const CMSProvider = ({ children }) => {
 
     // Füge den aktuellen Zustand zur Redo-Historie hinzu
     setRedoHistory(prev => [...prev, currentState]);
-
-    console.log('Undo performed');
   }, [undoHistory, blocks]);
 
   const redo = useCallback(() => {
     if (redoHistory.length === 0) {
-      console.log('No actions to redo');
       return;
     }
 
@@ -149,7 +147,6 @@ export const CMSProvider = ({ children }) => {
     // Füge den aktuellen Zustand zur Undo-Historie hinzu
     setUndoHistory(prev => [...prev, currentState]);
 
-    console.log('Redo performed');
   }, [redoHistory, blocks]);
 
   // Component Definitions Management
@@ -158,7 +155,6 @@ export const CMSProvider = ({ children }) => {
   // Load component definitions from API
   const loadComponentDefinitions = useCallback(async () => {
     try {
-      console.log('🧩 Loading component definitions...');
       const response = await fetch('/api/cms/components');
       if (response.ok) {
         const data = await response.json();
@@ -175,9 +171,6 @@ export const CMSProvider = ({ children }) => {
         });
 
         setComponentDefinitions(definitions);
-        console.log(`✅ Loaded ${Object.keys(definitions).length} component definitions`);
-      } else {
-        console.warn('⚠️ Could not load component definitions');
       }
     } catch (error) {
       console.error('❌ Error loading component definitions:', error);
@@ -220,8 +213,6 @@ export const CMSProvider = ({ children }) => {
   const applyDraftChangesToBlocks = useCallback((drafts, currentBlocks) => {
     if (!drafts || drafts.length === 0) return currentBlocks;
 
-    console.log(`🔧 Applying ${drafts.length} draft changes to ${currentBlocks.length} blocks`);
-
     let updatedBlocks = [...currentBlocks];
     const pendingOps = new Map();
 
@@ -229,7 +220,6 @@ export const CMSProvider = ({ children }) => {
     const sortedDrafts = [...drafts].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedDrafts.forEach(draft => {
-      console.log(`🔧 Applying draft change: ${draft.type} for block ${draft.blockId}`);
 
       switch (draft.type) {
         case 'create':
@@ -251,9 +241,6 @@ export const CMSProvider = ({ children }) => {
               data: blockData,
               timestamp: draft.timestamp
             });
-            console.log(`✅ Applied create for block ${draft.blockId}`);
-          } else {
-            console.log(`⚠️ Block ${draft.blockId} already exists, skipping create`);
           }
           break;
 
@@ -319,14 +306,6 @@ export const CMSProvider = ({ children }) => {
               });
             }
 
-            console.log(`✅ Applied update for block ${draft.blockId} with full block data:`, {
-              position: `${updatedBlock.grid_col},${updatedBlock.grid_row}`,
-              size: `${updatedBlock.grid_width}x${updatedBlock.grid_height}`,
-              colors: `bg:${updatedBlock.background_color}, text:${updatedBlock.text_color}`,
-              z_index: updatedBlock.z_index
-            });
-          } else {
-            console.log(`⚠️ Block ${draft.blockId} not found for update`);
           }
           break;
 
@@ -337,12 +316,10 @@ export const CMSProvider = ({ children }) => {
             data: { id: draft.blockId },
             timestamp: draft.timestamp
           });
-          console.log(`✅ Applied delete for block ${draft.blockId}`);
           break;
 
         case 'layout':
           // Layout-Änderungen werden separat behandelt
-          console.log(`🎨 Found layout change in drafts`);
           setPendingLayoutChanges(prevLayout => ({
             ...(prevLayout || {}),
             ...draft.data
@@ -360,7 +337,6 @@ export const CMSProvider = ({ children }) => {
         });
         return newOps;
       });
-      console.log(`📝 Set ${pendingOps.size} pending operations from drafts`);
     }
 
     return updatedBlocks;
@@ -370,17 +346,10 @@ export const CMSProvider = ({ children }) => {
   const loadAndApplyDrafts = useCallback(() => {
     const savedDrafts = loadDraftChanges();
     if (savedDrafts.length > 0) {
-      console.log(`📂 Loading and applying ${savedDrafts.length} draft changes from localStorage`);
 
       // Wende Draft-Änderungen auf aktuelle Blöcke an
       setBlocks(prevBlocks => {
         const updatedBlocks = applyDraftChangesToBlocks(savedDrafts, prevBlocks);
-        console.log(`🔧 Applied drafts to ${updatedBlocks.length} blocks`);
-
-        // Debug: Zeige die finalen Block-Positionen nach dem Anwenden der Drafts
-        updatedBlocks.forEach(block => {
-          console.log(`🔧 Final block ${block.id} position: ${block.grid_col},${block.grid_row} size: ${block.grid_width}x${block.grid_height}`);
-        });
 
         return updatedBlocks;
       });
@@ -390,9 +359,6 @@ export const CMSProvider = ({ children }) => {
       setDraftChanges(savedDrafts);
 
       setSaveStatus('dirty');
-      console.log(`📂 Loaded and applied ${savedDrafts.length} draft changes from localStorage`);
-    } else {
-      console.log(`📂 No draft changes found in localStorage`);
     }
   }, [loadDraftChanges, applyDraftChangesToBlocks]);
 
@@ -400,14 +366,12 @@ export const CMSProvider = ({ children }) => {
   useEffect(() => {
     const savedDrafts = loadDraftChanges();
     if (savedDrafts.length > 0) {
-      console.log(`📂 Loading ${savedDrafts.length} draft changes from localStorage`);
 
       // Überschreibe draftChanges komplett mit den geladenen Drafts
       // um sicherzustellen, dass alle Draft-Änderungen erhalten bleiben
       setDraftChanges(savedDrafts);
 
       setSaveStatus('dirty');
-      console.log(`📂 Loaded ${savedDrafts.length} draft changes from localStorage`);
     }
 
     // Bereinige alte Drafts
@@ -420,27 +384,13 @@ export const CMSProvider = ({ children }) => {
   // Zusätzlicher useEffect, der Draft-Änderungen anwendet, sobald Blöcke geladen sind
   useEffect(() => {
     if (blocks.length > 0 && !draftsApplied && draftChanges.length > 0) {
-      console.log(`🔄 Applying ${draftChanges.length} draft changes to ${blocks.length} blocks...`);
-      console.log(`🔄 DEBUG: Current block positions before applying drafts:`, blocks.map(b => ({
-        id: b.id,
-        position: `${b.grid_col},${b.grid_row}`,
-        size: `${b.grid_width}x${b.grid_height}`
-      })));
 
       // Kleiner Delay um sicherzustellen, dass Blöcke vollständig geladen sind
       const timer = setTimeout(() => {
         const updatedBlocks = applyDraftChangesToBlocks(draftChanges, blocks);
 
-        console.log(`🔄 DEBUG: Block positions after applying drafts:`, updatedBlocks.map(b => ({
-          id: b.id,
-          position: `${b.grid_col},${b.grid_row}`,
-          size: `${b.grid_width}x${b.grid_height}`
-        })));
-
         setBlocks(updatedBlocks);
         setDraftsApplied(true);
-
-        console.log(`✅ Applied ${draftChanges.length} draft changes to blocks`);
       }, 100);
 
       return () => clearTimeout(timer);
@@ -475,7 +425,6 @@ export const CMSProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setPages(data);
-        console.log('✅ Pages loaded:', data.length);
 
         const savedCurrentPage = localStorage.getItem('currentPage');
         let savedPage = null;
@@ -489,11 +438,9 @@ export const CMSProvider = ({ children }) => {
         if (savedPage && savedPage.id) {
           const foundPage = data.find(page => page.id === savedPage.id);
           if (foundPage) {
-            console.log('🔄 Restoring saved page from localStorage:', foundPage.title);
             setCurrentPage(foundPage);
 
             // Verwende Blöcke aus localStorage anstatt von der DB zu laden
-            console.log('📦 Using blocks from localStorage instead of fetching from database');
             // Die Blöcke sind bereits im useState Initializer aus localStorage geladen worden
             // Wende Draft-Änderungen an falls vorhanden
             setTimeout(() => {
@@ -502,7 +449,6 @@ export const CMSProvider = ({ children }) => {
 
             return; // Verlasse die Funktion früh, da wir die gespeicherte Seite gefunden haben
           } else {
-            console.warn('⚠️ Saved page not found in current pages, clearing localStorage');
             localStorage.removeItem('currentPage');
           }
         }        // Automatisch Home-Seite auswählen wenn keine Seite ausgewählt ist und keine im localStorage gespeichert war
@@ -513,19 +459,16 @@ export const CMSProvider = ({ children }) => {
             page.title?.toLowerCase() === 'home'
           ) || data[0];
 
-          console.log('🏠 Auto-selecting home page:', homePage.title);
           setCurrentPage(homePage);
 
           // Prüfe ob bereits Blöcke im localStorage vorhanden sind
           if (blocks.length > 0) {
-            console.log('📦 Using existing blocks from localStorage');
             // Wende Draft-Änderungen an
             setTimeout(() => {
               loadAndApplyDrafts();
             }, 100);
           } else {
             // Nur laden wenn keine Blöcke im localStorage vorhanden sind
-            console.log(`📦 Loading blocks for page: ${homePage.title} (ID: ${homePage.id})`);
             const blocksResponse = await fetch(`/api/cms/pages/${homePage.id}/blocks`);
             if (blocksResponse.ok) {
               const blocksData = await blocksResponse.json();
@@ -540,7 +483,6 @@ export const CMSProvider = ({ children }) => {
                 z_index: typeof block.z_index === 'number' ? block.z_index : 1
               }));
               setBlocks(validBlocks);
-              console.log(`✅ Loaded ${validBlocks.length} blocks for page ${homePage.id}`);
             }
           }
         }
@@ -558,16 +500,12 @@ export const CMSProvider = ({ children }) => {
   // Load layout settings from API
   const loadLayoutSettings = useCallback(async () => {
     try {
-      console.log('🎨 Loading layout settings...');
       const response = await fetch('/api/cms/layout');
       if (response.ok) {
         const data = await response.json();
         if (data) {
           setLayoutSettings(data);
-          console.log('✅ Layout settings loaded');
         }
-      } else {
-        console.warn('⚠️ Could not load layout settings, using defaults');
       }
     } catch (error) {
       console.error('❌ Error loading layout settings:', error);
@@ -577,7 +515,6 @@ export const CMSProvider = ({ children }) => {
   // Load blocks for a specific page
   const loadBlocks = useCallback(async (pageId, forceFromDB = false) => {
     if (!pageId) {
-      console.log('📦 No page ID provided, skipping block loading');
       return;
     }
 
@@ -593,7 +530,6 @@ export const CMSProvider = ({ children }) => {
         );
 
         if (pageBlocks.length > 0) {
-          console.log(`� Using ${pageBlocks.length} blocks from localStorage for page ${pageId}`);
           setBlocks(pageBlocks);
           setPendingOperations(new Map());
           setSaveStatus('saved');
@@ -605,14 +541,11 @@ export const CMSProvider = ({ children }) => {
       }
     }
 
-    console.log(`�🔄 Loading blocks from database for page ID: ${pageId}`);
     setIsLoading(true);
     try {
       const response = await fetch(`/api/cms/pages/${pageId}/blocks`);
       if (response.ok) {
         const data = await response.json();
-
-        console.log(`📦 Fetched ${data.length} blocks from server for page ${pageId}`);
 
         // Validiere und normalisiere Block-Daten
         const validBlocks = data.map(block => ({
@@ -638,7 +571,6 @@ export const CMSProvider = ({ children }) => {
         setBlocks(validBlocks);
         setPendingOperations(new Map());
         setSaveStatus('saved');
-        console.log(`✅ Loaded ${validBlocks.length} blocks for page ${pageId}`);
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -654,14 +586,11 @@ export const CMSProvider = ({ children }) => {
 
   // Select page and load its blocks
   const selectPage = useCallback((page) => {
-    console.log(`🔄 Switching to page: ${page ? page.title : 'none'}`);
 
     // Warn if there are unsaved changes
     if (pendingOperations.size > 0) {
       console.warn(`⚠️ Switching pages with ${pendingOperations.size} unsaved changes. Consider saving first.`);
     }
-
-    console.log('Clearing current blocks and pending operations', blocks);
 
     // Clear current state
     setBlocks([]);
@@ -671,12 +600,10 @@ export const CMSProvider = ({ children }) => {
     // setDraftChanges([]); // Entfernt um Draft-Änderungen zu bewahren
 
     // Set new page
-    console.log('Setting current page to:', page);
     setCurrentPage(page);
 
     // Load blocks for new page
     if (page && page.id) {
-      console.log(`📦 Loading blocks for page: ${page.title} (ID: ${page.id})`);
 
       // Prüfe ob bereits Blöcke für diese Seite im localStorage sind
       try {
@@ -691,12 +618,6 @@ export const CMSProvider = ({ children }) => {
         );
 
         if (pageBlocks.length > 0) {
-          console.log(`📦 Using ${pageBlocks.length} blocks from localStorage for page ${page.id}`);
-          console.log(`📦 DEBUG: Block positions from localStorage:`, pageBlocks.map(b => ({
-            id: b.id,
-            position: `${b.grid_col},${b.grid_row}`,
-            size: `${b.grid_width}x${b.grid_height}`
-          })));
 
           // Setze zuerst die Blöcke ohne Draft-Änderungen
           setBlocks(pageBlocks);
@@ -709,24 +630,18 @@ export const CMSProvider = ({ children }) => {
           setDraftsApplied(false);
 
           setSaveStatus(savedDrafts.length > 0 ? 'dirty' : 'saved');
-
-          console.log(`📦 Set ${pageBlocks.length} blocks from localStorage, ${savedDrafts.length} draft changes will be applied by useEffect`);
         } else {
-          console.log(`📦 No blocks in localStorage for page ${page.id}, loading from database`);
           loadBlocks(page.id);
         }
       } catch (error) {
         console.warn('⚠️ Error reading blocks from localStorage, loading from database:', error);
         loadBlocks(page.id);
       }
-    } else {
-      console.log('📦 No page selected, clearing blocks');
     }
   }, [loadBlocks]); // Entferne pendingOperations.size aus Abhängigkeiten
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
-    console.log(`📝 Batching operation: ${operation} for block ${blockId}`);
 
     setPendingOperations(prev => {
       const newOps = new Map(prev);
@@ -772,11 +687,7 @@ export const CMSProvider = ({ children }) => {
     const componentDef = componentDefinitions[blockType];
     const defaultOptions = componentDef?.options || {};
 
-    console.log(`🧩 Creating block "${blockType}" with default options:`, defaultOptions);
-
     const blockId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    console.log("Creating block with data:", { blockType, normalizedData, componentDef });
 
     // Finde freie Position mit Collision Detection
     const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
@@ -849,8 +760,6 @@ export const CMSProvider = ({ children }) => {
       contentObject = { text: blockType === 'Text' ? 'Neuer Text' : '' };
     }
 
-    console.log(`🧩 Creating block "${blockType}" with content object:`, contentObject);
-
     const newBlock = {
       id: blockId,
       page_id: currentPage?.id,
@@ -895,8 +804,6 @@ export const CMSProvider = ({ children }) => {
         saveSingleBlockChange(draftChange);
         return updated;
       });
-
-      console.log(`✅ Created block: ${newBlock.block_type} at (${newBlock.grid_col}, ${newBlock.grid_row}) with content:`, contentObject);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
@@ -906,7 +813,7 @@ export const CMSProvider = ({ children }) => {
 
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
-    console.log(`🔄 Updating block ${blockId}:`, Object.keys(updates));
+
 
     // Sofort UI aktualisieren für responsive Feedback
     saveStateToHistory(); // Speichere Zustand für Undo
@@ -966,7 +873,6 @@ export const CMSProvider = ({ children }) => {
   }, [blocks, batchOperation, saveStateToHistory]);
 
   const deleteBlock = useCallback((blockId) => {
-    console.log(`🗑️ Deleting block ${blockId}`);
 
     saveStateToHistory(); // Speichere Zustand für Undo
     setBlocks(prev => prev.filter(block => block.id !== blockId));
@@ -989,7 +895,6 @@ export const CMSProvider = ({ children }) => {
 
   // Layout Settings Management
   const updateLayoutSettings = useCallback((newSettings) => {
-    console.log('🎨 Updating layout settings:', Object.keys(newSettings));
 
     // Check if settings actually changed to prevent unnecessary updates
     const hasChanges = Object.keys(newSettings).some(key =>
@@ -997,7 +902,6 @@ export const CMSProvider = ({ children }) => {
     );
 
     if (!hasChanges) {
-      console.log('No layout changes detected, skipping update');
       return;
     }
 
@@ -1030,7 +934,6 @@ export const CMSProvider = ({ children }) => {
 
   // Alle Draft-Änderungen veröffentlichen mit verbessertem Batch-API
   const publishDrafts = useCallback(async () => {
-    console.log('🚀 Starting publishDrafts...');
 
     // Sammle alle Änderungen aus verschiedenen Quellen
     const hasBlockChanges = pendingOperations.size > 0;
@@ -1042,7 +945,6 @@ export const CMSProvider = ({ children }) => {
     try {
       const storedDrafts = loadDraftChanges();
       localStorageDrafts = storedDrafts || [];
-      console.log(`📂 Loaded ${localStorageDrafts.length} draft changes from localStorage`);
     } catch (error) {
       console.warn('⚠️ Error loading draft changes from localStorage:', error);
     }
@@ -1052,27 +954,17 @@ export const CMSProvider = ({ children }) => {
       !draftChanges.some(existing => existing.id === draft.id)
     )];
 
-    console.log(`📊 Changes summary:
-    - Pending Operations: ${pendingOperations.size}
-    - Layout Changes: ${hasLayoutChanges ? 'Yes' : 'No'}
-    - Draft Changes (State): ${draftChanges.length}
-    - Draft Changes (localStorage): ${localStorageDrafts.length}
-    - Total Draft Changes: ${allDraftChanges.length}`);
-
     if (!hasBlockChanges && !hasLayoutChanges && allDraftChanges.length === 0) {
-      console.log('📄 No changes to publish');
       return;
     }
 
     try {
       setSaveStatus('saving');
-      console.log(`🚀 Publishing changes... Blocks: ${pendingOperations.size}, Layout: ${hasLayoutChanges ? 'Yes' : 'No'}, Drafts: ${allDraftChanges.length}`);
 
       const promises = [];
 
       // 1. Verarbeite Draft-Änderungen zu pendingOperations
       if (allDraftChanges.length > 0) {
-        console.log('📝 Processing draft changes...');
 
         // Konvertiere Draft-Änderungen zu pendingOperations Format
         const additionalOperations = new Map();
@@ -1122,7 +1014,6 @@ export const CMSProvider = ({ children }) => {
         // Merge zusätzliche Operations mit existierenden
         additionalOperations.forEach((operation, blockId) => {
           if (!pendingOperations.has(blockId)) {
-            console.log(`📝 Adding draft operation for block ${blockId}: ${operation.operation}`);
             setPendingOperations(prev => new Map(prev).set(blockId, operation));
           }
         });
@@ -1210,7 +1101,6 @@ export const CMSProvider = ({ children }) => {
                 data: operationData,
                 timestamp: draft.timestamp
               });
-              console.log(`📝 Added operation ${draft.type} for block ${draft.blockId} with current position`);
             }
           }
         });
@@ -1218,27 +1108,9 @@ export const CMSProvider = ({ children }) => {
 
       // 3. Veröffentliche Block-Änderungen (falls vorhanden)
       if ((hasBlockChanges || allBlockOperations.size > 0) && currentPage) {
-        console.log(`📦 Publishing ${allBlockOperations.size} block operations...`);
 
         // Debug: Zeige alle Operations die gesendet werden
         const operations = Array.from(allBlockOperations.values());
-        console.log('🔍 DEBUG: Operations being sent to API:', operations.map(op => ({
-          operation: op.operation,
-          blockId: op.data?.id || 'temp',
-          blockType: op.data?.block_type,
-          content: op.data?.content ? (typeof op.data.content === 'string' ? 'JSON string' : 'Object') : 'none',
-          position: op.data ? `${op.data.grid_col || 0},${op.data.grid_row || 0}` : 'none',
-          size: op.data ? `${op.data.grid_width || 2}x${op.data.grid_height || 1}` : 'none',
-          backgroundColor: op.data?.background_color || 'default',
-          textColor: op.data?.text_color || 'default',
-          zIndex: op.data?.z_index || 'default'
-        })));
-
-        console.log('🔍 DEBUG: Full operation data:', operations.map(op => ({
-          operation: op.operation,
-          data: op.data,
-          timestamp: op.timestamp
-        })));
 
         const blockPromise = fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
           method: 'POST',
@@ -1260,7 +1132,6 @@ export const CMSProvider = ({ children }) => {
 
       // 5. Veröffentliche Layout-Änderungen (falls vorhanden)
       if (finalLayoutChanges) {
-        console.log('🎨 Publishing layout changes...');
 
         const layoutPromise = fetch('/api/cms/layout', {
           method: 'PUT',
@@ -1287,7 +1158,6 @@ export const CMSProvider = ({ children }) => {
           const data = await result.value.json();
 
           if (promiseInfo.type === 'blocks') {
-            console.log(`✅ Block operations completed:`, data);
 
             // Aktualisiere Block-UI mit Server-Response
             if (data.blocks && Array.isArray(data.blocks)) {
@@ -1318,7 +1188,6 @@ export const CMSProvider = ({ children }) => {
                 data.results.forEach(result => {
                   if (result.operation === 'create' && result.tempId && result.block) {
                     idMapping.set(result.tempId, result.block.id);
-                    console.log(`🔄 ID Mapping: ${result.tempId} -> ${result.block.id}`);
                   }
                 });
               }
@@ -1329,7 +1198,6 @@ export const CMSProvider = ({ children }) => {
                 const updatedSelectedBlock = normalizedBlocks.find(b => b.id === newRealId);
                 if (updatedSelectedBlock) {
                   setSelectedBlock(updatedSelectedBlock);
-                  console.log(`🔄 Updated selectedBlock ID: ${selectedBlock.id} -> ${newRealId}`);
                 }
               }
 
@@ -1349,7 +1217,6 @@ export const CMSProvider = ({ children }) => {
 
                   // Wenn lokale Version neuer ist, behalte lokale Daten aber server-ID
                   if (localTime > serverTime) {
-                    console.log(`🔄 Keeping local changes for block ${serverBlock.id} (local newer)`);
                     return {
                       ...serverBlock, // Server-ID und Basis-Daten
                       ...localBlock,  // Lokale Änderungen überschreiben
@@ -1383,11 +1250,8 @@ export const CMSProvider = ({ children }) => {
               } else {
                 setBlocks(mergedBlocks);
               }
-
-              console.log(`✅ Updated UI with ${mergedBlocks.length} blocks from server (with local merge)`);
             }
           } else if (promiseInfo.type === 'layout') {
-            console.log(`✅ Layout settings updated:`, data);
 
             // Aktualisiere Layout-UI mit Server-Daten
             if (data) {
@@ -1398,9 +1262,6 @@ export const CMSProvider = ({ children }) => {
           throw new Error(`${promiseInfo.type} operation failed: ${result.reason}`);
         }
       }
-
-      // 8. Bereinige alle Pending-States und Draft-Änderungen
-      console.log('🧹 Cleaning up pending states and draft changes...');
 
       if (hasBlockChanges || allDraftChanges.some(d => ['create', 'update', 'delete'].includes(d.type))) {
         setPendingOperations(new Map());
@@ -1416,15 +1277,6 @@ export const CMSProvider = ({ children }) => {
       setDraftChanges([]);
       clearDraftChanges(); // Lösche localStorage
 
-      console.log(`✅ Successfully published all changes and cleared drafts`);
-      console.log(`🔍 DEBUG: Final verification - Page ${currentPage.id} should now show updated content on public site`);
-      console.log(`🔍 DEBUG: Public URL to check: /${currentPage.slug || currentPage.id}`);
-
-      // Optional: Force page refresh for immediate feedback (nur im Development)
-      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.log(`🔄 DEBUG: Development mode - Consider checking the public page for changes`);
-      }
-
     } catch (error) {
       console.error('❌ Error publishing drafts:', error);
       setSaveStatus('error');
@@ -1434,13 +1286,11 @@ export const CMSProvider = ({ children }) => {
 
   // Draft-Änderungen verwerfen
   const discardDrafts = useCallback(() => {
-    console.log('🗑️ Discarding all draft changes');
 
     // Lade auch Draft-Änderungen aus localStorage für vollständige Bereinigung
     let localStorageDrafts = [];
     try {
       localStorageDrafts = loadDraftChanges() || [];
-      console.log(`📂 Found ${localStorageDrafts.length} draft changes in localStorage to discard`);
     } catch (error) {
       console.warn('⚠️ Error loading localStorage drafts for discard:', error);
     }
@@ -1462,7 +1312,6 @@ export const CMSProvider = ({ children }) => {
     setDraftChanges([]);
     clearDraftChanges();
 
-    console.log(`✅ Discarded ${localStorageDrafts.length + draftChanges.length} draft changes`);
   }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges]);
 
   // Manuelles Speichern
@@ -1475,7 +1324,6 @@ export const CMSProvider = ({ children }) => {
 
   // Initialisierung
   useEffect(() => {
-    console.log('🚀 Initializing CMS - ONE TIME ONLY...');
     loadPages();
     loadLayoutSettings();
     loadComponentDefinitions();
@@ -1624,7 +1472,6 @@ export const CMSProvider = ({ children }) => {
     componentDefinitions,
     createPage: async (title, slug) => {
       try {
-        console.log(`📝 Creating new page: ${title} (${slug})`);
 
         const response = await fetch('/api/cms/pages', {
           method: 'POST',
@@ -1638,7 +1485,6 @@ export const CMSProvider = ({ children }) => {
         }
 
         const newPage = await response.json();
-        console.log('✅ Page created:', newPage);
 
         // Aktualisiere die Seiten-Liste
         setPages(prev => [...prev, newPage]);
@@ -1651,7 +1497,6 @@ export const CMSProvider = ({ children }) => {
     },
     updatePage: async (pageId, title, slug) => {
       try {
-        console.log(`📝 Updating page ${pageId}: ${title} (${slug})`);
 
         const response = await fetch(`/api/cms/pages/${pageId}`, {
           method: 'PUT',
@@ -1665,7 +1510,6 @@ export const CMSProvider = ({ children }) => {
         }
 
         const updatedPage = await response.json();
-        console.log('✅ Page updated:', updatedPage);
 
         // Aktualisiere die Seiten-Liste
         setPages(prev => prev.map(page =>
@@ -1685,7 +1529,6 @@ export const CMSProvider = ({ children }) => {
     },
     deletePage: async (pageId) => {
       try {
-        console.log(`🗑️ Deleting page ${pageId}`);
 
         const response = await fetch(`/api/cms/pages/${pageId}`, {
           method: 'DELETE'
@@ -1695,8 +1538,6 @@ export const CMSProvider = ({ children }) => {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
-
-        console.log('✅ Page deleted');
 
         // Entferne die Seite aus der Liste
         setPages(prev => prev.filter(page => page.id !== pageId));
@@ -1728,6 +1569,9 @@ export const CMSProvider = ({ children }) => {
     componentFiles,
     setComponentFiles,
     loadComponents,
+
+    deviceSize,
+    setDeviceSize,
 
     // Helper functions
     getTotalPendingChanges,

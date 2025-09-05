@@ -46,15 +46,12 @@ async function getBlocks(pageId) {
 
     // Force fresh data by adding timestamp to prevent any potential caching
     const timestamp = Date.now();
-    console.log(`📦 [${timestamp}] Loading blocks for page ${pageId} from database...`);
 
     const result = await sql`
       SELECT * FROM blocks
       WHERE page_id = ${pageId}
       ORDER BY grid_row ASC, grid_col ASC
     `;
-
-    console.log(`📦 [${timestamp}] Found ${result.length} blocks in database for page ${pageId}`);
 
     // Normalisiere Block-Daten für Live-View
     const normalizedBlocks = result.map(block => ({
@@ -67,14 +64,6 @@ async function getBlocks(pageId) {
       grid_width: block.grid_width || 2,
       grid_height: block.grid_height || 1
     }));
-
-    console.log(`📦 [${timestamp}] Normalized blocks:`, normalizedBlocks.map(b => ({
-      id: b.id,
-      type: b.block_type,
-      position: `${b.grid_col},${b.grid_row}`,
-      size: `${b.grid_width}x${b.grid_height}`,
-      hasContent: !!b.content
-    })));
 
     return normalizedBlocks;
   } catch (error) {
@@ -157,35 +146,16 @@ export default async function PublicPage({ params }) {
   try {
     // Lade Seite und Daten
     const timestamp = Date.now();
-    console.log(`🌐 [${timestamp}] Loading public page with slug:`, id);
 
     const page = await getPageBySlug(id);
     if (!page) {
-      console.log(`❌ [${timestamp}] Page not found for slug:`, id);
       notFound();
     }
-
-    console.log(`📊 [${timestamp}] Page loaded:`, {
-      id: page.id,
-      title: page.title,
-      slug: page.slug,
-      rows: page.rows,
-      updated_at: page.updated_at
-    });
 
     const [blocks, layoutSettings] = await Promise.all([
       getBlocks(page.id),
       getLayoutSettings()
     ]);
-
-    console.log(`🎨 [${timestamp}] Layout-Einstellungen geladen:`, layoutSettings);
-    console.log(`📦 [${timestamp}] Blöcke geladen: ${blocks.length} für ${page.rows || 12} Zeilen`);
-    console.log(`🔍 [${timestamp}] Block details:`, blocks.map(b => ({
-      id: b.id,
-      type: b.block_type,
-      content: typeof b.content === 'object' ? Object.keys(b.content) : b.content,
-      updated_at: b.updated_at
-    })));
 
     // Header und Footer Komponenten basierend auf Layout-Einstellungen
     // Mapping der Layout-Einstellung zu Komponenten-Namen
@@ -212,26 +182,6 @@ export default async function PublicPage({ params }) {
                            footerComponents['DefaultFooter'] ||
                            footerComponents['default'] ||
                            DefaultFooter;
-
-    // Debug: Zeige geladene Komponenten in der Konsole
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 DEBUG: Layout-Einstellungen geladen:', layoutSettings);
-      console.log('🔍 DEBUG: Seiten-Zeilen:', page.rows || 12, '(Fallback: 12)');
-      console.log('🔍 DEBUG: Hintergrundfarbe:', layoutSettings.background_color || '#ffffff');
-      console.log('🔍 DEBUG: Geladene Block-Komponenten:', Object.keys(blockComponents));
-      console.log('🔍 DEBUG: Geladene Header-Komponenten:', Object.keys(headerComponents));
-      console.log('🔍 DEBUG: Geladene Footer-Komponenten:', Object.keys(footerComponents));
-      console.log('🔍 DEBUG: Gewählter Header-Name:', headerComponentName);
-      console.log('🔍 DEBUG: Gewählter Footer-Name:', footerComponentName);
-      console.log('🔍 DEBUG: Header-Komponente gefunden:', HeaderComponent ? '✅' : '❌');
-      console.log('🔍 DEBUG: Footer-Komponente gefunden:', FooterComponent ? '✅' : '❌');
-
-      // Zeige alle verfügbaren Header-Komponenten
-      console.log('🔍 DEBUG: Alle Header-Komponenten Details:');
-      Object.entries(headerComponents).forEach(([key, comp]) => {
-        console.log(`  - ${key}: ${comp ? '✅' : '❌'}`);
-      });
-    }
 
     return (
       <div

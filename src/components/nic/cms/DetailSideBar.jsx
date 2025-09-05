@@ -131,8 +131,6 @@ const DetailSideBar = () => {
     setSaveMessage('Speichere...');
 
     try {
-      console.log('💾 Saving content to database...', contentObject);
-
       // Aktualisiere auch lokalen State über CMSContext
       await updateBlock(selectedBlock.id, {
         content: JSON.stringify(contentObject)
@@ -140,7 +138,6 @@ const DetailSideBar = () => {
 
       setSaveStatus('success');
       setSaveMessage('Erfolgreich gespeichert!');
-      console.log('✅ Content saved successfully to database:', contentObject);
 
       // Status nach 3 Sekunden zurücksetzen
       setTimeout(() => {

@@ -17,7 +17,6 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Seite nicht gefunden' }, { status: 404 });
     }
 
-    console.log(`✅ Retrieved page: ${page.title}`);
     return NextResponse.json(page);
   } catch (error) {
     console.error('❌ Error getting page:', error);
@@ -53,7 +52,6 @@ export async function PUT(request, { params }) {
     // Lade die aktualisierte Seite
     const updatedPage = await getPageById(pageId);
 
-    console.log(`✅ Updated page: ${title} (${slug})`);
     return NextResponse.json(updatedPage);
   } catch (error) {
     console.error('❌ Error updating page:', error);
@@ -82,12 +80,10 @@ export async function DELETE(request, { params }) {
 
     // Lösche erst alle Blöcke der Seite
     const deletedBlocksCount = await deleteAllBlocksForPage(pageId);
-    console.log(`🗑️ Deleted ${deletedBlocksCount} blocks for page ${pageId}`);
 
     // Dann lösche die Seite selbst
     const result = await deletePage(pageId);
 
-    console.log(`✅ Deleted page: ${existingPage.title}`);
     return NextResponse.json({
       success: true,
       message: 'Seite erfolgreich gelöscht',

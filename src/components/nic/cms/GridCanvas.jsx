@@ -92,7 +92,6 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
 
     // Prüfe ob neue Position verfügbar ist und aktualisiere nur primitive Werte
     if (newCol !== currentCol || newRow !== currentRow) {
-      console.log(`Moving block ${String(block.id)} from (${currentCol}, ${currentRow}) to (${newCol}, ${newRow})`);
       onUpdate(block.id, {
         grid_col: newCol,
         grid_row: newRow
@@ -142,7 +141,6 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
     });
 
     onSelect(block.id);
-    console.log(`Start dragging block ${String(block.id)} from (${currentCol}, ${currentRow})`);
   }, [block, onSelect, containerRef, gridSystem]);
 
   const handleMouseMove = useCallback((e) => {
@@ -171,7 +169,6 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
       const validCol = typeof gridSystem.dropZone.col === 'number' && !isNaN(gridSystem.dropZone.col) ? gridSystem.dropZone.col : 0;
       const validRow = typeof gridSystem.dropZone.row === 'number' && !isNaN(gridSystem.dropZone.row) ? gridSystem.dropZone.row : 0;
 
-      console.log(`Mouse drop: Moving block ${String(block.id)} to (${validCol}, ${validRow})`);
       onUpdate(block.id, {
         grid_col: validCol,
         grid_row: validRow
@@ -277,7 +274,6 @@ const GridCanvas = () => {
   // Improved update function with save feedback
   const handleUpdateBlock = useCallback((id, data) => {
     setSaveStatus('Speichere...');
-    console.log(`Updating block ${String(id)} with data:`, data);
 
     try {
       updateBlock(id, data);
@@ -293,7 +289,6 @@ const GridCanvas = () => {
   // Improved delete function with feedback
   const handleDeleteBlock = useCallback((id) => {
     setSaveStatus('Lösche...');
-    console.log(`Deleting block ${String(id)}`);
 
     try {
       deleteBlock(id);
@@ -316,7 +311,6 @@ const GridCanvas = () => {
 
         if (currentCol !== block.grid_col || currentRow !== block.grid_row) {
           needsUpdate = true;
-          console.log(`Fixing block ${String(block.id)}: grid_col=${block.grid_col} -> ${currentCol}, grid_row=${block.grid_row} -> ${currentRow}`);
           handleUpdateBlock(block.id, {
             grid_col: currentCol,
             grid_row: currentRow,
@@ -326,10 +320,6 @@ const GridCanvas = () => {
         }
         return block;
       });
-
-      if (needsUpdate) {
-        console.log('Fixed blocks with invalid grid positions');
-      }
     }
   }, [blocks.length]); // Only run when blocks array length changes
 
@@ -457,7 +447,6 @@ const GridCanvas = () => {
 
     // Block über Context hinzufügen
     createBlock(blockWithPosition);
-    console.log(`✅ Block hinzugefügt: ${newBlock.block_type} an Position (${finalCol}, ${finalRow})`);
   }, [pixelToGrid, createBlock, blocks]);
 
   const handleDragOver = useCallback((e) => {
@@ -496,7 +485,6 @@ const GridCanvas = () => {
         </button>
         <button
           onClick={async () => {
-            console.log('🔄 Refreshing components...');
             try {
               await loadComponents();
               alert(`✅ Komponenten neu geladen!`);
@@ -513,7 +501,6 @@ const GridCanvas = () => {
         <button
           onClick={() => {
             if (confirm('Alle Blöcke löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
-              console.log('Clearing all blocks...');
               blocks.forEach(block => {
                 handleDeleteBlock(block.id);
               });

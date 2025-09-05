@@ -26,7 +26,7 @@ const nicConfig = {
     breakpoints: {
       mobile: {
         maxWidth: 768,
-        columns: 6, // Weniger Spalten auf Mobile
+        columns: 4, // Weniger Spalten auf Mobile
         rowHeight: 50
       },
       tablet: {

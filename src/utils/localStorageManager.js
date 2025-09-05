@@ -24,7 +24,6 @@ export const saveDraftChanges = (changes) => {
     };
 
     localStorage.setItem(STORAGE_KEYS.DRAFT_CHANGES, JSON.stringify(data));
-    console.log('💾 Draft changes saved to localStorage');
     return true;
   } catch (error) {
     console.error('❌ Failed to save draft changes:', error);
@@ -49,7 +48,6 @@ export const loadDraftChanges = () => {
       return [];
     }
 
-    console.log(`📂 Loaded ${data.changes.length} draft changes from localStorage`);
     return data.changes;
   } catch (error) {
     console.error('❌ Failed to load draft changes:', error);
@@ -63,7 +61,6 @@ export const loadDraftChanges = () => {
 export const clearDraftChanges = () => {
   try {
     localStorage.removeItem(STORAGE_KEYS.DRAFT_CHANGES);
-    console.log('🗑️ Draft changes cleared from localStorage');
     return true;
   } catch (error) {
     console.error('❌ Failed to clear draft changes:', error);
@@ -85,7 +82,6 @@ export const savePageBlockState = (pageId, blocks) => {
     };
 
     localStorage.setItem(STORAGE_KEYS.PAGE_STATES, JSON.stringify(stored));
-    console.log(`💾 Page block state saved for page ${pageId}`);
     return true;
   } catch (error) {
     console.error('❌ Failed to save page block state:', error);
@@ -101,7 +97,6 @@ export const loadPageBlockState = (pageId) => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAGE_STATES) || '{}');
 
     if (stored[pageId] && stored[pageId].blocks) {
-      console.log(`📂 Loaded block state for page ${pageId}`);
       return stored[pageId].blocks;
     }
 
@@ -184,7 +179,6 @@ export const cleanupOldDrafts = () => {
 
     if (recentChanges.length !== changes.length) {
       saveDraftChanges(recentChanges);
-      console.log(`🧹 Cleaned up ${changes.length - recentChanges.length} old draft changes`);
     }
 
     // Bereinige Page-States
@@ -244,7 +238,6 @@ export const importDraftData = (jsonData) => {
       setLastSaveTime(data.lastSave);
     }
 
-    console.log('📥 Draft data imported successfully');
     return true;
   } catch (error) {
     console.error('❌ Failed to import draft data:', error);
