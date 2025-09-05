@@ -571,6 +571,15 @@ export const CMSProvider = ({ children }) => {
         setBlocks(validBlocks);
         setPendingOperations(new Map());
         setSaveStatus('saved');
+
+        // Aktualisiere localStorage mit den neuen Daten von der DB
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('blocks', JSON.stringify(validBlocks));
+          } catch (error) {
+            console.warn('⚠️ Could not update localStorage with loaded blocks:', error);
+          }
+        }
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -804,6 +813,8 @@ export const CMSProvider = ({ children }) => {
         saveSingleBlockChange(draftChange);
         return updated;
       });
+
+      console.log(`✅ Created block with temp ID: ${blockId}, type: ${blockType}`);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
@@ -852,14 +863,17 @@ export const CMSProvider = ({ children }) => {
         ...processedUpdates,
         updated_at: new Date().toISOString()
       };
-      batchOperation(blockId, 'update', updatedBlock);
+
+      // Wichtig: Wenn Block eine temp_id hat, behandle als CREATE, nicht UPDATE
+      const operationType = blockId.toString().startsWith('temp_') ? 'create' : 'update';
+      batchOperation(blockId, operationType, updatedBlock);
 
       // Speichere Draft-Änderung in localStorage
       const draftChange = {
         id: Date.now(),
-        type: 'update',
+        type: operationType, // Verwende den korrekten Typ
         blockId: blockId,
-        data: processedUpdates,
+        data: operationType === 'create' ? updatedBlock : processedUpdates, // Vollständige Daten für CREATE
         timestamp: Date.now()
       };
 
@@ -869,6 +883,8 @@ export const CMSProvider = ({ children }) => {
         saveSingleBlockChange(draftChange);
         return updated;
       });
+
+      console.log(`🔄 Updated block ${blockId} (${operationType}):`, Object.keys(updates));
     }
   }, [blocks, batchOperation, saveStateToHistory]);
 
@@ -958,8 +974,24 @@ export const CMSProvider = ({ children }) => {
       return;
     }
 
+    // WICHTIG: Lade die neuesten Blöcke aus der Datenbank vor dem Veröffentlichen
+    // um sicherzustellen, dass wir mit den aktuellsten Daten arbeiten
+    let latestBlocksFromDB = [];
+    if (currentPage?.id) {
+      try {
+        const response = await fetch(`/api/cms/pages/${currentPage.id}/blocks`);
+        if (response.ok) {
+          latestBlocksFromDB = await response.json();
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load latest blocks from database, using current state:', error);
+      }
+    }
+
     try {
       setSaveStatus('saving');
+
+      console.log(`🚀 Starting publish process with ${blocks.length} current blocks`);
 
       const promises = [];
 
@@ -1022,6 +1054,52 @@ export const CMSProvider = ({ children }) => {
       // 2. Sammle alle Block-Operations mit aktuellen Positionen aus dem State
       const allBlockOperations = new Map();
 
+      // Sammle ALLE aktuellen Blöcke (sowohl existierende als auch neue mit temp IDs)
+      const allCurrentBlocks = [...blocks];
+
+      // Füge auch Blöcke aus localStorage hinzu, die noch nicht im State sind
+      try {
+        const storedBlocks = localStorage.getItem('blocks');
+        if (storedBlocks) {
+          const localStorageBlocks = JSON.parse(storedBlocks);
+          localStorageBlocks.forEach(localBlock => {
+            if (!allCurrentBlocks.find(b => b.id === localBlock.id)) {
+              allCurrentBlocks.push(localBlock);
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load additional blocks from localStorage:', error);
+      }
+
+      // Verarbeite alle aktuellen Blöcke
+      allCurrentBlocks.forEach(block => {
+        if (block.id && block.id.toString().startsWith('temp_')) {
+          // Neuer Block mit temporärer ID → CREATE Operation
+          let operationData = {
+            id: block.id,
+            page_id: block.page_id || currentPage?.id,
+            block_type: block.block_type,
+            content: typeof block.content === 'object' ? JSON.stringify(block.content) : block.content,
+            grid_col: block.grid_col || 0,
+            grid_row: block.grid_row || 0,
+            grid_width: block.grid_width || 2,
+            grid_height: block.grid_height || 1,
+            background_color: block.background_color || 'transparent',
+            text_color: block.text_color || '#000000',
+            z_index: block.z_index || 1,
+            created_at: block.created_at,
+            updated_at: block.updated_at
+          };
+
+          allBlockOperations.set(block.id, {
+            operation: 'create',
+            data: operationData,
+            timestamp: new Date(block.created_at || Date.now()).getTime()
+          });
+        }
+      });
+
       // Zuerst sammle existierende pendingOperations
       pendingOperations.forEach((operation, blockId) => {
         let operationData = operation.data;
@@ -1034,83 +1112,105 @@ export const CMSProvider = ({ children }) => {
           };
         }
 
+        // WICHTIG: Wenn blockId eine temp-ID ist, behandle IMMER als CREATE
+        const finalOperationType = blockId.toString().startsWith('temp_') ? 'create' : operation.operation;
+
         allBlockOperations.set(blockId, {
-          ...operation,
-          data: operationData
+          operation: finalOperationType,
+          data: operationData,
+          timestamp: operation.timestamp
         });
       });
 
-      // Dann verarbeite Draft-Änderungen und verwende die AKTUELLEN Block-Positionen
-      if (allDraftChanges.length > 0) {
-        const updatedBlocksMap = new Map();
+        // Dann verarbeite Draft-Änderungen und verwende die AKTUELLEN Block-Positionen
+        // ABER: Merge mit neuesten Daten aus der Datenbank
+        if (allDraftChanges.length > 0) {
+          const updatedBlocksMap = new Map();
 
-        // Erstelle eine Map der aktuellen Blöcke für schnellen Zugriff
-        blocks.forEach(block => {
-          updatedBlocksMap.set(block.id, block);
-        });
+          // Erstelle eine Map der aktuellen Blöcke für schnellen Zugriff
+          // Priorisiere Datenbank-Daten, dann lokale Änderungen
+          const blocksToUse = latestBlocksFromDB.length > 0 ? latestBlocksFromDB : blocks;
+          blocksToUse.forEach(block => {
+            updatedBlocksMap.set(block.id, block);
+          });
 
-        allDraftChanges.forEach(draft => {
-          if (['create', 'update', 'delete'].includes(draft.type)) {
-            const currentBlock = updatedBlocksMap.get(draft.blockId);
+          // Überschreibe mit lokalen Änderungen aus dem State (falls neuer)
+          blocks.forEach(localBlock => {
+            const dbBlock = updatedBlocksMap.get(localBlock.id);
+            if (!dbBlock || new Date(localBlock.updated_at || 0) > new Date(dbBlock.updated_at || 0)) {
+              updatedBlocksMap.set(localBlock.id, localBlock);
+            }
+          });
 
-            let operationData;
-            switch (draft.type) {
-              case 'create':
-                operationData = draft.data;
-                break;
-              case 'update':
-                // Verwende die AKTUELLE Block-Position aus dem State, nicht nur die Draft-Änderung
-                // Stelle sicher, dass ALLE Block-Eigenschaften übertragen werden
-                if (currentBlock) {
-                  operationData = {
-                    id: currentBlock.id,
-                    page_id: currentBlock.page_id,
-                    block_type: currentBlock.block_type,
-                    content: currentBlock.content,
-                    grid_col: currentBlock.grid_col,
-                    grid_row: currentBlock.grid_row,
-                    grid_width: currentBlock.grid_width,
-                    grid_height: currentBlock.grid_height,
-                    background_color: currentBlock.background_color,
-                    text_color: currentBlock.text_color,
-                    z_index: currentBlock.z_index,
-                    created_at: currentBlock.created_at,
-                    updated_at: currentBlock.updated_at
-                  };
-                } else {
+          allDraftChanges.forEach(draft => {
+            if (['create', 'update', 'delete'].includes(draft.type)) {
+              const currentBlock = updatedBlocksMap.get(draft.blockId);
+
+              let operationData;
+              switch (draft.type) {
+                case 'create':
                   operationData = draft.data;
-                }
-                break;
-              case 'delete':
-                operationData = { id: draft.blockId };
-                break;
-            }
+                  break;
+                case 'update':
+                  // Verwende die AKTUELLE Block-Position aus dem State, nicht nur die Draft-Änderung
+                  // Stelle sicher, dass ALLE Block-Eigenschaften übertragen werden
+                  if (currentBlock) {
+                    operationData = {
+                      id: currentBlock.id,
+                      page_id: currentBlock.page_id,
+                      block_type: currentBlock.block_type,
+                      content: currentBlock.content,
+                      grid_col: currentBlock.grid_col,
+                      grid_row: currentBlock.grid_row,
+                      grid_width: currentBlock.grid_width,
+                      grid_height: currentBlock.grid_height,
+                      background_color: currentBlock.background_color,
+                      text_color: currentBlock.text_color,
+                      z_index: currentBlock.z_index,
+                      created_at: currentBlock.created_at,
+                      updated_at: currentBlock.updated_at
+                    };
+                  } else {
+                    operationData = draft.data;
+                  }
+                  break;
+                case 'delete':
+                  operationData = { id: draft.blockId };
+                  break;
+              }
 
-            // Stelle sicher, dass content als JSON-String übertragen wird
-            if (operationData && operationData.content && typeof operationData.content === 'object') {
-              operationData = {
-                ...operationData,
-                content: JSON.stringify(operationData.content)
-              };
-            }
+              // Stelle sicher, dass content als JSON-String übertragen wird
+              if (operationData && operationData.content && typeof operationData.content === 'object') {
+                operationData = {
+                  ...operationData,
+                  content: JSON.stringify(operationData.content)
+                };
+              }
 
-            // Überschreibe nur wenn noch keine Operation für diesen Block existiert
-            if (!allBlockOperations.has(draft.blockId)) {
-              allBlockOperations.set(draft.blockId, {
-                operation: draft.type,
-                data: operationData,
-                timestamp: draft.timestamp
-              });
-            }
-          }
-        });
-      }
+              // Überschreibe nur wenn noch keine Operation für diesen Block existiert
+              if (!allBlockOperations.has(draft.blockId)) {
+                // WICHTIG: Wenn blockId eine temp-ID ist, behandle IMMER als CREATE
+                const finalOperationType = draft.blockId.toString().startsWith('temp_') ? 'create' : draft.type;
 
-      // 3. Veröffentliche Block-Änderungen (falls vorhanden)
+                allBlockOperations.set(draft.blockId, {
+                  operation: finalOperationType,
+                  data: operationData,
+                  timestamp: draft.timestamp
+                });
+              }
+            }
+          });
+        }      // 3. Veröffentliche Block-Änderungen (falls vorhanden)
       if ((hasBlockChanges || allBlockOperations.size > 0) && currentPage) {
 
         // Debug: Zeige alle Operations die gesendet werden
         const operations = Array.from(allBlockOperations.values());
+        console.log(`📤 Sending ${operations.length} block operations to server:`, operations.map(op => ({
+          operation: op.operation,
+          blockId: op.data?.id,
+          blockType: op.data?.block_type,
+          isTemp: op.data?.id?.toString().startsWith('temp_')
+        })));
 
         const blockPromise = fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
           method: 'POST',
@@ -1188,6 +1288,7 @@ export const CMSProvider = ({ children }) => {
                 data.results.forEach(result => {
                   if (result.operation === 'create' && result.tempId && result.block) {
                     idMapping.set(result.tempId, result.block.id);
+                    console.log(`✅ Block ID mapping: ${result.tempId} → ${result.block.id}`);
                   }
                 });
               }
@@ -1201,54 +1302,18 @@ export const CMSProvider = ({ children }) => {
                 }
               }
 
-              // Intelligent merge: Behalte lokale Änderungen für Blöcke, die nicht gespeichert wurden
-              const currentBlocksMap = new Map();
-              blocks.forEach(block => {
-                currentBlocksMap.set(block.id, block);
-              });
+              // Setze die finalen Blöcke direkt vom Server
+              console.log(`✅ Setting ${normalizedBlocks.length} blocks from server response`);
+              setBlocks(normalizedBlocks);
 
-              const mergedBlocks = normalizedBlocks.map(serverBlock => {
-                const localBlock = currentBlocksMap.get(serverBlock.id);
-
-                // Wenn der Block lokal existiert, überprüfe ob er neuere Änderungen hat
-                if (localBlock && localBlock.updated_at && serverBlock.updated_at) {
-                  const localTime = new Date(localBlock.updated_at).getTime();
-                  const serverTime = new Date(serverBlock.updated_at).getTime();
-
-                  // Wenn lokale Version neuer ist, behalte lokale Daten aber server-ID
-                  if (localTime > serverTime) {
-                    return {
-                      ...serverBlock, // Server-ID und Basis-Daten
-                      ...localBlock,  // Lokale Änderungen überschreiben
-                      id: serverBlock.id, // Aber server ID beibehalten
-                      updated_at: localBlock.updated_at
-                    };
-                  }
+              // Aktualisiere localStorage sofort mit den finalen Server-Daten
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem('blocks', JSON.stringify(normalizedBlocks));
+                  console.log('✅ Updated localStorage with final blocks from server');
+                } catch (error) {
+                  console.warn('⚠️ Could not update localStorage with server blocks:', error);
                 }
-
-                return serverBlock;
-              });
-
-              // Füge auch ID-Mappings für neue Blöcke hinzu
-              if (idMapping.size > 0) {
-                setBlocks(prevBlocks => {
-                  return prevBlocks.map(block => {
-                    if (idMapping.has(block.id)) {
-                      const newId = idMapping.get(block.id);
-                      const serverBlock = mergedBlocks.find(b => b.id === newId);
-                      if (serverBlock) {
-                        return {
-                          ...block,
-                          id: newId,
-                          ...serverBlock
-                        };
-                      }
-                    }
-                    return block;
-                  });
-                });
-              } else {
-                setBlocks(mergedBlocks);
               }
             }
           } else if (promiseInfo.type === 'layout') {
@@ -1273,7 +1338,44 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('saved');
       setLastSaveTime(new Date());
 
-      // 9. Lösche ALLE Draft-Änderungen (State + localStorage)
+      // Verifizierung: Prüfe ob alle erwarteten Blöcke nach dem Speichern noch vorhanden sind
+      if (currentPage?.id) {
+        setTimeout(async () => {
+          try {
+            const response = await fetch(`/api/cms/pages/${currentPage.id}/blocks`);
+            if (response.ok) {
+              const dbBlocks = await response.json();
+              console.log(`✅ Verification: Found ${dbBlocks.length} blocks in database after publishing`);
+
+              if (dbBlocks.length === 0 && blocks.length > 0) {
+                console.error('❌ CRITICAL: All blocks disappeared after publishing!');
+                // Wiederherstelle aus Backup falls vorhanden
+                try {
+                  const backup = localStorage.getItem('blocks_backup');
+                  if (backup) {
+                    console.warn('⚠️ Kritischer Fehler: Alle Blöcke sind verschwunden! Versuche Wiederherstellung aus Backup...');
+                    const backupData = JSON.parse(backup);
+                    if (backupData.blocks && Array.isArray(backupData.blocks)) {
+                      setBlocks(backupData.blocks);
+                    }
+                  } else {
+                    console.error('❌ Kritischer Fehler: Alle Blöcke sind verschwunden und kein Backup verfügbar!');
+                  }
+                } catch (backupError) {
+                  console.error('❌ Could not restore from backup:', backupError);
+                  console.error('❌ Kritischer Fehler: Alle Blöcke sind verschwunden und Backup-Wiederherstellung fehlgeschlagen!');
+                }
+              } else if (dbBlocks.length > 0) {
+                console.log('✅ All blocks successfully saved to database');
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not verify blocks after publishing:', error);
+          }
+        }, 1000);
+      }
+
+      // 9. Lösche ALLE Draft-Änderungen (State + localStorage) und synchronisiere mit DB
       setDraftChanges([]);
       clearDraftChanges(); // Lösche localStorage
 
@@ -1282,7 +1384,24 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('error');
       throw error;
     }
-  }, [currentPage, pendingOperations, pendingLayoutChanges, draftChanges, loadDraftChanges]);
+  }, [currentPage, pendingOperations, pendingLayoutChanges, draftChanges, loadDraftChanges, blocks]);
+
+  // Separater useEffect zum Aktualisieren des localStorage nach Block-Änderungen
+  useEffect(() => {
+    if (typeof window !== 'undefined' && blocks.length >= 0) { // Auch leere Arrays speichern
+      // Debounce localStorage updates to avoid excessive writes
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem('blocks', JSON.stringify(blocks));
+          console.log(`💾 Saved ${blocks.length} blocks to localStorage`);
+        } catch (error) {
+          console.warn('⚠️ Could not update localStorage with blocks:', error);
+        }
+      }, 200); // Schnellere Reaktion für bessere UX
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [blocks]);
 
   // Draft-Änderungen verwerfen
   const discardDrafts = useCallback(() => {
@@ -1293,6 +1412,19 @@ export const CMSProvider = ({ children }) => {
       localStorageDrafts = loadDraftChanges() || [];
     } catch (error) {
       console.warn('⚠️ Error loading localStorage drafts for discard:', error);
+    }
+
+    // Sichere aktuelle Blöcke bevor sie überschrieben werden
+    if (typeof window !== 'undefined' && blocks.length > 0) {
+      try {
+        localStorage.setItem('blocks_backup', JSON.stringify({
+          blocks: blocks,
+          timestamp: new Date().toISOString(),
+          reason: 'discard_drafts'
+        }));
+      } catch (error) {
+        console.warn('⚠️ Could not create blocks backup:', error);
+      }
     }
 
     // Lade Blöcke neu wenn Seite ausgewählt - explizit von DB laden
@@ -1312,7 +1444,43 @@ export const CMSProvider = ({ children }) => {
     setDraftChanges([]);
     clearDraftChanges();
 
-  }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges]);
+  }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges, blocks]);
+
+  // Backup and recovery functions
+  const hasBackup = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const backup = localStorage.getItem('blocks_backup');
+        return backup !== null;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, []);
+
+  const restoreFromBackup = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const backup = localStorage.getItem('blocks_backup');
+        if (backup) {
+          const backupData = JSON.parse(backup);
+          if (backupData.blocks && Array.isArray(backupData.blocks)) {
+            setBlocks(backupData.blocks);
+            alert(`✅ Blöcke aus Backup wiederhergestellt (${backupData.timestamp})`);
+            return true;
+          }
+        }
+        alert('❌ Kein Backup gefunden');
+        return false;
+      } catch (error) {
+        console.error('❌ Error restoring from backup:', error);
+        alert('❌ Fehler beim Wiederherstellen des Backups');
+        return false;
+      }
+    }
+    return false;
+  }, []);
 
   // Manuelles Speichern
   const saveNow = useCallback(async () => {
@@ -1327,7 +1495,41 @@ export const CMSProvider = ({ children }) => {
     loadPages();
     loadLayoutSettings();
     loadComponentDefinitions();
-  }, []); // Nur einmal beim Mount ausführen
+  }, []);
+
+  // Berechne die Gesamtanzahl der ausstehenden Änderungen (inklusive localStorage)
+  const getTotalPendingChanges = useCallback(() => {
+    let totalPendingOperations = pendingOperations.size;
+    let totalLayoutChanges = pendingLayoutChanges ? 1 : 0;
+    let totalDraftChanges = draftChanges.length;
+
+    // Prüfe auch localStorage für zusätzliche Draft-Änderungen
+    try {
+      const localStorageDrafts = loadDraftChanges() || [];
+      const uniqueLocalStorageDrafts = localStorageDrafts.filter(draft =>
+        !draftChanges.some(existing => existing.id === draft.id)
+      );
+      totalDraftChanges += uniqueLocalStorageDrafts.length;
+    } catch (error) {
+      console.warn('⚠️ Error counting localStorage drafts:', error);
+    }
+
+    return totalPendingOperations + totalLayoutChanges + totalDraftChanges;
+  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length, loadDraftChanges]);
+
+  // Warnung vor Seitenverlassen mit ungespeicherten Änderungen
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (getTotalPendingChanges() > 0) {
+        e.preventDefault();
+        e.returnValue = 'Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [getTotalPendingChanges]);
 
   const [componentFiles, setComponentFiles] = useState([]);
 
@@ -1369,36 +1571,24 @@ export const CMSProvider = ({ children }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Synchronisiere States mit localStorage bei Änderungen
+  // Synchronisiere States mit localStorage bei Änderungen (mit Debouncing)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('blocks', JSON.stringify(blocks));
-      localStorage.setItem('undoHistory', JSON.stringify(undoHistory));
-      localStorage.setItem('redoHistory', JSON.stringify(redoHistory));
-      localStorage.setItem('draftChanges', JSON.stringify(draftChanges));
-      localStorage.setItem('currentPage', JSON.stringify(currentPage));
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem('undoHistory', JSON.stringify(undoHistory));
+          localStorage.setItem('redoHistory', JSON.stringify(redoHistory));
+          localStorage.setItem('draftChanges', JSON.stringify(draftChanges));
+          localStorage.setItem('currentPage', JSON.stringify(currentPage));
+          // Blocks werden separat im anderen useEffect behandelt
+        } catch (error) {
+          console.warn('⚠️ Could not update localStorage:', error);
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [blocks, undoHistory, redoHistory, draftChanges, currentPage]);
-
-  // Berechne die Gesamtanzahl der ausstehenden Änderungen (inklusive localStorage)
-  const getTotalPendingChanges = useCallback(() => {
-    let totalPendingOperations = pendingOperations.size;
-    let totalLayoutChanges = pendingLayoutChanges ? 1 : 0;
-    let totalDraftChanges = draftChanges.length;
-
-    // Prüfe auch localStorage für zusätzliche Draft-Änderungen
-    try {
-      const localStorageDrafts = loadDraftChanges() || [];
-      const uniqueLocalStorageDrafts = localStorageDrafts.filter(draft =>
-        !draftChanges.some(existing => existing.id === draft.id)
-      );
-      totalDraftChanges += uniqueLocalStorageDrafts.length;
-    } catch (error) {
-      console.warn('⚠️ Error counting localStorage drafts:', error);
-    }
-
-    return totalPendingOperations + totalLayoutChanges + totalDraftChanges;
-  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length, loadDraftChanges]);
+  }, [undoHistory, redoHistory, draftChanges, currentPage]);
 
   const value = {
     pages,
@@ -1575,6 +1765,10 @@ export const CMSProvider = ({ children }) => {
 
     // Helper functions
     getTotalPendingChanges,
+
+    // Backup and recovery functions
+    restoreFromBackup,
+    hasBackup,
   };
 
   return (

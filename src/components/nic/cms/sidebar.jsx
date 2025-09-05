@@ -27,7 +27,9 @@ const Sidebar = () => {
     undo,
     redo,
     undoHistory,
-    redoHistory
+    redoHistory,
+    restoreFromBackup,
+    hasBackup
   } = useCMS();
   const [activeTab, setActiveTab] = useState('blocks');
 
@@ -101,7 +103,7 @@ const Sidebar = () => {
               </div>
 
               {/* Buttons IMMER anzeigen */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-2">
                 <button
                   onClick={publishDrafts}
                   disabled={pendingOperationsCount === 0}
@@ -124,6 +126,20 @@ const Sidebar = () => {
                   Verwerfen
                 </button>
               </div>
+
+              {/* Backup-Wiederherstellung */}
+              {hasBackup() && (
+                <button
+                  onClick={() => {
+                    if (confirm('Blöcke aus Backup wiederherstellen? Aktuelle ungespeicherte Änderungen gehen verloren.')) {
+                      restoreFromBackup();
+                    }
+                  }}
+                  className="w-full px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1"
+                >
+                  🔄 Backup wiederherstellen
+                </button>
+              )}
             </div>
 
             {/* Tabs */}
