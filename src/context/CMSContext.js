@@ -40,8 +40,6 @@ export const CMSProvider = ({ children }) => {
   // Sidebar Management
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const [currentBreakpoint, setCurrentBreakpoint] = useState('desktop');
-
   // Undo/Redo System
     const [undoHistory, setUndoHistory] = useState(() => {
       if (typeof window !== 'undefined') {
@@ -87,6 +85,8 @@ export const CMSProvider = ({ children }) => {
   const [pendingOperations, setPendingOperations] = useState(new Map());
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
+
+  const [deviceSize, setDeviceSize] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
 
   // Hilfsfunktion zum Speichern des aktuellen Zustands - NACH blocks Deklaration
   const saveStateToHistory = useCallback(() => {
@@ -813,6 +813,8 @@ export const CMSProvider = ({ children }) => {
         saveSingleBlockChange(draftChange);
         return updated;
       });
+
+      console.log(`✅ Created block with temp ID: ${blockId}, type: ${blockType}`);
       return newBlock;
     } catch (error) {
       console.error('❌ Error creating block:', error);
@@ -881,6 +883,8 @@ export const CMSProvider = ({ children }) => {
         saveSingleBlockChange(draftChange);
         return updated;
       });
+
+      console.log(`🔄 Updated block ${blockId} (${operationType}):`, Object.keys(updates));
     }
   }, [blocks, batchOperation, saveStateToHistory]);
 
@@ -986,6 +990,8 @@ export const CMSProvider = ({ children }) => {
 
     try {
       setSaveStatus('saving');
+
+      console.log(`🚀 Starting publish process with ${blocks.length} current blocks`);
 
       const promises = [];
 
@@ -1199,6 +1205,12 @@ export const CMSProvider = ({ children }) => {
 
         // Debug: Zeige alle Operations die gesendet werden
         const operations = Array.from(allBlockOperations.values());
+        console.log(`📤 Sending ${operations.length} block operations to server:`, operations.map(op => ({
+          operation: op.operation,
+          blockId: op.data?.id,
+          blockType: op.data?.block_type,
+          isTemp: op.data?.id?.toString().startsWith('temp_')
+        })));
 
         const blockPromise = fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
           method: 'POST',
@@ -1276,6 +1288,7 @@ export const CMSProvider = ({ children }) => {
                 data.results.forEach(result => {
                   if (result.operation === 'create' && result.tempId && result.block) {
                     idMapping.set(result.tempId, result.block.id);
+                    console.log(`✅ Block ID mapping: ${result.tempId} → ${result.block.id}`);
                   }
                 });
               }
@@ -1290,12 +1303,14 @@ export const CMSProvider = ({ children }) => {
               }
 
               // Setze die finalen Blöcke direkt vom Server
+              console.log(`✅ Setting ${normalizedBlocks.length} blocks from server response`);
               setBlocks(normalizedBlocks);
 
               // Aktualisiere localStorage sofort mit den finalen Server-Daten
               if (typeof window !== 'undefined') {
                 try {
                   localStorage.setItem('blocks', JSON.stringify(normalizedBlocks));
+                  console.log('✅ Updated localStorage with final blocks from server');
                 } catch (error) {
                   console.warn('⚠️ Could not update localStorage with server blocks:', error);
                 }
@@ -1330,6 +1345,7 @@ export const CMSProvider = ({ children }) => {
             const response = await fetch(`/api/cms/pages/${currentPage.id}/blocks`);
             if (response.ok) {
               const dbBlocks = await response.json();
+              console.log(`✅ Verification: Found ${dbBlocks.length} blocks in database after publishing`);
 
               if (dbBlocks.length === 0 && blocks.length > 0) {
                 console.error('❌ CRITICAL: All blocks disappeared after publishing!');
@@ -1349,6 +1365,8 @@ export const CMSProvider = ({ children }) => {
                   console.error('❌ Could not restore from backup:', backupError);
                   console.error('❌ Kritischer Fehler: Alle Blöcke sind verschwunden und Backup-Wiederherstellung fehlgeschlagen!');
                 }
+              } else if (dbBlocks.length > 0) {
+                console.log('✅ All blocks successfully saved to database');
               }
             }
           } catch (error) {
@@ -1375,6 +1393,7 @@ export const CMSProvider = ({ children }) => {
       const timeoutId = setTimeout(() => {
         try {
           localStorage.setItem('blocks', JSON.stringify(blocks));
+          console.log(`💾 Saved ${blocks.length} blocks to localStorage`);
         } catch (error) {
           console.warn('⚠️ Could not update localStorage with blocks:', error);
         }
@@ -1741,8 +1760,8 @@ export const CMSProvider = ({ children }) => {
     setComponentFiles,
     loadComponents,
 
-    currentBreakpoint,
-    setCurrentBreakpoint,
+    deviceSize,
+    setDeviceSize,
 
     // Helper functions
     getTotalPendingChanges,

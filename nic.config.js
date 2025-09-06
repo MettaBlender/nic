@@ -7,8 +7,20 @@
 const nicConfig = {
   // Grid System
   grid: {
+    // Anzahl der Spalten im Grid (Standard: 12 wie Bootstrap)
+    columns: 12,
+
+    // Minimale Anzahl der Reihen (automatisch erweiterbar)
+    minRows: 12,
+
+    // Maximale Anzahl der Reihen (0 = unbegrenzt)
+    maxRows: 0,
+
     // Gap zwischen Grid-Elementen in px
     gap: 8,
+
+    // Mindest-Höhe einer Grid-Reihe in px
+    rowHeight: '60px',
 
     // Responsive Breakpoints
     breakpoints: {

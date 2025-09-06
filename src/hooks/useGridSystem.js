@@ -11,7 +11,7 @@ import { hexToHsl, hslToHex } from '@/utils/colorFunctions.jsx';
 
 export const useGridSystem = (containerSize = { width: 1200, height: 800 }, externalLayoutSettings = null) => {
   const [gridConfig, setGridConfig] = useState(nicConfig.grid);
-  const {currentBreakpoint, setCurrentBreakpoint} = useCMS();
+  const [currentBreakpoint, setCurrentBreakpoint] = useState('desktop');
   const [gridRows, setGridRows] = useState(nicConfig.grid.minRows);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedBlock, setDraggedBlock] = useState(null);
@@ -23,18 +23,13 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
   // Use external layout settings if provided, otherwise use context
   const layoutSettings = externalLayoutSettings || contextLayoutSettings;
 
-
   // Berechne Grid-Dimensionen basierend auf Container-Größe
   const calculateGridDimensions = useCallback(() => {
     const config = nicConfig.grid.breakpoints[currentBreakpoint] || nicConfig.grid;
     const columns = config.columns;
     const gap = nicConfig.grid.gap;
 
-    console.log("containerSize.width: " + containerSize.width + " | container height: " + containerSize.height );
-
-    const faktor = currentBreakpoint == "mobile" ? 3 : currentBreakpoint == "tablet" ? 2 : 1;
-
-    const cellWidth = (containerSize.width / faktor - (gap * (columns + 1))) / columns;
+    const cellWidth = (containerSize.width - (gap * (columns + 1))) / columns;
     const cellHeight = config.rowHeight;
 
     return {
@@ -49,25 +44,24 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
   }, [containerSize, currentBreakpoint, currentPage.rows]);
 
   // Ermittle aktuellen Breakpoint
-  // useEffect(() => {
-  //   const updateBreakpoint = () => {
+  useEffect(() => {
+    const updateBreakpoint = () => {
+      const width = window.innerWidth;
+      const breakpoints = nicConfig.grid.breakpoints;
 
-  //     const width = window.innerWidth;
-  //     const breakpoints = nicConfig.grid.breakpoints;
+      if (width <= breakpoints.mobile.maxWidth) {
+        setCurrentBreakpoint('mobile');
+      } else if (width <= breakpoints.tablet.maxWidth) {
+        setCurrentBreakpoint('tablet');
+      } else {
+        setCurrentBreakpoint('desktop');
+      }
+    };
 
-  //     if (width <= breakpoints.mobile.maxWidth) {
-  //       setCurrentBreakpoint('mobile');
-  //     } else if (width <= breakpoints.tablet.maxWidth) {
-  //       setCurrentBreakpoint('tablet');
-  //     } else {
-  //       setCurrentBreakpoint('desktop');
-  //     }
-  //   };
-
-  //   updateBreakpoint();
-  //   window.addEventListener('resize', updateBreakpoint);
-  //   return () => window.removeEventListener('resize', updateBreakpoint);
-  // }, []);
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, []);
 
   // Konvertiere Pixel-Position zu Grid-Position
   const pixelToGrid = useCallback((x, y) => {
@@ -212,15 +206,14 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
     if( mode === "preview") {
       return {
         position: 'relative',
-        width: currentBreakpoint == "mobile" ? `${totalWidth / 3}px` : currentBreakpoint == "tablet" ? `${totalWidth / 2}px` : `${totalWidth}px`,
+        width: `${totalWidth}px`,
         height: `${totalHeight}px`,
         backgroundColor: '#ffffff',
-        margin: '0 auto',
       };
     } else {
       return {
         position: 'relative',
-        width: currentBreakpoint == "mobile" ? `${totalWidth / 3}px` : currentBreakpoint == "tablet" ? `${totalWidth / 2}px` : `${totalWidth}px`,
+        width: `${totalWidth}px`,
         height: `${totalHeight}px`,
         backgroundColor: layoutSettings?.background_color || '#ffffff',
         backgroundImage:`
@@ -228,8 +221,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
         linear-gradient(to bottom, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px)
         `,
         backgroundSize: `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px`,
-        backgroundPosition: `4px 4px`,
-        margin: '0 auto',
+        backgroundPosition: `4px 4px`
       };
     }
   }, [calculateGridDimensions, mode, layoutSettings]);
