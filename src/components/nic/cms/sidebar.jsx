@@ -63,7 +63,7 @@ const Sidebar = () => {
         }`}
       >
         {/* Toggle Button */}
-        <div className={`absolute top-4 left-0 flex items-center ${sidebarOpen ? 'w-80 justify-end pr-2' : 'w-16 justify-center'}`}>
+        <div className={`absolute left-0 flex items-center ${sidebarOpen ? 'w-80 justify-end pr-2 top-4' : 'w-16 justify-center top-12'}`}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="bg-background text-foreground p-2 rounded-md ring ring-transparent hover:bg-accent/10 hover:ring-accent z-10"
@@ -157,7 +157,7 @@ const Sidebar = () => {
         ) : (
           /* Collapsed Sidebar */
           <div className="h-full flex flex-col pt-16">
-            <div className="flex flex-col space-y-2 p-2">
+            <div className="flex flex-col space-y-2 p-2 mt-6">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (

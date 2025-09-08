@@ -16,7 +16,7 @@ export default async function HomePage() {
             <nav className="flex space-x-4">
               <Link
                 href="/nic"
-                className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-accent transition-colors"
+                className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-accent/40 transition-colors"
               >
                 CMS Ausprobieren
               </Link>
@@ -59,12 +59,12 @@ export default async function HomePage() {
           </div>
 
           <div className="text-center">
-            <div className="text-4xl mb-4">📱</div>
+            <div className="text-4xl mb-4">📅</div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Responsive Design
+              Grid Design
             </h3>
             <p className="text-foreground">
-              Automatisch angepasst für alle Bildschirmgrößen
+              Freie Verschiebung der Blöcke im Raster
             </p>
           </div>
 

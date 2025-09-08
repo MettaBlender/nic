@@ -170,7 +170,7 @@ const CMSEditor = () => {
 
       {selectedBlock && mode !== 'preview' && <DetailSideBar />}
 
-      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-2 left-1 w-[600%] text-center rounded-md bg-background text-accent'>Öffentliche Seite</p></button>
+      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-0 left-6 w-[500%] text-center rounded-md bg-background text-accent'>Öffentliche Seite</p></button>
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>
