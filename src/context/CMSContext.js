@@ -1390,22 +1390,6 @@ export const CMSProvider = ({ children }) => {
 
               if (dbBlocks.length === 0 && blocks.length > 0) {
                 console.error('❌ CRITICAL: All blocks disappeared after publishing!');
-                // Wiederherstelle aus Backup falls vorhanden
-                try {
-                  const backup = localStorage.getItem('blocks_backup');
-                  if (backup) {
-                    console.warn('⚠️ Kritischer Fehler: Alle Blöcke sind verschwunden! Versuche Wiederherstellung aus Backup...');
-                    const backupData = JSON.parse(backup);
-                    if (backupData.blocks && Array.isArray(backupData.blocks)) {
-                      setBlocks(backupData.blocks);
-                    }
-                  } else {
-                    console.error('❌ Kritischer Fehler: Alle Blöcke sind verschwunden und kein Backup verfügbar!');
-                  }
-                } catch (backupError) {
-                  console.error('❌ Could not restore from backup:', backupError);
-                  console.error('❌ Kritischer Fehler: Alle Blöcke sind verschwunden und Backup-Wiederherstellung fehlgeschlagen!');
-                }
               } else if (dbBlocks.length > 0) {
                 console.log('✅ All blocks successfully saved to database');
               }
@@ -1455,19 +1439,6 @@ export const CMSProvider = ({ children }) => {
       console.warn('⚠️ Error loading localStorage drafts for discard:', error);
     }
 
-    // Sichere aktuelle Blöcke bevor sie überschrieben werden
-    if (typeof window !== 'undefined' && blocks.length > 0) {
-      try {
-        localStorage.setItem('blocks_backup', JSON.stringify({
-          blocks: blocks,
-          timestamp: new Date().toISOString(),
-          reason: 'discard_drafts'
-        }));
-      } catch (error) {
-        console.warn('⚠️ Could not create blocks backup:', error);
-      }
-    }
-
     // Lade Blöcke neu wenn Seite ausgewählt - explizit von DB laden
     if (currentPage && currentPage.id) {
       loadBlocks(currentPage.id, true); // forceFromDB = true
@@ -1488,42 +1459,6 @@ export const CMSProvider = ({ children }) => {
     console.log('✅ All draft changes discarded, layout settings reloaded');
 
   }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges, blocks]);
-
-  // Backup and recovery functions
-  const hasBackup = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const backup = localStorage.getItem('blocks_backup');
-        return backup !== null;
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  }, []);
-
-  const restoreFromBackup = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const backup = localStorage.getItem('blocks_backup');
-        if (backup) {
-          const backupData = JSON.parse(backup);
-          if (backupData.blocks && Array.isArray(backupData.blocks)) {
-            setBlocks(backupData.blocks);
-            alert(`✅ Blöcke aus Backup wiederhergestellt (${backupData.timestamp})`);
-            return true;
-          }
-        }
-        alert('❌ Kein Backup gefunden');
-        return false;
-      } catch (error) {
-        console.error('❌ Error restoring from backup:', error);
-        alert('❌ Fehler beim Wiederherstellen des Backups');
-        return false;
-      }
-    }
-    return false;
-  }, []);
 
   // Manuelles Speichern
   const saveNow = useCallback(async () => {
@@ -1808,10 +1743,6 @@ export const CMSProvider = ({ children }) => {
 
     // Helper functions
     getTotalPendingChanges,
-
-    // Backup and recovery functions
-    restoreFromBackup,
-    hasBackup,
   };
 
   return (

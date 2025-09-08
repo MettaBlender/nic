@@ -2,7 +2,6 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.NEON_DATABASE_URL);
 
-// Backup Funktion für Legacy-Support
 export async function getDb() {
   // Diese Funktion wird für Init-Routes benötigt
   return sql;

@@ -1,6 +1,11 @@
 /**
  * Einfacher Text Block für Inhalte
  * @icon 📝
+ * @width 3
+ * @height 2
+ * @options {
+ *  text: "text1"
+ * }
  */
 
 'use client';
@@ -60,7 +65,7 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
   };
 
   const handleChange = (e) => {
-    setTextContent(e.target.value);
+    setTextContent((prev) => ({ ...prev, text: e.target.value }));
   };
 
   useEffect(() => {
@@ -78,7 +83,7 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
       {isEditing ? (
         <textarea
           ref={textRef}
-          value={textContent}
+          value={textContent.text}
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
@@ -94,8 +99,8 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
       ) : (
         <div className="w-full h-full flex items-center justify-center text-center break-words relative">
           <span style={{
-            color: (!textContent || !textContent.trim()) ? '#9ca3af' : 'inherit',
-            fontStyle: (!textContent || !textContent.trim()) ? 'italic' : 'normal',
+            color: (!textContent.text || !textContent?.text?.trim()) ? '#9ca3af' : 'inherit',
+            fontStyle: (!textContent.text || !textContent?.text?.trim()) ? 'italic' : 'normal',
             fontSize: block_type === 'Heading' ? '1.5rem' : '1rem',
             fontWeight: block_type === 'Heading' ? 'bold' : 'normal'
           }}>
