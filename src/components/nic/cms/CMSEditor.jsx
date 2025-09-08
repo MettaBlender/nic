@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import GridCanvas from './GridCanvas';
 import Sidebar from './sidebar';
-import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Settings } from 'lucide-react';
+import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DetailSideBar from './DetailSideBar';
 
@@ -158,12 +158,19 @@ const CMSEditor = () => {
     }
   };
 
+  const openPublicPage = () => {
+    const url = currentPage.slug === 'home' ? '/home' : `/${currentPage.slug}`;
+    window.open(url, '_blank');
+  }
+
   return (
     <div className="w-full h-full flex">
       {/* Sidebar */}
       {mode !== 'preview' && <Sidebar />}
 
       {selectedBlock && mode !== 'preview' && <DetailSideBar />}
+
+      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-2 left-1 w-[600%] text-center rounded-md bg-background text-accent'>Öffentliche Seite</p></button>
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>
