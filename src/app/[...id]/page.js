@@ -11,10 +11,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // Direct imports as fallback
-import DefaultHeader from '@/components/nic/blocks/header/DefaultHeader';
-import NavigationHeader from '@/components/nic/blocks/header/NavigationHeader';
-import DefaultFooter from '@/components/nic/blocks/footer/DefaultFooter';
-import SocialFooter from '@/components/nic/blocks/footer/SocialFooter';
+import DefaultHeader from '@/components/nic/cms/header/DefaultHeader.jsx';
+import NavigationHeader from '@/components/nic/cms/header/NavigationHeader.jsx';
+import DefaultFooter from '@/components/nic/cms/footer/DefaultFooter.jsx';
+import SocialFooter from '@/components/nic/cms/footer/SocialFooter.jsx';
 
 import nicConfig from '../../../nic.config.js';
 

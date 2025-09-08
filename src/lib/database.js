@@ -163,14 +163,41 @@ export async function updateLayoutSettings(settings) {
     secondary_color
   } = settings;
 
-  return await sql`
-    UPDATE layout_settings SET
-      header_component = ${header_component}, footer_component = ${footer_component},
-      background_color = ${background_color}, background_image = ${background_image},
-      primary_color = ${primary_color}, secondary_color = ${secondary_color},
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = (SELECT MAX(id) FROM layout_settings)
-  `;
+  // Prüfe ob bereits Layout-Einstellungen existieren
+  const existing = await sql`SELECT id FROM layout_settings ORDER BY id DESC LIMIT 1`;
+
+  if (existing.length > 0) {
+    // Update existierende Einstellungen
+    return await sql`
+      UPDATE layout_settings SET
+        header_component = ${header_component || 'default'},
+        footer_component = ${footer_component || 'default'},
+        background_color = ${background_color || '#ffffff'},
+        background_image = ${background_image},
+        primary_color = ${primary_color || '#3b82f6'},
+        secondary_color = ${secondary_color || '#64748b'},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${existing[0].id}
+    `;
+  } else {
+    // Erstelle neue Layout-Einstellungen
+    return await sql`
+      INSERT INTO layout_settings (
+        header_component, footer_component, background_color,
+        background_image, primary_color, secondary_color,
+        created_at, updated_at
+      ) VALUES (
+        ${header_component || 'default'},
+        ${footer_component || 'default'},
+        ${background_color || '#ffffff'},
+        ${background_image},
+        ${primary_color || '#3b82f6'},
+        ${secondary_color || '#64748b'},
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+    `;
+  }
 }
 
 // CMS Einstellungen

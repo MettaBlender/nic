@@ -154,7 +154,7 @@ export const createDynamicHeaderComponents = () => {
   if (!headerComponents.default) {
     try {
       headerComponents.default = dynamic(
-        () => import('@/components/nic/blocks/header/DefaultHeader'),
+        () => import('@/components/nic/cms/header/DefaultHeader'),
         { ssr: true }
       );
     } catch (error) {
@@ -201,7 +201,7 @@ export const createDynamicFooterComponents = () => {
   if (!footerComponents.default) {
     try {
       footerComponents.default = dynamic(
-        () => import('@/components/nic/blocks/footer/DefaultFooter'),
+        () => import('@/components/nic/cms/footer/DefaultFooter'),
         { ssr: true }
       );
     } catch (error) {

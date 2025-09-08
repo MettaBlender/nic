@@ -911,6 +911,13 @@ export const CMSProvider = ({ children }) => {
 
   // Layout Settings Management
   const updateLayoutSettings = useCallback((newSettings) => {
+    console.log('🎨 Updating layout settings:', newSettings);
+
+    // Validiere die Eingabedaten
+    if (!newSettings || typeof newSettings !== 'object') {
+      console.error('❌ Invalid layout settings provided:', newSettings);
+      return;
+    }
 
     // Check if settings actually changed to prevent unnecessary updates
     const hasChanges = Object.keys(newSettings).some(key =>
@@ -918,12 +925,18 @@ export const CMSProvider = ({ children }) => {
     );
 
     if (!hasChanges) {
+      console.log('ℹ️ No layout changes detected, skipping update');
       return;
     }
+
+    console.log('📝 Layout changes detected:', Object.keys(newSettings).filter(key =>
+      layoutSettings[key] !== newSettings[key]
+    ));
 
     // Aktualisiere lokalen State sofort für sofortiges Feedback
     setLayoutSettings(prev => {
       const updated = { ...prev, ...newSettings };
+      console.log('✅ Updated local layout settings:', updated);
 
       // Markiere als pending für späteren Batch-Upload nur wenn sich was geändert hat
       setPendingLayoutChanges(newSettings);
@@ -938,9 +951,11 @@ export const CMSProvider = ({ children }) => {
       };
 
       setDraftChanges(prev => {
+        // Entferne nur das letzte Layout-Change, um Duplikate zu vermeiden
         const filtered = prev.filter(change => change.type !== 'layout');
         const updatedDrafts = [...filtered, draftChange];
         saveSingleBlockChange(draftChange);
+        console.log('💾 Saved layout draft change to localStorage');
         return updatedDrafts;
       });
 
@@ -1220,18 +1235,37 @@ export const CMSProvider = ({ children }) => {
         promises.push({ type: 'blocks', promise: blockPromise });
       }
 
-      // 4. Sammle Layout-Änderungen aus drafts
-      let finalLayoutChanges = pendingLayoutChanges;
+      // 4. Sammle Layout-Änderungen aus drafts und aktuellen pendingLayoutChanges
+      let finalLayoutChanges = pendingLayoutChanges ? { ...pendingLayoutChanges } : null;
+
+      // Sammle alle Layout-Änderungen aus draft changes
       allDraftChanges.forEach(draft => {
         if (draft.type === 'layout') {
           finalLayoutChanges = finalLayoutChanges ?
             { ...finalLayoutChanges, ...draft.data } :
-            draft.data;
+            { ...draft.data };
         }
       });
 
+      // Füge auch aktuelle layoutSettings hinzu, falls finalLayoutChanges existiert
+      if (finalLayoutChanges) {
+        // Merge mit aktuellen layoutSettings um sicherzustellen, dass alle Felder vorhanden sind
+        finalLayoutChanges = {
+          header_component: layoutSettings.header_component || 'default',
+          footer_component: layoutSettings.footer_component || 'default',
+          background_color: layoutSettings.background_color || '#ffffff',
+          background_image: layoutSettings.background_image || null,
+          primary_color: layoutSettings.primary_color || '#3b82f6',
+          secondary_color: layoutSettings.secondary_color || '#64748b',
+          ...finalLayoutChanges // Überschreibe mit den tatsächlichen Änderungen
+        };
+
+        console.log('📋 Final layout changes to be published:', finalLayoutChanges);
+      }
+
       // 5. Veröffentliche Layout-Änderungen (falls vorhanden)
       if (finalLayoutChanges) {
+        console.log('🎨 Publishing layout settings:', finalLayoutChanges);
 
         const layoutPromise = fetch('/api/cms/layout', {
           method: 'PUT',
@@ -1317,10 +1351,17 @@ export const CMSProvider = ({ children }) => {
               }
             }
           } else if (promiseInfo.type === 'layout') {
+            console.log('✅ Layout operation successful:', result.value.status);
 
             // Aktualisiere Layout-UI mit Server-Daten
             if (data) {
+              console.log('🎨 Updated layout settings from server:', data);
               setLayoutSettings(data);
+
+              // Bestätige dass Layout-Änderungen erfolgreich gespeichert wurden
+              console.log('✅ Layout settings successfully saved to database');
+            } else {
+              console.warn('⚠️ Layout operation successful but no data returned');
             }
           }
         } else {
@@ -1443,6 +1484,8 @@ export const CMSProvider = ({ children }) => {
     // Lösche ALLE Draft-Änderungen (State + localStorage)
     setDraftChanges([]);
     clearDraftChanges();
+
+    console.log('✅ All draft changes discarded, layout settings reloaded');
 
   }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges, blocks]);
 

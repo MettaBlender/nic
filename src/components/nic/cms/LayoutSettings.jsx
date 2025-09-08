@@ -36,11 +36,22 @@ const LayoutSettings = () => {
   }, [layoutSettings]);
 
   const handleUpdateSettings = async (updatedSettings) => {
+    console.log('🎨 LayoutSettings: Updating settings:', updatedSettings);
+
+    // Validiere die Eingabedaten
+    if (!updatedSettings || typeof updatedSettings !== 'object') {
+      console.error('❌ Invalid settings provided:', updatedSettings);
+      return;
+    }
+
     setLocalSettings(updatedSettings);
     try {
       await updateLayoutSettings(updatedSettings);
+      console.log('✅ Layout settings updated successfully');
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Einstellungen:', error);
+      console.error('❌ Fehler beim Aktualisieren der Einstellungen:', error);
+      // Rollback bei Fehler
+      setLocalSettings(layoutSettings);
     }
   };
 
@@ -79,16 +90,21 @@ const LayoutSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.log('📁 Uploading background image:', file.name);
+
     // Hier würden Sie normalerweise das Bild auf den Server hochladen
     // Für dieses Beispiel verwenden wir eine lokale URL
     const imageUrl = URL.createObjectURL(file);
     const updatedSettings = { ...localSettings, background_image: imageUrl };
-    handleUpdateSettings(updatedSettings);
+
+    console.log('🖼️ Setting background image:', imageUrl);
+    await handleUpdateSettings(updatedSettings);
   };
 
-  const removeBackgroundImage = () => {
+  const removeBackgroundImage = async () => {
+    console.log('🗑️ Removing background image');
     const updatedSettings = { ...localSettings, background_image: null };
-    handleUpdateSettings(updatedSettings);
+    await handleUpdateSettings(updatedSettings);
   };
 
   return (
@@ -109,7 +125,11 @@ const LayoutSettings = () => {
           <h3 className="text-lg font-medium mb-3">Header Komponente</h3>
           <select
             value={localSettings.header_component || 'default'}
-            onChange={(e) => handleUpdateSettings({ ...localSettings, header_component: e.target.value })}
+            onChange={(e) => {
+              const newSettings = { ...localSettings, header_component: e.target.value };
+              console.log('🎨 Header component changed:', e.target.value);
+              handleUpdateSettings(newSettings);
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {headerComponents.map((comp) => (
@@ -125,7 +145,11 @@ const LayoutSettings = () => {
           <h3 className="text-lg font-medium mb-3">Footer Komponente</h3>
           <select
             value={localSettings.footer_component || 'default'}
-            onChange={(e) => handleUpdateSettings({ ...localSettings, footer_component: e.target.value })}
+            onChange={(e) => {
+              const newSettings = { ...localSettings, footer_component: e.target.value };
+              console.log('🎨 Footer component changed:', e.target.value);
+              handleUpdateSettings(newSettings);
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {footerComponents.map((comp) => (
