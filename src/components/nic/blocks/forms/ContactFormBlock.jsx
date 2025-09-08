@@ -3,11 +3,14 @@
  * @icon 📝
  * @width 2
  * @height 3
+ * @options {
+ *   editable: true
+ * }
  */
 
 import React from 'react';
 
-const ContactFormBlock = ({ content = '', onContentChange, editable = true }) => {
+const ContactFormBlock = ({ content, onContentChange }) => {
   return (
     <div className="w-full h-full min-h-[160px] bg-gray-50 border border-gray-200 rounded-lg p-4">
       <h3 className="text-lg font-semibold mb-3">Kontakt</h3>
@@ -16,18 +19,18 @@ const ContactFormBlock = ({ content = '', onContentChange, editable = true }) =>
           type="text"
           placeholder="Name"
           className="w-full p-2 border border-gray-300 rounded text-sm"
-          disabled={!editable}
+          disabled={!content.editable}
         />
         <input
           type="email"
           placeholder="E-Mail"
           className="w-full p-2 border border-gray-300 rounded text-sm"
-          disabled={!editable}
+          disabled={!content.editable}
         />
         <textarea
           placeholder="Nachricht"
           className="w-full p-2 border border-gray-300 rounded text-sm h-16 resize-none"
-          disabled={!editable}
+          disabled={!content.editable}
         />
         <button className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
           Senden

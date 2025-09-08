@@ -817,8 +817,9 @@ export const CMSProvider = ({ children }) => {
       // Verwende Default-Options als Content
       contentObject = { ...defaultOptions };
     } else {
-      // Fallback für Text-Blöcke
-      contentObject = { text: blockType === 'Text' ? 'Neuer Text' : '' };
+      // Kein automatischer Fallback mehr - Block muss gültigen Content haben
+      console.warn(`Block ${blockType} konnte nicht erstellt werden: Kein gültiger Content oder Default-Options gefunden`);
+      return null; // Verhindere automatische Text-Block-Erstellung
     }
 
     const newBlock = {

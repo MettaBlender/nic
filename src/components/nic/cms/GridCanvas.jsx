@@ -446,7 +446,10 @@ const GridCanvas = () => {
     };
 
     // Block über Context hinzufügen
-    createBlock(blockWithPosition);
+    const result = createBlock(blockWithPosition);
+    if (!result) {
+      console.warn('Block konnte nicht erstellt werden - Fallback verhindert');
+    }
   }, [pixelToGrid, createBlock, blocks]);
 
   const handleDragOver = useCallback((e) => {

@@ -87,12 +87,17 @@ export default function Components() {
     }
 
     try {
-      createBlock({
+      const result = createBlock({
         block_type: blockType,
         grid_width: component?.width || 2,
         grid_height: component?.height || 1,
         category: categoryName
       });
+
+      if (!result) {
+        console.warn(`Block ${blockType} konnte nicht erstellt werden - keine gültigen Default-Options gefunden`);
+        alert(`Fehler: Block ${blockType} konnte nicht erstellt werden. Möglicherweise fehlen Default-Options.`);
+      }
     } catch (error) {
       console.error('Fehler beim Hinzufügen des Blocks:', error);
       alert('Fehler beim Hinzufügen des Blocks');
