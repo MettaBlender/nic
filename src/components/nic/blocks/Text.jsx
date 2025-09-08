@@ -12,14 +12,14 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 
-const Text = ({ content = '', onContentChange, editable = false, block_type = 'Text' }) => {
+const Text = ({ content, onContentChange, editable = false, block_type = 'Text' }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [textContent, setTextContent] = useState(content);
+  const [textContent, setTextContent] = useState(content.text);
   const textRef = useRef(null);
 
   // Besserer Default-Content basierend auf Block-Typ
   const getDefaultContent = () => {
-    if (content && content.trim()) return content;
+    if (content && content?.text?.trim()) return content.text;
 
     switch (block_type) {
       case 'Text':
@@ -36,8 +36,8 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
   const displayContent = textContent || getDefaultContent();
 
   useEffect(() => {
-    setTextContent(content);
-  }, [content]);
+    setTextContent(content.text);
+  }, [content.text]);
 
   const handleDoubleClick = (e) => {
     e.stopPropagation();
@@ -48,7 +48,7 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (onContentChange && textContent !== content) {
+    if (onContentChange && textContent !== content.text) {
       onContentChange(textContent);
     }
   };
@@ -59,13 +59,13 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
       handleBlur();
     }
     if (e.key === 'Escape') {
-      setTextContent(content);
+      setTextContent(content.text);
       setIsEditing(false);
     }
   };
 
   const handleChange = (e) => {
-    setTextContent((prev) => ({ ...prev, text: e.target.value }));
+    setTextContent(e.target.value);
   };
 
   useEffect(() => {
@@ -83,7 +83,7 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
       {isEditing ? (
         <textarea
           ref={textRef}
-          value={textContent.text}
+          value={textContent}
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
@@ -99,8 +99,8 @@ const Text = ({ content = '', onContentChange, editable = false, block_type = 'T
       ) : (
         <div className="w-full h-full flex items-center justify-center text-center break-words relative">
           <span style={{
-            color: (!textContent.text || !textContent?.text?.trim()) ? '#9ca3af' : 'inherit',
-            fontStyle: (!textContent.text || !textContent?.text?.trim()) ? 'italic' : 'normal',
+            color: (!textContent || !textContent.trim()) ? '#9ca3af' : 'inherit',
+            fontStyle: (!textContent || !textContent.trim()) ? 'italic' : 'normal',
             fontSize: block_type === 'Heading' ? '1.5rem' : '1rem',
             fontWeight: block_type === 'Heading' ? 'bold' : 'normal'
           }}>

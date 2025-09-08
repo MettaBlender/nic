@@ -1,5 +1,15 @@
 import React from 'react'
 
+/**
+ * Test Block Component
+ * @icon 🧪
+ * @description Test component for grid system
+ * @options {
+ *  title: "test title",
+ *  description: "This is a test description",
+ * }
+ */
+
 const TestComponents = ({ content, block, ...props }) => {
   // Handle different content types
   const renderContent = () => {
@@ -17,11 +27,6 @@ const TestComponents = ({ content, block, ...props }) => {
           )}
         </div>
       );
-    }
-
-    // If content is a string
-    if (typeof content === 'string') {
-      return <div className="text-gray-800">{content}</div>;
     }
 
     // Fallback for any other content type

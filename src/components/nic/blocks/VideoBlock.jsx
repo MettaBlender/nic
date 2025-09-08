@@ -2,14 +2,22 @@
 
 import React from 'react'
 
-const VideoBlock = ({ content = '', title = 'Video Block' }) => {
-  const videoUrl = content;
+/**
+ * Test Block Component
+ * @icon 🎥
+ * @description Test component for grid system
+ * @options {
+ *  videoUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+ * }
+ */
+
+const VideoBlock = ({ content, title = 'Video Block' }) => {
 
   return (
     <div className="w-full h-full">
-      {videoUrl ? (
+      {content.videoUrl ? (
         <video
-          src={videoUrl}
+          src={content.videoUrl}
           controls
           className="w-full h-full object-cover rounded"
         >

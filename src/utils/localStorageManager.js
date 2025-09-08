@@ -199,3 +199,38 @@ export const cleanupOldDrafts = () => {
     return false;
   }
 };
+
+/**
+ * Bereinige alte temp_ IDs aus localStorage blocks
+ */
+export const cleanupTempBlocks = () => {
+  try {
+    const storedBlocks = localStorage.getItem('blocks');
+    if (!storedBlocks) return true;
+
+    const blocks = JSON.parse(storedBlocks);
+    if (!Array.isArray(blocks)) return true;
+
+    // Entferne alle Blöcke mit temp_ IDs die älter als 1 Stunde sind
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const cleanedBlocks = blocks.filter(block => {
+      if (!block.id || !block.id.toString().startsWith('temp_')) {
+        return true; // Behalte nicht-temp Blöcke
+      }
+
+      // Prüfe das Alter basierend auf created_at
+      const createdAt = new Date(block.created_at || 0).getTime();
+      return createdAt > oneHourAgo; // Behalte nur neue temp Blöcke
+    });
+
+    if (cleanedBlocks.length !== blocks.length) {
+      localStorage.setItem('blocks', JSON.stringify(cleanedBlocks));
+      console.log(`🧹 Cleaned up ${blocks.length - cleanedBlocks.length} old temp blocks from localStorage`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to cleanup temp blocks:', error);
+    return false;
+  }
+};

@@ -6,7 +6,8 @@ import {
   loadDraftChanges,
   clearDraftChanges,
   saveSingleBlockChange,
-  cleanupOldDrafts
+  cleanupOldDrafts,
+  cleanupTempBlocks
 } from '../utils/localStorageManager.js';
 import { getComponentFiles } from '@/components/nic/cms/Components.jsx';
 
@@ -374,8 +375,9 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('dirty');
     }
 
-    // Bereinige alte Drafts
+    // Bereinige alte Drafts und temp Blöcke
     cleanupOldDrafts();
+    cleanupTempBlocks();
   }, []);
 
   // State um zu verfolgen, ob Draft-Änderungen bereits angewendet wurden
@@ -1069,44 +1071,48 @@ export const CMSProvider = ({ children }) => {
       // 2. Sammle alle Block-Operations mit aktuellen Positionen aus dem State
       const allBlockOperations = new Map();
 
-      // Sammle ALLE aktuellen Blöcke (sowohl existierende als auch neue mit temp IDs)
+      // Verwende NUR die aktuellen Blöcke aus dem State - NICHT aus localStorage
+      // localStorage kann veraltete temp_ IDs enthalten, die zu doppelten Blöcken führen
       const allCurrentBlocks = [...blocks];
 
-      // Füge auch Blöcke aus localStorage hinzu, die noch nicht im State sind
-      try {
-        const storedBlocks = localStorage.getItem('blocks');
-        if (storedBlocks) {
-          const localStorageBlocks = JSON.parse(storedBlocks);
-          localStorageBlocks.forEach(localBlock => {
-            if (!allCurrentBlocks.find(b => b.id === localBlock.id)) {
-              allCurrentBlocks.push(localBlock);
-            }
-          });
+      console.log(`📋 Processing ${allCurrentBlocks.length} blocks from current state`);
+
+      // Verarbeite NUR Blöcke mit temp_ IDs, die auch in pendingOperations oder draftChanges sind
+      // Das verhindert, dass alte temp_ IDs aus localStorage doppelt erstellt werden
+      const tempBlocksToCreate = allCurrentBlocks.filter(block => {
+        if (!block.id || !block.id.toString().startsWith('temp_')) {
+          return false;
         }
-      } catch (error) {
-        console.warn('⚠️ Could not load additional blocks from localStorage:', error);
-      }
 
-      // Verarbeite alle aktuellen Blöcke
-      allCurrentBlocks.forEach(block => {
-        if (block.id && block.id.toString().startsWith('temp_')) {
-          // Neuer Block mit temporärer ID → CREATE Operation
-          let operationData = {
-            id: block.id,
-            page_id: block.page_id || currentPage?.id,
-            block_type: block.block_type,
-            content: typeof block.content === 'object' ? JSON.stringify(block.content) : block.content,
-            grid_col: block.grid_col || 0,
-            grid_row: block.grid_row || 0,
-            grid_width: block.grid_width || 2,
-            grid_height: block.grid_height || 1,
-            background_color: block.background_color || 'transparent',
-            text_color: block.text_color || '#000000',
-            z_index: block.z_index || 1,
-            created_at: block.created_at,
-            updated_at: block.updated_at
-          };
+        // Prüfe ob dieser Block in pendingOperations oder draftChanges ist
+        const hasPendingOperation = pendingOperations.has(block.id);
+        const hasDraftChange = allDraftChanges.some(draft => draft.blockId === block.id);
 
+        return hasPendingOperation || hasDraftChange;
+      });
+
+      console.log(`📋 Found ${tempBlocksToCreate.length} temp blocks that need to be created`);
+
+      tempBlocksToCreate.forEach(block => {
+        // Neuer Block mit temporärer ID → CREATE Operation
+        let operationData = {
+          id: block.id,
+          page_id: block.page_id || currentPage?.id,
+          block_type: block.block_type,
+          content: typeof block.content === 'object' ? JSON.stringify(block.content) : block.content,
+          grid_col: block.grid_col || 0,
+          grid_row: block.grid_row || 0,
+          grid_width: block.grid_width || 2,
+          grid_height: block.grid_height || 1,
+          background_color: block.background_color || 'transparent',
+          text_color: block.text_color || '#000000',
+          z_index: block.z_index || 1,
+          created_at: block.created_at,
+          updated_at: block.updated_at
+        };
+
+        // Füge nur hinzu wenn noch keine Operation für diesen Block existiert
+        if (!allBlockOperations.has(block.id)) {
           allBlockOperations.set(block.id, {
             operation: 'create',
             data: operationData,
@@ -1115,7 +1121,7 @@ export const CMSProvider = ({ children }) => {
         }
       });
 
-      // Zuerst sammle existierende pendingOperations
+      // Sammle existierende pendingOperations
       pendingOperations.forEach((operation, blockId) => {
         let operationData = operation.data;
 
@@ -1202,7 +1208,7 @@ export const CMSProvider = ({ children }) => {
                 };
               }
 
-              // Überschreibe nur wenn noch keine Operation für diesen Block existiert
+              // Verhindere doppelte Operations für den gleichen Block
               if (!allBlockOperations.has(draft.blockId)) {
                 // WICHTIG: Wenn blockId eine temp-ID ist, behandle IMMER als CREATE
                 const finalOperationType = draft.blockId.toString().startsWith('temp_') ? 'create' : draft.type;
@@ -1220,12 +1226,10 @@ export const CMSProvider = ({ children }) => {
 
         // Debug: Zeige alle Operations die gesendet werden
         const operations = Array.from(allBlockOperations.values());
-        console.log(`📤 Sending ${operations.length} block operations to server:`, operations.map(op => ({
-          operation: op.operation,
-          blockId: op.data?.id,
-          blockType: op.data?.block_type,
-          isTemp: op.data?.id?.toString().startsWith('temp_')
-        })));
+        console.log(`📤 Sending ${operations.length} block operations to server:`);
+        operations.forEach((op, index) => {
+          console.log(`  ${index + 1}. ${op.operation.toUpperCase()}: ${op.data?.block_type || 'unknown'} (ID: ${op.data?.id || 'unknown'})`);
+        });
 
         const blockPromise = fetch(`/api/cms/pages/${currentPage.id}/blocks/batch`, {
           method: 'POST',
@@ -1403,6 +1407,9 @@ export const CMSProvider = ({ children }) => {
       // 9. Lösche ALLE Draft-Änderungen (State + localStorage) und synchronisiere mit DB
       setDraftChanges([]);
       clearDraftChanges(); // Lösche localStorage
+      cleanupTempBlocks(); // Bereinige alte temp_ IDs
+
+      console.log('✅ All draft changes published and cleared');
 
     } catch (error) {
       console.error('❌ Error publishing drafts:', error);
