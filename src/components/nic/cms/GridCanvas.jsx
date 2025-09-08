@@ -483,20 +483,6 @@ const GridCanvas = () => {
         >
           - letzte Zeile entfernen
         </button>
-        <button
-          onClick={async () => {
-            try {
-              await loadComponents();
-              alert(`✅ Komponenten neu geladen!`);
-            } catch (error) {
-              console.error('❌ Error refreshing components:', error);
-              alert('❌ Fehler beim Neuladen der Komponenten');
-            }
-          }}
-          className='bg-accent/10 hover:bg-background text-white ring ring-accent cursor-pointer rounded-md px-4 py-2'
-        >
-          🔄 Komponenten neu laden
-        </button>
 
         <button
           onClick={() => {

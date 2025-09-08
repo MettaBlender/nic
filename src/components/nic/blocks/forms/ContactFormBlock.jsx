@@ -1,11 +1,13 @@
 /**
  * Kontaktformular Block für Benutzeranfragen
  * @icon 📝
+ * @width 2
+ * @height 3
  */
 
 import React from 'react';
 
-const ContactFormBlock = ({ content = '', onContentChange, editable = false }) => {
+const ContactFormBlock = ({ content = '', onContentChange, editable = true }) => {
   return (
     <div className="w-full h-full min-h-[160px] bg-gray-50 border border-gray-200 rounded-lg p-4">
       <h3 className="text-lg font-semibold mb-3">Kontakt</h3>

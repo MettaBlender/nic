@@ -234,3 +234,48 @@ export const cleanupTempBlocks = () => {
     return false;
   }
 };
+
+/**
+ * Bereinige problematische Draft-Änderungen
+ */
+export const cleanupProblematicDrafts = () => {
+  try {
+    const storedDrafts = localStorage.getItem(STORAGE_KEYS.DRAFT_CHANGES);
+    if (!storedDrafts) return true;
+
+    const drafts = JSON.parse(storedDrafts);
+    if (!Array.isArray(drafts)) return true;
+
+    // Entferne problematische Draft-Änderungen
+    const cleanedDrafts = drafts.filter(draft => {
+      // Entferne Text-Block CREATE Drafts ohne Inhalt
+      if (draft.type === 'create' &&
+          draft.data?.block_type === 'Text' &&
+          (!draft.data.content ||
+           (typeof draft.data.content === 'object' && !draft.data.content.text) ||
+           (typeof draft.data.content === 'string' && draft.data.content.trim() === ''))) {
+        console.log(`🧹 Removing problematic Text block draft: ${draft.blockId}`);
+        return false;
+      }
+
+      // Entferne sehr alte Draft-Änderungen (älter als 24 Stunden)
+      const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      if (draft.timestamp < dayAgo) {
+        console.log(`🧹 Removing old draft: ${draft.blockId} (${new Date(draft.timestamp).toLocaleString()})`);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (cleanedDrafts.length !== drafts.length) {
+      localStorage.setItem(STORAGE_KEYS.DRAFT_CHANGES, JSON.stringify(cleanedDrafts));
+      console.log(`🧹 Cleaned up ${drafts.length - cleanedDrafts.length} problematic draft changes`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to cleanup problematic drafts:', error);
+    return false;
+  }
+};

@@ -1,6 +1,8 @@
 /**
  * Newsletter Anmeldung Block
  * @icon 📧
+ * @width 2
+ * @height 3
  */
 
 import React from 'react';

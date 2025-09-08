@@ -7,7 +7,8 @@ import {
   clearDraftChanges,
   saveSingleBlockChange,
   cleanupOldDrafts,
-  cleanupTempBlocks
+  cleanupTempBlocks,
+  cleanupProblematicDrafts
 } from '../utils/localStorageManager.js';
 import { getComponentFiles } from '@/components/nic/cms/Components.jsx';
 
@@ -225,7 +226,8 @@ export const CMSProvider = ({ children }) => {
       switch (draft.type) {
         case 'create':
           // Prüfe ob Block bereits existiert (könnte durch andere Drafts erstellt worden sein)
-          if (!updatedBlocks.find(b => b.id === draft.blockId)) {
+          const existingBlock = updatedBlocks.find(b => b.id === draft.blockId);
+          if (!existingBlock) {
             // Verarbeite Content für create korrekt
             let blockData = { ...draft.data };
             if (blockData.content && typeof blockData.content === 'string') {
@@ -236,12 +238,23 @@ export const CMSProvider = ({ children }) => {
               }
             }
 
+            console.log(`➕ Adding block from draft: ${draft.blockId} (${blockData.block_type || 'UNKNOWN'})`);
+            console.log('📊 Block data:', blockData);
+
+            // SICHERHEITSPRÜFUNG: Verhindere ungewollte Text-Blöcke
+            if (blockData.block_type === 'Text' && !blockData.content?.text && !blockData.content) {
+              console.warn('⚠️ Preventing creation of empty Text block from draft');
+              return; // Überspringe diesen Block
+            }
+
             updatedBlocks.push(blockData);
             pendingOps.set(draft.blockId, {
               operation: 'create',
               data: blockData,
               timestamp: draft.timestamp
             });
+          } else {
+            console.log(`ℹ️ Block ${draft.blockId} already exists, skipping create`);
           }
           break;
 
@@ -347,19 +360,38 @@ export const CMSProvider = ({ children }) => {
   const loadAndApplyDrafts = useCallback(() => {
     const savedDrafts = loadDraftChanges();
     if (savedDrafts.length > 0) {
+      console.log(`🔄 Loading ${savedDrafts.length} draft changes from localStorage`);
 
-      // Wende Draft-Änderungen auf aktuelle Blöcke an
-      setBlocks(prevBlocks => {
-        const updatedBlocks = applyDraftChangesToBlocks(savedDrafts, prevBlocks);
-
-        return updatedBlocks;
+      // Filtere problematische Draft-Änderungen vor der Anwendung
+      const validDrafts = savedDrafts.filter(draft => {
+        // Filtere leere Text-Block CREATE Drafts
+        if (draft.type === 'create' &&
+            draft.data?.block_type === 'Text' &&
+            (!draft.data.content ||
+             (typeof draft.data.content === 'object' && !draft.data.content.text) ||
+             (typeof draft.data.content === 'string' && draft.data.content.trim() === ''))) {
+          console.warn(`⚠️ Filtering out empty Text block draft: ${draft.blockId}`);
+          return false;
+        }
+        return true;
       });
 
-      // Überschreibe draftChanges komplett mit den geladenen Drafts (keine Deduplication)
-      // um sicherzustellen, dass alle Draft-Änderungen erhalten bleiben
-      setDraftChanges(savedDrafts);
+      if (validDrafts.length !== savedDrafts.length) {
+        console.log(`🧹 Filtered out ${savedDrafts.length - validDrafts.length} problematic drafts`);
+      }
 
-      setSaveStatus('dirty');
+      if (validDrafts.length > 0) {
+        // Wende Draft-Änderungen auf aktuelle Blöcke an
+        setBlocks(prevBlocks => {
+          const updatedBlocks = applyDraftChangesToBlocks(validDrafts, prevBlocks);
+          console.log(`📦 Applied drafts: ${prevBlocks.length} -> ${updatedBlocks.length} blocks`);
+          return updatedBlocks;
+        });
+
+        // Überschreibe draftChanges mit den gefilterten Drafts
+        setDraftChanges(validDrafts);
+        setSaveStatus('dirty');
+      }
     }
   }, [loadDraftChanges, applyDraftChangesToBlocks]);
 
@@ -375,9 +407,10 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('dirty');
     }
 
-    // Bereinige alte Drafts und temp Blöcke
+    // Bereinige alte Drafts, temp Blöcke und problematische Draft-Änderungen
     cleanupOldDrafts();
     cleanupTempBlocks();
+    cleanupProblematicDrafts();
   }, []);
 
   // State um zu verfolgen, ob Draft-Änderungen bereits angewendet wurden
@@ -386,18 +419,32 @@ export const CMSProvider = ({ children }) => {
   // Zusätzlicher useEffect, der Draft-Änderungen anwendet, sobald Blöcke geladen sind
   useEffect(() => {
     if (blocks.length > 0 && !draftsApplied && draftChanges.length > 0) {
+      console.log('🔄 Applying draft changes to loaded blocks...');
 
       // Kleiner Delay um sicherzustellen, dass Blöcke vollständig geladen sind
       const timer = setTimeout(() => {
+        // Prüfe nochmal ob Draft-Änderungen bereits angewendet wurden
+        if (draftsApplied) {
+          console.log('ℹ️ Draft changes already applied, skipping');
+          return;
+        }
+
         const updatedBlocks = applyDraftChangesToBlocks(draftChanges, blocks);
 
-        setBlocks(updatedBlocks);
+        // Verhindere Endlosschleife durch Prüfung ob sich wirklich etwas geändert hat
+        if (JSON.stringify(updatedBlocks) !== JSON.stringify(blocks)) {
+          console.log('✅ Applying draft changes to blocks');
+          setBlocks(updatedBlocks);
+        } else {
+          console.log('ℹ️ No changes detected in draft application');
+        }
+
         setDraftsApplied(true);
       }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [blocks.length, draftsApplied, draftChanges.length, applyDraftChangesToBlocks, blocks, draftChanges]);
+  }, [blocks.length, draftsApplied, draftChanges.length, applyDraftChangesToBlocks]);
 
   // Reset draftsApplied when page changes
   useEffect(() => {
@@ -674,6 +721,9 @@ export const CMSProvider = ({ children }) => {
 
   // Block erstellen mit verbesserter Collision Detection und Default-Options
   const createBlock = useCallback((blockData) => {
+    console.log('🆕 createBlock called with:', blockData);
+    console.trace('📍 createBlock call stack');
+
     // Validierung: Stelle sicher, dass blockData existiert
     if (!blockData) {
       console.error('❌ createBlock: blockData is undefined or null');
@@ -1502,20 +1552,6 @@ export const CMSProvider = ({ children }) => {
     return totalPendingOperations + totalLayoutChanges + totalDraftChanges;
   }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length, loadDraftChanges]);
 
-  // Warnung vor Seitenverlassen mit ungespeicherten Änderungen
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (getTotalPendingChanges() > 0) {
-        e.preventDefault();
-        e.returnValue = 'Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?';
-        return e.returnValue;
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [getTotalPendingChanges]);
-
   const [componentFiles, setComponentFiles] = useState([]);
 
   const loadComponents = async () => {
@@ -1750,6 +1786,22 @@ export const CMSProvider = ({ children }) => {
 
     // Helper functions
     getTotalPendingChanges,
+
+    // Debug functions
+    debugLocalStorage: () => {
+      console.log('🔍 localStorage Debug Info:');
+      console.log('Blocks:', JSON.parse(localStorage.getItem('blocks') || '[]'));
+      console.log('Draft Changes:', JSON.parse(localStorage.getItem('draftChanges') || '[]'));
+      console.log('Current Page:', JSON.parse(localStorage.getItem('currentPage') || 'null'));
+    },
+
+    cleanupAllStorage: () => {
+      console.log('🧹 Cleaning up all localStorage...');
+      cleanupOldDrafts();
+      cleanupTempBlocks();
+      cleanupProblematicDrafts();
+      console.log('✅ Storage cleanup completed');
+    },
   };
 
   return (
