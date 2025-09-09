@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export function middleware(request) {
   // Prüfe nur Anfragen an /nic, aber nicht /nic/login
-  if (request.nextUrl.pathname.startsWith('/nic') && !request.nextUrl.pathname.startsWith('/nic/login')) {
+  if (request.nextUrl.pathname.startsWith('/nic') && !request.nextUrl.pathname.startsWith('/nic/login') && !request.nextUrl.pathname.startsWith('/nic/docs')) {
     const isAuthenticated = request.cookies.get('nic-auth')?.value === 'authenticated';
 
     // Wenn bereits authentifiziert, weiterleiten
