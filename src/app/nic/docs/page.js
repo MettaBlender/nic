@@ -182,7 +182,7 @@ const Docs = () => {
                     The Folder name must be unique.
                   </li>
                   <li className='mt-2'>
-                    Don't create subfolders within a folder in the blocks folder, it won't work properly.
+                    Don&apos;t create subfolders within a folder in the blocks folder, it won&apos;t work properly.
                   </li>
                   <li className='mt-2'>
                     The name of the File and the Component must match.
