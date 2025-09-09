@@ -23,7 +23,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
   // Use external layout settings if provided, otherwise use context
   const layoutSettings = externalLayoutSettings || contextLayoutSettings;
 
-  // Berechne Grid-Dimensionen basierend auf Container-Größe
+  // Calculate grid dimensions based on container size
   const calculateGridDimensions = useCallback(() => {
     const config = nicConfig.grid.breakpoints[currentBreakpoint] || nicConfig.grid;
     const columns = config.columns;
@@ -98,7 +98,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
     };
   }, [calculateGridDimensions]);
 
-  // Prüfe ob eine Position verfügbar ist
+  // Check if a position is available
   const isPositionAvailable = useCallback((col, row, width, height, blocks, excludeId = null) => {
     const { columns } = calculateGridDimensions();
 
@@ -107,7 +107,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
       return false;
     }
 
-    // Prüfe Kollisionen mit anderen Blöcken
+    // Check collisions with other blocks
     for (const block of blocks) {
       if (block.id === excludeId) continue;
 
@@ -226,7 +226,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
     }
   }, [calculateGridDimensions, mode, layoutSettings]);
 
-  // Style-Generator für Grid-Blöcke
+  // Style generator for grid blocks
   const getBlockStyle = useCallback((block) => {
     const position = gridToPixel(block.grid_col, block.grid_row);
     const size = getBlockPixelSize(block.grid_width, block.grid_height);

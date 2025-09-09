@@ -9,7 +9,7 @@ export async function PUT(request) {
 
     return NextResponse.json(content);
   } catch (error) {
-    console.error('Fehler beim Aktualisieren des Blocks:', error);
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren des Blocks' }, { status: 500 });
+    console.error('Error updating block:', error);
+    return NextResponse.json({ error: 'Error updating block' }, { status: 500 });
   }
 }

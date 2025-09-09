@@ -37,7 +37,7 @@ const DetailSideBar = () => {
         }
       } catch (error) {
         console.warn('Could not parse content, using defaults:', error);
-        // Bei Parsing-Fehlern: versuche als text zu interpretieren oder leeres Objekt
+        // On parsing errors: try to interpret as text or empty object
         parsedContent = selectedBlock.content ? { text: selectedBlock.content } : {};
       }
 
@@ -64,7 +64,7 @@ const DetailSideBar = () => {
     }));
   };
 
-  // Property hinzufügen
+  // Add property
   const addProperty = (key, defaultValue = '') => {
     if (key && !contentObject.hasOwnProperty(key)) {
       setContentObject(prev => ({
@@ -83,7 +83,7 @@ const DetailSideBar = () => {
     });
   };
 
-  // Erkennung des Input-Typs basierend auf Wert und Key-Name
+  // Input type detection based on value and key name
   const getInputType = (key, value) => {
     // Farb-Felder
     if (key.toLowerCase().includes('color') || key.toLowerCase().includes('colour')) {
@@ -137,7 +137,7 @@ const DetailSideBar = () => {
       });
 
       setSaveStatus('success');
-      setSaveMessage('Erfolgreich gespeichert!');
+      setSaveMessage('Successfully saved!');
 
       // Status nach 3 Sekunden zurücksetzen
       setTimeout(() => {
@@ -148,7 +148,7 @@ const DetailSideBar = () => {
     } catch (error) {
       console.error('❌ Error saving content to database:', error);
       setSaveStatus('error');
-      setSaveMessage(`Fehler: ${error.message}`);
+      setSaveMessage(`Error: ${error.message}`);
 
       // Status nach 5 Sekunden zurücksetzen
       setTimeout(() => {
@@ -215,7 +215,7 @@ const DetailSideBar = () => {
                 <h3 className='font-medium text-foreground'>Content Properties</h3>
                 {componentDef?.options && Object.keys(componentDef.options).length > 0 && (
                   <div className='text-xs text-gray-400'>
-                    ({Object.keys(contentObject).length} von {Object.keys(componentDef.options).length} Feldern)
+                    ({Object.keys(contentObject).length} of {Object.keys(componentDef.options).length} fields)
                   </div>
                 )}
               </div>

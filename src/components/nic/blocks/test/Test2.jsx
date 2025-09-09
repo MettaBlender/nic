@@ -1,7 +1,7 @@
 import React from 'react'
 
 /**
- * Einfacher Text Block für Inhalte
+ * Simple test block for content
  * @icon 💡
  * @width 1
  * @height 1

@@ -9,8 +9,8 @@ export async function GET() {
     const settings = await getLayoutSettings();
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Fehler beim Abrufen der Layout-Einstellungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Abrufen der Layout-Einstellungen' }, { status: 500 });
+    console.error('Error fetching layout settings:', error);
+    return NextResponse.json({ error: 'Error fetching layout settings' }, { status: 500 });
   }
 }
 
@@ -48,7 +48,7 @@ export async function PUT(request) {
     console.log('✅ Layout settings updated successfully:', updatedSettings);
     return NextResponse.json(updatedSettings);
   } catch (error) {
-    console.error('❌ Fehler beim Aktualisieren der Layout-Einstellungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren der Layout-Einstellungen' }, { status: 500 });
+    console.error('❌ Error updating layout settings:', error);
+    return NextResponse.json({ error: 'Error updating layout settings' }, { status: 500 });
   }
 }

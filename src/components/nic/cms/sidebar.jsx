@@ -34,13 +34,13 @@ const Sidebar = () => {
   const tabs = [
     {
       id: 'blocks',
-      label: 'Blöcke',
+      label: 'Blocks',
       icon: Blocks,
       component: Components
     },
     {
       id: 'pages',
-      label: 'Seiten',
+      label: 'Pages',
       icon: FileText,
       component: PageManager
     },
@@ -74,18 +74,18 @@ const Sidebar = () => {
 
         {sidebarOpen ? (
           <div className="h-full flex flex-col">
-            {/* Draft-Status und Aktionen - IMMER SICHTBAR */}
+            {/* Draft status and actions - ALWAYS VISIBLE */}
             <div className="p-4 pt-16 border-b border-accent">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-foreground text-sm font-medium">
-                  Draft-Änderungen: {pendingOperationsCount}
+                  Draft-Changes: {pendingOperationsCount}
                 </span>
                 <div className="flex gap-1">
                   <button
                     onClick={undo}
                     disabled={undoHistory.length === 0}
                     className="p-1 text-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/20"
-                    title="Rückgängig (Ctrl+Z)"
+                    title="Undo (Ctrl+Z)"
                   >
                     <RotateCcw size={14} />
                   </button>
@@ -93,14 +93,14 @@ const Sidebar = () => {
                     onClick={redo}
                     disabled={redoHistory.length === 0}
                     className="p-1 text-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/20"
-                    title="Wiederholen (Ctrl+Y)"
+                    title="Redo (Ctrl+Y)"
                   >
                     <RotateCw size={14} />
                   </button>
                 </div>
               </div>
 
-              {/* Buttons IMMER anzeigen */}
+              {/* ALWAYS show buttons */}
               <div className="flex gap-2 mb-2">
                 <button
                   onClick={publishDrafts}
@@ -108,12 +108,12 @@ const Sidebar = () => {
                   className="flex-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                 >
                   <Upload size={12} />
-                  Veröffentlichen
+                  Publish
                 </button>
                 <button
                   onClick={() => {
                     if (pendingOperationsCount === 0) return;
-                    if (confirm(`${pendingOperationsCount} Änderungen verwerfen?`)) {
+                    if (confirm(`Discard ${pendingOperationsCount} changes?`)) {
                       discardDrafts();
                     }
                   }}
@@ -121,7 +121,7 @@ const Sidebar = () => {
                   className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                 >
                   <X size={12} />
-                  Verwerfen
+                  Discard
                 </button>
               </div>
             </div>

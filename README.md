@@ -1,56 +1,56 @@
 # NIC CMS - Next.js Intuitive Content Management System
 
-Ein modernes, drag-and-drop basiertes Content Management System, entwickelt mit Next.js, React und SQLite.
+A modern, drag-and-drop based Content Management System built with Next.js, React and SQLite.
 
 ## 🚀 Features
 
 ### CMS Editor (`/nic`)
-- **Drag & Drop Editor**: Frei bewegbare Blöcke ähnlich wie im japresentation Projekt
-- **Block-Bibliothek**: Vordefinierte Komponenten (Text, Image, Button, Video, Container)
-- **Seiten-Verwaltung**: Erstellen, bearbeiten und löschen von Seiten
-- **Layout-Einstellungen**: Anpassbare Header, Footer, Farben und Hintergründe
-- **Responsive Design**: Automatisch angepasst für alle Bildschirmgrößen
+- **Drag & Drop Editor**: Freely movable blocks similar to the japresentation project
+- **Block Library**: Predefined components (Text, Image, Button, Video, Container)
+- **Page Management**: Create, edit and delete pages
+- **Layout Settings**: Customizable header, footer, colors and backgrounds
+- **Responsive Design**: Automatically adapted for all screen sizes
 
-### Block-Typen
-- **Text Block**: Editierbarer Text mit Doppelklick-Bearbeitung
-- **Image Block**: Bild-Upload und -anzeige
-- **Button Block**: Anklickbare Buttons
-- **Video Block**: Video-Einbettung
-- **Container Block**: Gruppierung anderer Blöcke
+### Block Types
+- **Text Block**: Editable text with double-click editing
+- **Image Block**: Image upload and display
+- **Button Block**: Clickable buttons
+- **Video Block**: Video embedding
+- **Container Block**: Grouping of other blocks
 
-### Layout-System
-- **Header Komponenten**:
-  - DefaultHeader: Einfacher Header
-  - NavigationHeader: Header mit Navigation
-- **Footer Komponenten**:
-  - DefaultFooter: Standard Footer
-  - SocialFooter: Footer mit Social Media Links
+### Layout System
+- **Header Components**:
+  - DefaultHeader: Simple header
+  - NavigationHeader: Header with navigation
+- **Footer Components**:
+  - DefaultFooter: Standard footer
+  - SocialFooter: Footer with social media links
 
-### Datenbank
-- **SQLite**: Lokale Datenbank für Seiten, Blöcke und Einstellungen
-- **Automatische Migration**: Datenbankstruktur wird automatisch erstellt
+### Database
+- **SQLite**: Local database for pages, blocks and settings
+- **Automatic Migration**: Database structure is created automatically
 
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   ├── page.js                     # Startseite
-│   ├── [id]/page.js                # Dynamische öffentliche Seiten
+│   ├── page.js                     # Homepage
+│   ├── [id]/page.js                # Dynamic public pages
 │   ├── nic/page.js                 # CMS Editor
-│   └── api/cms/                    # API Routen
-│       ├── pages/                  # Seiten API
-│       ├── blocks/                 # Blöcke API
+│   └── api/cms/                    # API Routes
+│       ├── pages/                  # Pages API
+│       ├── blocks/                 # Blocks API
 │       └── layout/                 # Layout API
 ├── components/nic/
-│   ├── cms/                        # CMS Komponenten
-│   │   ├── CMSEditor.jsx           # Haupt-Editor
-│   │   ├── MovableBlock.jsx        # Bewegbare Blöcke
-│   │   ├── PageManager.jsx         # Seiten-Verwaltung
-│   │   ├── LayoutSettings.jsx      # Layout-Einstellungen
-│   │   ├── Components.jsx          # Block-Bibliothek
-│   │   └── sidebar.jsx             # Sidebar mit Tabs
-│   └── blocks/                     # Block-Komponenten
+│   ├── cms/                        # CMS Components
+│   │   ├── CMSEditor.jsx           # Main Editor
+│   │   ├── MovableBlock.jsx        # Movable Blocks
+│   │   ├── PageManager.jsx         # Page Management
+│   │   ├── LayoutSettings.jsx      # Layout Settings
+│   │   ├── Components.jsx          # Block Library
+│   │   └── sidebar.jsx             # Sidebar with Tabs
+│   └── blocks/                     # Block Components
 │       ├── Text.jsx
 │       ├── ImageBlock.jsx
 │       ├── ButtonBlock.jsx
@@ -63,128 +63,128 @@ src/
 │           ├── DefaultFooter.jsx
 │           └── SocialFooter.jsx
 ├── context/
-│   └── CMSContext.js               # React Context für State Management
+│   └── CMSContext.js               # React Context for State Management
 └── lib/
-    └── database.js                 # SQLite Datenbankfunktionen
+    └── database.js                 # SQLite Database Functions
 ```
 
-## 🛠️ Installation und Setup
+## 🛠️ Installation and Setup
 
-1. **Dependencies installieren:**
+1. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Entwicklungsserver starten:**
+2. **Start development server:**
    ```bash
    npm run dev
    ```
 
-3. **CMS Editor öffnen:**
-   Navigieren Sie zu `http://localhost:3000/nic`
+3. **Open CMS Editor:**
+   Navigate to `http://localhost:3000/nic`
 
-## 📖 Verwendung
+## 📖 Usage
 
-### 1. Seiten erstellen
-1. Öffnen Sie den CMS Editor unter `/nic`
-2. Klicken Sie auf den "Seiten" Tab in der Sidebar
-3. Klicken Sie auf "Neue Seite"
-4. Geben Sie Titel und URL-Slug ein
-5. Klicken Sie auf "Erstellen"
+### 1. Create Pages
+1. Open the CMS Editor at `/nic`
+2. Click on the "Pages" tab in the sidebar
+3. Click on "New Page"
+4. Enter title and URL slug
+5. Click on "Create"
 
-### 2. Blöcke hinzufügen
-1. Wählen Sie eine Seite aus
-2. Klicken Sie auf den "Blöcke" Tab
-3. Wählen Sie einen Block-Typ aus der Bibliothek
-4. Klicken Sie auf das "+" Symbol um den Block hinzuzufügen
+### 2. Add Blocks
+1. Select a page
+2. Click on the "Blocks" tab
+3. Choose a block type from the library
+4. Click the "+" symbol to add the block
 
-### 3. Blöcke bearbeiten
-- **Positionieren**: Ziehen Sie Blöcke mit der Maus
-- **Größe ändern**: Verwenden Sie die Resize-Handles
-- **Rotieren**: Nutzen Sie die Rotations-Controls
-- **Inhalt bearbeiten**: Doppelklicken Sie auf Text-Blöcke
-- **Farbe ändern**: Klicken Sie auf das Palette-Symbol
+### 3. Edit Blocks
+- **Positioning**: Drag blocks with the mouse
+- **Resize**: Use the resize handles
+- **Rotate**: Use the rotation controls
+- **Edit content**: Double-click on text blocks
+- **Change color**: Click on the palette symbol
 
-### 4. Layout anpassen
-1. Klicken Sie auf den "Layout" Tab
-2. Wählen Sie Header- und Footer-Komponenten
-3. Passen Sie Farben und Hintergrund an
-4. Änderungen werden automatisch gespeichert
+### 4. Customize Layout
+1. Click on the "Layout" tab
+2. Select header and footer components
+3. Adjust colors and background
+4. Changes are automatically saved
 
-### 5. Seite veröffentlichen
-- Öffentliche Seiten sind automatisch unter `/{slug}` verfügbar
-- Die Startseite zeigt alle verfügbaren Seiten
+### 5. Publish Page
+- Public pages are automatically available at `/{slug}`
+- The homepage shows all available pages
 
-## 🎨 Editor Modi
+## 🎨 Editor Modes
 
-### Edit Modus
-- Blöcke sind bewegbar und editierbar
-- Grid-Overlay für präzise Positionierung
-- Alle Editing-Tools verfügbar
+### Edit Mode
+- Blocks are movable and editable
+- Grid overlay for precise positioning
+- All editing tools available
 
-### Preview Modus
-- Zeigt die Seite wie sie öffentlich erscheint
-- Keine Editing-Funktionen
+### Preview Mode
+- Shows the page as it appears publicly
+- No editing functions
 
-### Delete Modus
-- Klicken Sie auf Blöcke um sie zu löschen
-- Rote Overlay-Markierung
+### Delete Mode
+- Click on blocks to delete them
+- Red overlay marking
 
-## 🔧 Technische Details
+## 🔧 Technical Details
 
-### Abhängigkeiten
+### Dependencies
 - **Next.js 15.4.6**: React Framework
 - **React 19.1.0**: UI Library
-- **react-colorful**: Farbauswahl
-- **sqlite3**: Datenbank
+- **react-colorful**: Color picker
+- **sqlite3**: Database
 - **lucide-react**: Icons
 - **Tailwind CSS**: Styling
 
-### Datenbank Schema
+### Database Schema
 
-#### Pages Tabelle
-- `id`: Eindeutige ID
-- `title`: Seitentitel
-- `slug`: URL-Slug
-- `created_at`, `updated_at`: Zeitstempel
+#### Pages Table
+- `id`: Unique ID
+- `title`: Page title
+- `slug`: URL slug
+- `created_at`, `updated_at`: Timestamps
 
-#### Blocks Tabelle
-- `id`: Eindeutige ID
-- `page_id`: Referenz zur Seite
-- `block_type`: Typ des Blocks
-- `content`: Block-Inhalt
-- `position_x`, `position_y`: Position in Prozent
-- `width`, `height`: Größe in Prozent
-- `rotation`: Rotation in Grad
-- `scale_x`, `scale_y`: Skalierung
-- `background_color`, `text_color`: Farben
-- `z_index`: Ebenen-Reihenfolge
+#### Blocks Table
+- `id`: Unique ID
+- `page_id`: Reference to page
+- `block_type`: Block type
+- `content`: Block content
+- `position_x`, `position_y`: Position in percent
+- `width`, `height`: Size in percent
+- `rotation`: Rotation in degrees
+- `scale_x`, `scale_y`: Scaling
+- `background_color`, `text_color`: Colors
+- `z_index`: Layer order
 
-#### Layout Settings Tabelle
-- Header/Footer Komponenten
-- Farben und Hintergrund-Einstellungen
+#### Layout Settings Table
+- Header/Footer components
+- Colors and background settings
 
 ## 🚀 Deployment
 
-Das Projekt kann auf jeder Next.js-kompatiblen Plattform deployed werden:
+The project can be deployed on any Next.js-compatible platform:
 
-1. **Vercel** (empfohlen)
+1. **Vercel** (recommended)
 2. **Netlify**
-3. **Selbst gehostet**
+3. **Self-hosted**
 
-Hinweis: SQLite-Datenbank funktioniert am besten bei selbst gehosteten Lösungen.
+Note: SQLite database works best with self-hosted solutions.
 
-## 🤝 Beitragen
+## 🤝 Contributing
 
-1. Fork das Repository
-2. Erstellen Sie einen Feature Branch
-3. Committen Sie Ihre Änderungen
-4. Erstellen Sie einen Pull Request
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Create a pull request
 
-## 📄 Lizenz
+## 📄 License
 
-Dieses Projekt steht unter der MIT Lizenz.
+This project is under the MIT License.
 
 ## 🆘 Support
 
-Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository.
+For questions or issues, please create an issue in the repository.

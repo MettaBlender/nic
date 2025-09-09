@@ -1,5 +1,5 @@
 /**
- * Bildergalerie Block für mehrere Bilder
+ * Image gallery block for multiple images
  * @icon 🖼️
  * @width 4
  * @height 3
@@ -19,7 +19,7 @@ const GalleryBlock = ({ content, onContentChange, editable = false }) => {
             key={i}
             className="bg-gray-200 rounded flex items-center justify-center text-gray-500 text-xs"
           >
-            <img src={image} alt={`Bild ${i}`} className="w-full h-full object-cover rounded" />
+            <img src={image} alt={`Image ${i}`} className="w-full h-full object-cover rounded" />
           </div>
         ))}
       </div>

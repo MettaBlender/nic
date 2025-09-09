@@ -8,15 +8,15 @@ import { Plus, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 // Hilfsfunktion für dynamisches Laden der Komponenten
 export async function getComponentFiles() {
   try {
-    // API-Route aufrufen, die die Komponenten-Struktur zurückgibt
+    // Call API route that returns component structure
     const response = await fetch('/api/cms/components');
     if (!response.ok) {
-      throw new Error('Fehler beim Laden der Komponenten');
+      throw new Error('Error loading components');
     }
     const data = await response.json();
     return data.categories;
   } catch (error) {
-    console.error('Fehler beim Lesen der Komponenten:', error);
+    console.error('Error reading components:', error);
     return {};
   }
 }
@@ -48,7 +48,7 @@ export default function Components() {
         ...comp,
         Component: dynamic(() =>
           import(`@/components/nic/blocks/${categoryName === 'root' ? '' : categoryName + '/'}${comp.file}`)
-            .catch(() => import('@/components/nic/blocks/fallback')), // Fallback bei Fehlern
+            .catch(() => import('@/components/nic/blocks/fallback')), // Fallback on errors
           {
             ssr: false,
             loading: () => (
@@ -96,11 +96,11 @@ export default function Components() {
 
       if (!result) {
         console.warn(`Block ${blockType} konnte nicht erstellt werden - keine gültigen Default-Options gefunden`);
-        alert(`Fehler: Block ${blockType} konnte nicht erstellt werden. Möglicherweise fehlen Default-Options.`);
+        alert(`Error: Block ${blockType} could not be created. Default options may be missing.`);
       }
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Blocks:', error);
-      alert('Fehler beim Hinzufügen des Blocks');
+      console.error('Error adding block:', error);
+      alert('Error adding block');
     }
   };
 
@@ -138,7 +138,7 @@ export default function Components() {
   };
 
   const getCategoryDisplayName = (categoryName) => {
-    if (categoryName === 'root') return 'Standard Blöcke';
+    if (categoryName === 'root') return 'Standard Blocks';
     return categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
   };
 
@@ -156,18 +156,18 @@ export default function Components() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-accent">
-        <h2 className="text-xl font-semibold text-foreground text-center">
-          Block Bibliothek
-        </h2>
-        {currentPage && (
-          <p className="text-sm text-gray-300 text-center mt-1">
-            Aktuelle Seite: {currentPage.title}
-          </p>
-        )}
-      </div>
+        <div className="p-4 border-b border-accent">
+          <h2 className="text-xl font-semibold text-foreground text-center">
+            Block Library
+          </h2>
+          {currentPage && (
+            <p className="text-sm text-gray-300 text-center mt-1">
+            Current Page: {currentPage.title}
+            </p>
+          )}
+        </div>
 
-      {/* Component Categories */}
+        {/* Component Categories */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {Object.entries(componentCategories).map(([categoryName, components]) => {
           const isExpanded = expandedCategories[categoryName];
@@ -216,14 +216,14 @@ export default function Components() {
                             <button
                               onClick={() => togglePreview(blockKey)}
                               className="p-1 text-foreground/70 hover:text-foreground hover:bg-foreground/10 rounded"
-                              title={isPreviewOpen ? 'Vorschau ausblenden' : 'Vorschau anzeigen'}
+                              title={isPreviewOpen ? 'Hide Preview' : 'Show Preview'}
                             >
                               {isPreviewOpen ? <EyeOff size={12} /> : <Eye size={12} />}
                             </button>
                             <button
                               onClick={() => handleAddBlock(component.componentName || component.name, component, categoryName)}
                               className="p-1 text-foreground rounded bg-blue-500 hover:bg-blue-600"
-                              title="Block hinzufügen"
+                              title="Add block"
                               disabled={!currentPage}
                             >
                               <Plus size={12} />
@@ -233,7 +233,7 @@ export default function Components() {
 
                         {/* Drag Indicator */}
                         <div className="text-xs text-foreground/50 mb-2 text-center">
-                          🔄 Ziehen zum Hinzufügen
+                          🔄 Drag to Add
                         </div>
 
                         {/* Component Description */}
@@ -272,7 +272,7 @@ export default function Components() {
       {!currentPage && (
         <div className="p-4 border-t border-gray-200">
           <p className="text-yellow-300 text-sm text-center">
-            ⚠️ Wählen Sie eine Seite aus, um Blöcke hinzuzufügen
+            ⚠️ Select a page to add blocks
           </p>
         </div>
       )}

@@ -103,7 +103,7 @@ async function getLayoutSettings() {
     };
   } catch (error) {
     console.error('Error fetching layout settings:', error);
-    // Fallback bei Fehler
+    // Fallback on error
     return {
       header_component: 'default',
       footer_component: 'default',
@@ -157,7 +157,7 @@ export default async function PublicPage({ params }) {
       getLayoutSettings()
     ]);
 
-    // Header und Footer Komponenten basierend auf Layout-Einstellungen
+    // Header and footer components based on layout settings
     // Mapping der Layout-Einstellung zu Komponenten-Namen
     const headerMapping = {
       'default': 'DefaultHeader',
@@ -274,7 +274,7 @@ export default async function PublicPage({ params }) {
               );
             })}
 
-            {/* Empty State für Seiten ohne Blöcke */}
+            {/* Empty State for pages without blocks */}
             {blocks.length === 0 && (
               <div className="col-span-12 flex items-center justify-center h-full">
                 <div className="text-center text-gray-500">
@@ -299,7 +299,7 @@ export default async function PublicPage({ params }) {
       </div>
     );
   } catch (error) {
-    console.error('Fehler beim Laden der Seite:', error);
+    console.error('Error loading page:', error);
     notFound();
   }
 }
@@ -329,8 +329,8 @@ export async function generateMetadata({ params }) {
     };
   } catch (error) {
     return {
-      title: 'Fehler',
-      description: 'Ein Fehler ist aufgetreten.'
+      title: 'Error',
+      description: 'An error has occurred.'
     };
   }
 }

@@ -1,8 +1,8 @@
-// Utility-Funktionen für dynamisches Laden von CMS-Komponenten
+// Utility functions for dynamic loading of CMS components
 import { useState, useEffect } from 'react';
 
 /**
- * Lädt die verfügbaren Komponenten über die API
+ * Loads available components via API
  */
 export const loadAvailableComponents = async () => {
   try {
@@ -12,7 +12,7 @@ export const loadAvailableComponents = async () => {
     if (data.success) {
       const components = [];
 
-      // Flatten die Kategorien zu einer Liste von Komponenten
+      // Flatten categories to a list of components
       Object.entries(data.categories).forEach(([category, categoryComponents]) => {
         categoryComponents.forEach(comp => {
           components.push({
@@ -20,7 +20,7 @@ export const loadAvailableComponents = async () => {
             componentName: comp.componentName,
             component: category === 'root' ? comp.file.replace(/\.(jsx?|tsx?)$/, '') : `${category}/${comp.file.replace(/\.(jsx?|tsx?)$/, '')}`,
             icon: comp.icon || '🧩',
-            description: comp.description || 'Block-Komponente',
+            description: comp.description || 'Block Component',
             category: category,
             width: comp.width || 2,
             height: comp.height || 1,
@@ -36,7 +36,7 @@ export const loadAvailableComponents = async () => {
       };
     }
   } catch (error) {
-    console.error('Fehler beim Laden der Komponenten-Liste:', error);
+    console.error('Error loading component list:', error);
   }
 
   return {
@@ -47,7 +47,7 @@ export const loadAvailableComponents = async () => {
 };
 
 /**
- * Lädt eine spezifische Komponente dynamisch
+ * Loads a specific component dynamically
  */
 export const loadComponent = async (componentPath) => {
   try {
@@ -57,7 +57,7 @@ export const loadComponent = async (componentPath) => {
       component: moduleResult.default
     };
   } catch (error) {
-    console.error(`Fehler beim Laden der Komponente ${componentPath}:`, error);
+    console.error(`Error loading component ${componentPath}:`, error);
     return {
       success: false,
       component: null,
@@ -67,7 +67,7 @@ export const loadComponent = async (componentPath) => {
 };
 
 /**
- * Lädt alle verfügbaren Komponenten und gibt sie als Objekt zurück
+ * Loads all available components and returns them as an object
  */
 export const loadAllComponents = async () => {
   const { success, components } = await loadAvailableComponents();
@@ -82,11 +82,11 @@ export const loadAllComponents = async () => {
     const { success: loadSuccess, component } = await loadComponent(comp.component);
 
     if (loadSuccess) {
-      // Verschiedene Bezeichnungen für Backward-Compatibility
+      // Different names for backward compatibility
       loadedComponents[comp.name] = component;
       loadedComponents[comp.componentName] = component;
 
-      // Kurze Namen ohne "Block" Suffix
+      // Short names without "Block" suffix
       if (comp.component.endsWith('Block')) {
         const shortName = comp.component.replace('Block', '');
         loadedComponents[shortName] = component;
@@ -102,7 +102,7 @@ export const loadAllComponents = async () => {
 };
 
 /**
- * Hook für React-Komponenten um Komponenten dynamisch zu laden
+ * Hook for React components to load components dynamically
  */
 export const useDynamicComponents = () => {
   const [components, setComponents] = useState({});
@@ -122,7 +122,7 @@ export const useDynamicComponents = () => {
           setComponents(result.components);
           setAvailableComponents(result.availableComponents);
         } else {
-          setError('Fehler beim Laden der Komponenten');
+          setError('Error loading components');
         }
       } catch (err) {
         setError(err.message);

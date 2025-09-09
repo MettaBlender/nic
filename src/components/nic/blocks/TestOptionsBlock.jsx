@@ -1,7 +1,7 @@
 import React from 'react'
 
 /**
- * Test Block für @options Funktionalität
+ * Test Block for @options functionality
  * @icon 🧪
  * @width 3
  * @height 2
@@ -17,7 +17,7 @@ import React from 'react'
  */
 
 const TestOptionsBlock = ({ content }) => {
-  // Parse content zu Objekt falls es ein String ist
+  // Parse content to object if it's a string
   let contentObj = {};
   try {
     if (typeof content === 'string') {

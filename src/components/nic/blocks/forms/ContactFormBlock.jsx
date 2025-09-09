@@ -1,5 +1,5 @@
 /**
- * Kontaktformular Block für Benutzeranfragen
+ * Contact form block for user inquiries
  * @icon 📝
  * @width 2
  * @height 3
@@ -13,7 +13,7 @@ import React from 'react';
 const ContactFormBlock = ({ content, onContentChange }) => {
   return (
     <div className="w-full h-full min-h-[160px] bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <h3 className="text-lg font-semibold mb-3">Kontakt</h3>
+      <h3 className="text-lg font-semibold mb-3">Contact</h3>
       <div className="space-y-2">
         <input
           type="text"
@@ -28,12 +28,12 @@ const ContactFormBlock = ({ content, onContentChange }) => {
           disabled={!content.editable}
         />
         <textarea
-          placeholder="Nachricht"
+          placeholder="Message"
           className="w-full p-2 border border-gray-300 rounded text-sm h-16 resize-none"
           disabled={!content.editable}
         />
         <button className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
-          Senden
+          Send
         </button>
       </div>
     </div>

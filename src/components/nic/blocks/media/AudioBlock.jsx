@@ -1,5 +1,5 @@
 /**
- * Audio Player Block für Musik und Sounds
+ * Audio Player Block for music and sounds
  * @icon 🎵
  */
 

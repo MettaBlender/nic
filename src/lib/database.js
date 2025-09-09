@@ -3,13 +3,13 @@ import { neon } from '@neondatabase/serverless';
 const sql = neon(process.env.NEON_DATABASE_URL);
 
 export async function getDb() {
-  // Diese Funktion wird für Init-Routes benötigt
+  // This function is required for init routes
   return sql;
 }
 
-// Alle Queries direkt mit der Neon-Syntax ausführen
+// Execute all queries directly with Neon syntax
 
-// CRUD Operationen für Seiten
+// CRUD Operations for Pages
 export async function getPages() {
   return await sql`SELECT * FROM pages ORDER BY created_at DESC`;
 }
@@ -48,7 +48,7 @@ export async function deletePage(id) {
   return await sql`DELETE FROM pages WHERE id = ${id}`;
 }
 
-// CRUD Operationen für Blöcke
+// CRUD Operations for Blocks
 export async function getBlocksForPage(pageId) {
   return await sql`
     SELECT * FROM blocks WHERE page_id = ${pageId} ORDER BY z_index ASC, created_at ASC
@@ -71,13 +71,13 @@ export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth
     )
     RETURNING *
   `;
-  return result[0]; // Vollständiges Block-Objekt zurückgeben
+  return result[0]; // Return complete block object
 }
 
 export async function updateBlock(id, blockData) {
 
   try {
-    // Extrahiere alle möglichen Felder aus blockData
+    // Extract all possible fields from blockData
     const {
       grid_col,
       grid_row,
@@ -90,7 +90,7 @@ export async function updateBlock(id, blockData) {
       z_index
     } = blockData;
 
-    // Alle Updates in einer Query mit NULL-safe updates
+    // All updates in one query with NULL-safe updates
     const result = await sql`
       UPDATE blocks SET
         grid_col = COALESCE(${grid_col}, grid_col),
@@ -108,7 +108,7 @@ export async function updateBlock(id, blockData) {
     `;
 
     if (result.length > 0) {
-      return result[0]; // Gib das aktualisierte Block-Objekt zurück
+      return result[0]; // Return the updated block object
     } else {
       console.warn(`⚠️ No block found with ID ${id} to update`);
       return null;
@@ -162,11 +162,11 @@ export async function updateLayoutSettings(settings) {
     secondary_color
   } = settings;
 
-  // Prüfe ob bereits Layout-Einstellungen existieren
+  // Check if layout settings already exist
   const existing = await sql`SELECT id FROM layout_settings ORDER BY id DESC LIMIT 1`;
 
   if (existing.length > 0) {
-    // Update existierende Einstellungen
+    // Update existing settings
     return await sql`
       UPDATE layout_settings SET
         header_component = ${header_component || 'default'},

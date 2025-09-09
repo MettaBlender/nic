@@ -18,14 +18,14 @@ const LayoutSettings = () => {
   const [activeColorPicker, setActiveColorPicker] = useState(null);
   const debounceTimeoutsRef = useRef({});
 
-  // Verfügbare Header/Footer Komponenten
+  // Available Header/Footer Components
   const headerComponents = [
-    { value: 'default', label: 'Standard Header', component: 'DefaultHeader' },
+    { value: 'default', label: 'Default Header', component: 'DefaultHeader' },
     { value: 'navigation', label: 'Navigation Header', component: 'NavigationHeader' }
   ];
 
   const footerComponents = [
-    { value: 'default', label: 'Standard Footer', component: 'DefaultFooter' },
+    { value: 'default', label: 'Default Footer', component: 'DefaultFooter' },
     { value: 'social', label: 'Social Footer', component: 'SocialFooter' }
   ];
 
@@ -38,7 +38,7 @@ const LayoutSettings = () => {
   const handleUpdateSettings = async (updatedSettings) => {
     console.log('🎨 LayoutSettings: Updating settings:', updatedSettings);
 
-    // Validiere die Eingabedaten
+    // Validate input data
     if (!updatedSettings || typeof updatedSettings !== 'object') {
       console.error('❌ Invalid settings provided:', updatedSettings);
       return;
@@ -49,8 +49,8 @@ const LayoutSettings = () => {
       await updateLayoutSettings(updatedSettings);
       console.log('✅ Layout settings updated successfully');
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren der Einstellungen:', error);
-      // Rollback bei Fehler
+      console.error('❌ Error updating settings:', error);
+      // Rollback on error
       setLocalSettings(layoutSettings);
     }
   };
@@ -92,8 +92,8 @@ const LayoutSettings = () => {
 
     console.log('📁 Uploading background image:', file.name);
 
-    // Hier würden Sie normalerweise das Bild auf den Server hochladen
-    // Für dieses Beispiel verwenden wir eine lokale URL
+    // Here you would normally upload the image to the server
+    // For this example we use a local URL
     const imageUrl = URL.createObjectURL(file);
     const updatedSettings = { ...localSettings, background_image: imageUrl };
 
@@ -113,7 +113,7 @@ const LayoutSettings = () => {
       <div className="border-b border-accent p-4">
         <div className="flex items-center gap-2">
           <Monitor className="w-5 h-5" />
-          <h2 className="text-xl font-semibold">Layout-Einstellungen</h2>
+          <h2 className="text-xl font-semibold">Layout Settings</h2>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ const LayoutSettings = () => {
 
         {/* Header Component Selection */}
         <div className="border border-accent rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Header Komponente</h3>
+          <h3 className="text-lg font-medium mb-3">Header Component</h3>
           <select
             value={localSettings.header_component || 'default'}
             onChange={(e) => {
@@ -142,7 +142,7 @@ const LayoutSettings = () => {
 
         {/* Footer Component Selection */}
         <div className="border border-accent rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Footer Komponente</h3>
+          <h3 className="text-lg font-medium mb-3">Footer Component</h3>
           <select
             value={localSettings.footer_component || 'default'}
             onChange={(e) => {
@@ -162,13 +162,13 @@ const LayoutSettings = () => {
 
         {/* Background Settings */}
         <div className="border border-accent rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Hintergrund</h3>
+          <h3 className="text-lg font-medium mb-3">Background</h3>
 
           {/* Background Color */}
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Hintergrundfarbe
+                Background Color
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -201,7 +201,7 @@ const LayoutSettings = () => {
             {/* Background Image */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Hintergrundbild
+                Background Image
               </label>
 
               {localSettings.background_image ? (
@@ -209,7 +209,7 @@ const LayoutSettings = () => {
                   <div className="w-full h-32 bg-gray-100 rounded-md overflow-hidden">
                     <img
                       src={localSettings.background_image}
-                      alt="Hintergrundbild"
+                      alt="Background Image"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -217,7 +217,7 @@ const LayoutSettings = () => {
                     onClick={removeBackgroundImage}
                     className="w-full px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
                   >
-                    Bild entfernen
+                    Remove Image
                   </button>
                 </div>
               ) : (
@@ -234,7 +234,7 @@ const LayoutSettings = () => {
                     className="w-full h-32 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-gray-400"
                   >
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500">Bild hochladen</span>
+                    <span className="text-sm text-gray-500">Upload image</span>
                   </label>
                 </div>
               )}
@@ -244,13 +244,13 @@ const LayoutSettings = () => {
 
         {/* Color Scheme */}
         <div className="border border-accent rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Farbschema</h3>
+          <h3 className="text-lg font-medium mb-3">Color Scheme</h3>
 
           <div className="flex flex-col gap-4">
             {/* Primary Color */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Primärfarbe
+                Primary Color
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -283,7 +283,7 @@ const LayoutSettings = () => {
             {/* Secondary Color */}
             <div>
               <label className="block text-sm font-medium  mb-2">
-                Sekundärfarbe
+                Secondary Color
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -317,7 +317,7 @@ const LayoutSettings = () => {
 
         {/* Preview */}
         <div className="border border-accent rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Vorschau</h3>
+          <h3 className="text-lg font-medium text-gray-800 mb-3">Preview</h3>
           <div
             className="w-full h-32 rounded-md border border-gray-300 relative overflow-hidden"
             style={{
@@ -332,13 +332,13 @@ const LayoutSettings = () => {
                 className="px-3 py-1 rounded text-white text-sm"
                 style={{ backgroundColor: localSettings.primary_color || '#3b82f6' }}
               >
-                Primär
+                Primary
               </div>
               <div
                 className="px-3 py-1 rounded text-white text-sm"
                 style={{ backgroundColor: localSettings.secondary_color || '#64748b' }}
               >
-                Sekundär
+                Secondary
               </div>
             </div>
           </div>

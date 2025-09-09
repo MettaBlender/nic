@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Einfacher Text Block für Inhalte
+ * Container block for grouping other blocks
  * @icon 📝
  * @width 3
  * @height 2

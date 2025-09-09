@@ -96,7 +96,7 @@ function extractComponentInfo(filePath, fileName) {
       options
     };
   } catch (error) {
-    console.error(`Fehler beim Lesen der Datei ${fileName}:`, error);
+    console.error(`Error reading file ${fileName}:`, error);
     return {
       name: fileName.replace(/\.(jsx?|tsx?|js?|ts?)$/, ''),
       componentName: fileName.replace(/\.(jsx?|tsx?|js?|ts?)$/, ''),
@@ -110,7 +110,7 @@ function extractComponentInfo(filePath, fileName) {
   }
 }
 
-// Standard-Icons basierend auf Komponentenname
+// Default icons based on component name
 function getDefaultIcon(componentName) {
   const name = componentName.toLowerCase();
   if (name.includes('text')) return '📝';
@@ -182,7 +182,7 @@ function scanDirectory(dirPath, relativePath = '') {
       }
     });
   } catch (error) {
-    console.error(`Fehler beim Scannen des Verzeichnisses ${dirPath}:`, error);
+    console.error(`Error scanning directory ${dirPath}:`, error);
   }
 
   return categories;
@@ -214,10 +214,10 @@ export async function GET() {
       totalComponents: Object.values(categories).reduce((sum, arr) => sum + arr.length, 0)
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Komponenten:', error);
+    console.error('Error loading components:', error);
     return NextResponse.json({
       success: false,
-      error: 'Fehler beim Laden der Komponenten',
+      error: 'Error loading components',
       categories: {}
     }, { status: 500 });
   }

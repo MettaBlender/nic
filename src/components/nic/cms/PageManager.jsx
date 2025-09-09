@@ -29,7 +29,7 @@ const PageManager = () => {
       setFormData({ title: '', slug: '' });
       selectPage(newPage);
     } catch (error) {
-      alert('Fehler beim Erstellen der Seite: ' + error.message);
+      alert('Error creating page: ' + error.message);
     }
   };
 
@@ -42,16 +42,16 @@ const PageManager = () => {
       setEditingPage(null);
       setFormData({ title: '', slug: '' });
     } catch (error) {
-      alert('Fehler beim Aktualisieren der Seite: ' + error.message);
+      alert('Error updating page: ' + error.message);
     }
   };
 
   const handleDeletePage = async (page) => {
-    if (window.confirm(`Sind Sie sicher, dass Sie die Seite "${page.title}" löschen möchten?`)) {
+    if (window.confirm(`Are you sure you want to delete the page "${page.title}"?`)) {
       try {
         await deletePage(page.id);
       } catch (error) {
-        alert('Fehler beim Löschen der Seite: ' + error.message);
+        alert('Error deleting page: ' + error.message);
       }
     }
   };
@@ -97,13 +97,13 @@ const PageManager = () => {
       {/* Header */}
       <div className="border-b border-accent p-4">
         <div className="flex flex-col gap-2 items-center justify-between">
-          <h2 className="text-xl font-semibold text">Seiten verwalten</h2>
+          <h2 className="text-xl font-semibold text">Manage Pages</h2>
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-background flex items-center gap-2 transition-colors duration-200 ease-in-out"
           >
             <Plus size={16} />
-            Neue Seite
+            New Page
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@ const PageManager = () => {
                   value={formData.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   className="w-full px-3 py-2 border border-accent rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                  placeholder="Seiten-Titel eingeben"
+                  placeholder="Enter page title"
                   required
                 />
               </div>
@@ -138,7 +138,7 @@ const PageManager = () => {
                   className="w-full px-3 pl-4 py-2 border border-accent rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                   placeholder="url-slug"
                   pattern="[a-z0-9-]+"
-                  title="Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt"
+                  title="Only lowercase letters, numbers and hyphens allowed"
                   required
                 />
                 <div className="absolute top-[1.92rem] left-2 text-xl text-foreground">/</div>
@@ -149,14 +149,14 @@ const PageManager = () => {
                   type="submit"
                   className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
                 >
-                  {editingPage ? 'Aktualisieren' : 'Erstellen'}
+                  {editingPage ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
                   className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
                 >
-                  Abbrechen
+                  Cancel
                 </button>
               </div>
             </div>
@@ -174,8 +174,8 @@ const PageManager = () => {
           <div className="flex items-center justify-center h-32 text-foreground">
             <div className="text-center">
               <FileText size={48} className="mx-auto mb-2" />
-              <p>Noch keine Seiten vorhanden</p>
-              <p className="text-sm">Erstellen Sie Ihre erste Seite</p>
+              <p>No pages available yet</p>
+              <p className="text-sm">Create your first page</p>
             </div>
           </div>
         ) : (
@@ -221,7 +221,7 @@ const PageManager = () => {
                         startEdit(page);
                       }}
                       className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                      title="Seite bearbeiten"
+                      title="Edit page"
                     >
                       <Edit size={16} />
                     </button>
@@ -232,7 +232,7 @@ const PageManager = () => {
                         handleDeletePage(page);
                       }}
                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-                      title="Seite löschen"
+                                            title="Edit page"
                     >
                       <Trash2 size={16} />
                     </button>

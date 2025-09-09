@@ -1,5 +1,5 @@
 /**
- * Einfacher Text Block für Inhalte
+ * Simple text block for content
  * @icon 📝
  * @width 3
  * @height 2
@@ -17,19 +17,19 @@ const Text = ({ content, onContentChange, editable = false, block_type = 'Text' 
   const [textContent, setTextContent] = useState(content.text);
   const textRef = useRef(null);
 
-  // Besserer Default-Content basierend auf Block-Typ
+  // Better default content based on block type
   const getDefaultContent = () => {
     if (content && content?.text?.trim()) return content.text;
 
     switch (block_type) {
       case 'Text':
-        return editable ? 'Neuer Text Block - Doppelklick zum Bearbeiten' : 'Text Block';
+        return editable ? 'New Text Block - Double-click to edit' : 'Text Block';
       case 'Heading':
-        return editable ? 'Neue Überschrift - Doppelklick zum Bearbeiten' : 'Überschrift';
+        return editable ? 'New Heading - Double-click to edit' : 'Heading';
       case 'Paragraph':
-        return editable ? 'Neuer Absatz Text - Doppelklick zum Bearbeiten' : 'Absatz Text';
+        return editable ? 'New Paragraph Text - Double-click to edit' : 'Paragraph Text';
       default:
-        return editable ? `${block_type} Block - Doppelklick zum Bearbeiten` : `${block_type} Block`;
+        return editable ? `${block_type} Block - Double-click to edit` : `${block_type} Block`;
     }
   };
 
@@ -94,7 +94,7 @@ const Text = ({ content, onContentChange, editable = false, block_type = 'Text' 
             color: 'inherit',
             backgroundColor: 'transparent'
           }}
-          placeholder="Text eingeben..."
+          placeholder="Enter text..."
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-center break-words relative">

@@ -28,8 +28,8 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(updatedBlock);
   } catch (error) {
-    console.error('Fehler beim Aktualisieren des Blocks:', error);
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren des Blocks' }, { status: 500 });
+    console.error('Error updating block:', error);
+    return NextResponse.json({ error: 'Error updating block' }, { status: 500 });
   }
 }export async function DELETE(request, { params }) {
   try {
@@ -37,9 +37,9 @@ export async function PUT(request, { params }) {
     const { id } = resolvedParams;
     await deleteBlock(id);
 
-    return NextResponse.json({ message: 'Block erfolgreich gelöscht' });
+    return NextResponse.json({ message: 'Block successfully deleted' });
   } catch (error) {
-    console.error('Fehler beim Löschen des Blocks:', error);
-    return NextResponse.json({ error: 'Fehler beim Löschen des Blocks' }, { status: 500 });
+    console.error('Error deleting block:', error);
+    return NextResponse.json({ error: 'Error deleting block' }, { status: 500 });
   }
 }

@@ -25,13 +25,13 @@ const LoginPage = () => {
       });
 
       if (response.ok) {
-        // Login erfolgreich, Cookie wird vom Server gesetzt
+        // Login successful, cookie is set by server
         router.push('/nic');
       } else {
         setError('Ungültige Anmeldedaten');
       }
     } catch (error) {
-      setError('Fehler bei der Anmeldung');
+      setError('Login error');
     } finally {
       setIsLoading(false);
     }

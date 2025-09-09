@@ -6,7 +6,7 @@ export function hexToRgb(hex) {
     return { r: 255, g: 255, b: 255 }; // Default to white
   }
 
-  // Entferne # und konvertiere Kurzform (z. B. #FFF) in Langform
+  // Remove # and convert short form (e.g. #FFF) to long form
   hex = hex.replace(/^#/, '');
   if (hex.length === 3) {
     hex = hex
@@ -48,7 +48,7 @@ export function getLuminance({ r, g, b }) {
   return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 }
 
-// Funktion zur Berechnung des Kontrastverhältnisses
+// Function to calculate contrast ratio
 export default function getContrastRatio(hex1, hex2) {
   const rgb1 = hexToRgb(hex1);
   const rgb2 = hexToRgb(hex2);
@@ -61,7 +61,7 @@ export default function getContrastRatio(hex1, hex2) {
 
 // Konvertiert RGB in HSL
 export function rgbToHsl(r, g, b) {
-  // Normalisiere RGB-Werte auf 0-1 Bereich
+  // Normalize RGB values to 0-1 range
   r /= 255;
   g /= 255;
   b /= 255;
@@ -90,9 +90,9 @@ export function rgbToHsl(r, g, b) {
   }
 
   return {
-    h: Math.round(h * 360), // Hue in Grad (0-360)
-    s: Math.round(s * 100), // Sättigung in Prozent (0-100)
-    l: Math.round(l * 100), // Helligkeit in Prozent (0-100)
+    h: Math.round(h * 360), // Hue in degrees (0-360)
+    s: Math.round(s * 100), // Saturation in percent (0-100)
+    l: Math.round(l * 100), // Lightness in percent (0-100)
   };
 }
 
@@ -192,7 +192,7 @@ export function getWizardColors(foreground, background) {
   // Get HSL values for the foreground color
   const foregroundHsl = hexToHsl(colors.foreground);
 
-  // Intelligente Helligkeitsanpassung basierend auf der ursprünglichen Helligkeit
+  // Smart brightness adjustment based on original brightness
   let secondaryLightness, tertiaryLightness, secondarySaturation, tertiarySaturation;
 
   if (foregroundHsl.l <= 30) {
@@ -210,11 +210,11 @@ export function getWizardColors(foreground, background) {
     secondarySaturation = foregroundHsl.s;
     tertiarySaturation = foregroundHsl.s;
   } else {
-    // Bereits helle Farben: Reduziere Sättigung statt Helligkeit zu erhöhen
+    // Already bright colors: Reduce saturation instead of increasing brightness
     secondaryLightness = foregroundHsl.l;
     tertiaryLightness = foregroundHsl.l;
 
-    // Reduziere Sättigung für hellere Varianten
+    // Reduce saturation for brighter variants
     secondarySaturation = Math.max(0, foregroundHsl.s - 20);
     tertiarySaturation = Math.max(0, foregroundHsl.s - 40);
 
@@ -241,11 +241,11 @@ export function getWizardColors(foreground, background) {
     secondarySaturation = backgroundHsl.s;
     tertiarySaturation = backgroundHsl.s;
   } else {
-    // Bereits helle Farben: Reduziere Sättigung statt Helligkeit zu erhöhen
+    // Already bright colors: Reduce saturation instead of increasing brightness
     secondaryLightness = backgroundHsl.l;
     tertiaryLightness = backgroundHsl.l;
 
-    // Reduziere Sättigung für hellere Varianten
+    // Reduce saturation for brighter variants
     secondarySaturation = Math.max(0, backgroundHsl.s + 20);
     tertiarySaturation = Math.max(0, backgroundHsl.s + 40);
   }

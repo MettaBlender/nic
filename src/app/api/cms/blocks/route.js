@@ -13,8 +13,8 @@ export async function GET(request) {
     const blocks = await getBlocksForPage(pageId);
     return NextResponse.json(blocks);
   } catch (error) {
-    console.error('Fehler beim Abrufen der Blöcke:', error);
-    return NextResponse.json({ error: 'Fehler beim Abrufen der Blöcke' }, { status: 500 });
+    console.error('Error retrieving blocks:', error);
+    return NextResponse.json({ error: 'Error retrieving blocks' }, { status: 500 });
   }
 }
 
@@ -51,7 +51,7 @@ export async function POST(request) {
 
     return NextResponse.json(newBlock, { status: 201 });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Blocks:', error);
-    return NextResponse.json({ error: 'Fehler beim Erstellen des Blocks' }, { status: 500 });
+    console.error('Error creating block:', error);
+    return NextResponse.json({ error: 'Error creating block' }, { status: 500 });
   }
 }

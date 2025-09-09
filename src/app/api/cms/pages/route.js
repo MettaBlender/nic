@@ -24,7 +24,7 @@ export async function GET() {
     return NextResponse.json(pages);
   } catch (error) {
     console.error('❌ Error loading pages:', error);
-    return NextResponse.json({ error: 'Fehler beim Abrufen der Seiten' }, { status: 500 });
+    return NextResponse.json({ error: 'Error retrieving pages' }, { status: 500 });
   }
 }
 
@@ -49,8 +49,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Error creating page:', error);
     if (error.message.includes('UNIQUE constraint failed') || error.message.includes('duplicate key')) {
-      return NextResponse.json({ error: 'Eine Seite mit diesem Slug existiert bereits' }, { status: 409 });
+      return NextResponse.json({ error: 'A page with this slug already exists' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Fehler beim Erstellen der Seite' }, { status: 500 });
+    return NextResponse.json({ error: 'Error creating page' }, { status: 500 });
   }
 }

@@ -18,7 +18,7 @@ export default async function HomePage() {
                 href="/nic"
                 className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-accent/40 transition-colors"
               >
-                CMS Ausprobieren
+                Try CMS
               </Link>
             </nav>
           </div>
@@ -29,10 +29,10 @@ export default async function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-foreground mb-4">
-            Willkommen zum NIC CMS
+            Welcome to NIC CMS
           </h2>
           <p className="text-xl text-foreground mb-8">
-            Ein modernes Content Management System mit Drag & Drop Editor
+            A modern Content Management System with drag & drop editor
           </p>
 
           <div className="flex justify-center gap-4">
@@ -40,7 +40,7 @@ export default async function HomePage() {
               href="/nic"
               className="bg-transparent ring ring-accent/10 hover:ring-accent text-foreground px-6 py-3 rounded-lg hover:bg-accent/40 transition-colors text-lg font-medium"
             >
-              CMS Editor ausprobieren
+              Try CMS Editor
             </Link>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default async function HomePage() {
               Drag & Drop Editor
             </h3>
             <p className="text-foreground">
-              Intuitive Bearbeitung mit frei bewegbaren Blöcken
+              Intuitive editing with freely movable blocks
             </p>
           </div>
 
@@ -64,17 +64,17 @@ export default async function HomePage() {
               Grid Design
             </h3>
             <p className="text-foreground">
-              Freie Verschiebung der Blöcke im Raster
+              Free movement of blocks in the grid
             </p>
           </div>
 
           <div className="text-center">
             <div className="text-4xl mb-4">⚡</div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Schnell & Modern
+              Fast & Modern
             </h3>
             <p className="text-foreground">
-              Basiert auf Next.js und modernen Web-Technologien
+              Based on Next.js and modern web technologies
             </p>
           </div>
         </div>
@@ -83,7 +83,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="absolute bottom-0 bg-gray-900 text-white py-8 mt-16 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; 2025 NIC CMS. Alle Rechte vorbehalten.</p>
+          <p>&copy; 2025 NIC CMS. All rights reserved.</p>
         </div>
       </footer>
     </div>

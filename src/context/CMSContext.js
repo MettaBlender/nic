@@ -23,7 +23,7 @@ export const useCMS = () => {
 };
 
 export const CMSProvider = ({ children }) => {
-  // Seiten Management
+  // Pages Management
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -71,7 +71,7 @@ export const CMSProvider = ({ children }) => {
 
   const [selectedBlock, setSelectedBlock] = useState(null);
 
-  // Blöcke Management mit intelligentem Batching
+  // Blocks Management with intelligent batching
   const [blocks, setBlocks] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -90,7 +90,7 @@ export const CMSProvider = ({ children }) => {
 
   const [deviceSize, setDeviceSize] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
 
-  // Hilfsfunktion zum Speichern des aktuellen Zustands - NACH blocks Deklaration
+  // Helper function to save current state - AFTER blocks declaration
   const saveStateToHistory = useCallback(() => {
     const currentState = {
       blocks: [...blocks],
@@ -98,14 +98,14 @@ export const CMSProvider = ({ children }) => {
     };
     setUndoHistory(prev => {
       const newHistory = [...prev, currentState];
-      // Begrenze die Historie auf MAX_HISTORY_SIZE
+      // Limit history to MAX_HISTORY_SIZE
       return newHistory.length > MAX_HISTORY_SIZE ? newHistory.slice(-MAX_HISTORY_SIZE) : newHistory;
     });
-    // Leere Redo-Historie bei neuer Aktion
+    // Clear redo history on new action
     setRedoHistory([]);
   }, [blocks]);
 
-  // Undo/Redo Funktionen - NACH blocks Deklaration
+  // Undo/Redo Functions - AFTER blocks declaration
   const undo = useCallback(() => {
     if (undoHistory.length === 0) {
       return;
@@ -117,14 +117,14 @@ export const CMSProvider = ({ children }) => {
       timestamp: Date.now()
     };
 
-    // Setze den Zustand zurück
+    // Set state back
     setBlocks(lastState.blocks);
-    setSelectedBlock(null); // Deselektiere Block bei Undo
+    setSelectedBlock(null); // Deselect block on undo
 
-    // Entferne den letzten Zustand aus Undo-Historie
+    // Remove last state from undo history
     setUndoHistory(prev => prev.slice(0, -1));
 
-    // Füge den aktuellen Zustand zur Redo-Historie hinzu
+    // Add current state to redo history
     setRedoHistory(prev => [...prev, currentState]);
   }, [undoHistory, blocks]);
 
@@ -139,14 +139,14 @@ export const CMSProvider = ({ children }) => {
       timestamp: Date.now()
     };
 
-    // Setze den Zustand vorwärts
+    // Set state forward
     setBlocks(nextState.blocks);
     setSelectedBlock(null); // Deselektiere Block bei Redo
 
-    // Entferne den letzten Zustand aus Redo-Historie
+    // Remove last state from redo history
     setRedoHistory(prev => prev.slice(0, -1));
 
-    // Füge den aktuellen Zustand zur Undo-Historie hinzu
+    // Add current state to undo history
     setUndoHistory(prev => [...prev, currentState]);
 
   }, [redoHistory, blocks]);
@@ -190,7 +190,7 @@ export const CMSProvider = ({ children }) => {
   });
   const [pendingLayoutChanges, setPendingLayoutChanges] = useState(null);
 
-  // Draft Changes für localStorage-Persistierung
+  // Draft Changes for localStorage persistence
   const [draftChanges, setDraftChanges] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -209,26 +209,26 @@ export const CMSProvider = ({ children }) => {
 
   // Auto-Save Debouncing
   const autoSaveTimeoutRef = useRef(null);
-  const AUTOSAVE_DELAY = 3000; // 3 Sekunden
+  const AUTOSAVE_DELAY = 3000; // 3 seconds
 
-  // Funktion zum Anwenden von Draft-Änderungen auf die aktuellen Blöcke
+  // Function to apply draft changes to current blocks
   const applyDraftChangesToBlocks = useCallback((drafts, currentBlocks) => {
     if (!drafts || drafts.length === 0) return currentBlocks;
 
     let updatedBlocks = [...currentBlocks];
     const pendingOps = new Map();
 
-    // Sortiere Draft-Änderungen nach Timestamp
+    // Sort draft changes by timestamp
     const sortedDrafts = [...drafts].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedDrafts.forEach(draft => {
 
       switch (draft.type) {
         case 'create':
-          // Prüfe ob Block bereits existiert (könnte durch andere Drafts erstellt worden sein)
+          // Check if block already exists (could have been created by other drafts)
           const existingBlock = updatedBlocks.find(b => b.id === draft.blockId);
           if (!existingBlock) {
-            // Verarbeite Content für create korrekt
+            // Process content for create correctly
             let blockData = { ...draft.data };
             if (blockData.content && typeof blockData.content === 'string') {
               try {
@@ -241,10 +241,10 @@ export const CMSProvider = ({ children }) => {
             console.log(`➕ Adding block from draft: ${draft.blockId} (${blockData.block_type || 'UNKNOWN'})`);
             console.log('📊 Block data:', blockData);
 
-            // SICHERHEITSPRÜFUNG: Verhindere ungewollte Text-Blöcke
+            // SECURITY CHECK: Prevent unwanted text blocks
             if (blockData.block_type === 'Text' && !blockData.content?.text && !blockData.content) {
               console.warn('⚠️ Preventing creation of empty Text block from draft');
-              return; // Überspringe diesen Block
+              return; // Skip this block
             }
 
             updatedBlocks.push(blockData);
@@ -277,17 +277,17 @@ export const CMSProvider = ({ children }) => {
               }
             }
 
-            // WICHTIG: Merge mit dem vollständigen aktuellen Block
-            // Behalte ALLE Eigenschaften des aktuellen Blocks und überschreibe nur die geänderten
+            // IMPORTANT: Merge with the complete current block
+            // Keep ALL properties of the current block and only overwrite the changed ones
             const updatedBlock = {
-              ...currentBlock, // Alle aktuellen Block-Eigenschaften beibehalten
-              ...processedDraftData, // Nur die geänderten Eigenschaften überschreiben
+              ...currentBlock, // Keep all current block properties
+              ...processedDraftData, // Only overwrite the changed properties
               updated_at: new Date().toISOString()
             };
 
             updatedBlocks[blockIndex] = updatedBlock;
 
-            // Für pending operations: Verwende den VOLLSTÄNDIGEN Block-State
+            // For pending operations: Use the COMPLETE block state
             const fullBlockData = {
               id: updatedBlock.id,
               page_id: updatedBlock.page_id,
@@ -309,13 +309,13 @@ export const CMSProvider = ({ children }) => {
             if (existing && existing.operation === 'update') {
               pendingOps.set(draft.blockId, {
                 operation: 'update',
-                data: fullBlockData, // Verwende vollständige Block-Daten
+                data: fullBlockData, // Use complete block data
                 timestamp: Math.max(existing.timestamp, draft.timestamp)
               });
             } else if (!existing || existing.operation !== 'create') {
               pendingOps.set(draft.blockId, {
                 operation: 'update',
-                data: fullBlockData, // Verwende vollständige Block-Daten
+                data: fullBlockData, // Use complete block data
                 timestamp: draft.timestamp
               });
             }
@@ -333,7 +333,7 @@ export const CMSProvider = ({ children }) => {
           break;
 
         case 'layout':
-          // Layout-Änderungen werden separat behandelt
+          // Layout changes are handled separately
           setPendingLayoutChanges(prevLayout => ({
             ...(prevLayout || {}),
             ...draft.data
@@ -356,13 +356,13 @@ export const CMSProvider = ({ children }) => {
     return updatedBlocks;
   }, []);
 
-  // Erweiterte Funktion zum Laden und Anwenden von Draft-Änderungen
+  // Extended function for loading and applying draft changes
   const loadAndApplyDrafts = useCallback(() => {
     const savedDrafts = loadDraftChanges();
     if (savedDrafts.length > 0) {
       console.log(`🔄 Loading ${savedDrafts.length} draft changes from localStorage`);
 
-      // Filtere problematische Draft-Änderungen vor der Anwendung
+      // Filter problematic draft changes before application
       const validDrafts = savedDrafts.filter(draft => {
         // Filtere leere Text-Block CREATE Drafts
         if (draft.type === 'create' &&
@@ -381,49 +381,49 @@ export const CMSProvider = ({ children }) => {
       }
 
       if (validDrafts.length > 0) {
-        // Wende Draft-Änderungen auf aktuelle Blöcke an
+        // Apply draft changes to current blocks
         setBlocks(prevBlocks => {
           const updatedBlocks = applyDraftChangesToBlocks(validDrafts, prevBlocks);
           console.log(`📦 Applied drafts: ${prevBlocks.length} -> ${updatedBlocks.length} blocks`);
           return updatedBlocks;
         });
 
-        // Überschreibe draftChanges mit den gefilterten Drafts
+        // Overwrite draftChanges with filtered drafts
         setDraftChanges(validDrafts);
         setSaveStatus('dirty');
       }
     }
   }, [loadDraftChanges, applyDraftChangesToBlocks]);
 
-  // Lade Draft-Änderungen beim Start und synchronisiere mit localStorage
+  // Load draft changes on start and synchronize with localStorage
   useEffect(() => {
     const savedDrafts = loadDraftChanges();
     if (savedDrafts.length > 0) {
 
-      // Überschreibe draftChanges komplett mit den geladenen Drafts
-      // um sicherzustellen, dass alle Draft-Änderungen erhalten bleiben
+      // Completely overwrite draftChanges with loaded drafts
+      // to ensure all draft changes are preserved
       setDraftChanges(savedDrafts);
 
       setSaveStatus('dirty');
     }
 
-    // Bereinige alte Drafts, temp Blöcke und problematische Draft-Änderungen
+    // Clean up old drafts, temp blocks and problematic draft changes
     cleanupOldDrafts();
     cleanupTempBlocks();
     cleanupProblematicDrafts();
   }, []);
 
-  // State um zu verfolgen, ob Draft-Änderungen bereits angewendet wurden
+  // State to track whether draft changes have already been applied
   const [draftsApplied, setDraftsApplied] = useState(false);
 
-  // Zusätzlicher useEffect, der Draft-Änderungen anwendet, sobald Blöcke geladen sind
+  // Additional useEffect that applies draft changes as soon as blocks are loaded
   useEffect(() => {
     if (blocks.length > 0 && !draftsApplied && draftChanges.length > 0) {
       console.log('🔄 Applying draft changes to loaded blocks...');
 
-      // Kleiner Delay um sicherzustellen, dass Blöcke vollständig geladen sind
+      // Small delay to ensure blocks are fully loaded
       const timer = setTimeout(() => {
-        // Prüfe nochmal ob Draft-Änderungen bereits angewendet wurden
+        // Check again if draft changes have already been applied
         if (draftsApplied) {
           console.log('ℹ️ Draft changes already applied, skipping');
           return;
@@ -431,7 +431,7 @@ export const CMSProvider = ({ children }) => {
 
         const updatedBlocks = applyDraftChangesToBlocks(draftChanges, blocks);
 
-        // Verhindere Endlosschleife durch Prüfung ob sich wirklich etwas geändert hat
+        // Prevent infinite loop by checking if something actually changed
         if (JSON.stringify(updatedBlocks) !== JSON.stringify(blocks)) {
           console.log('✅ Applying draft changes to blocks');
           setBlocks(updatedBlocks);
@@ -451,7 +451,7 @@ export const CMSProvider = ({ children }) => {
     setDraftsApplied(false);
   }, [currentPage?.id]);
 
-  // Speichere Draft-Änderungen bei Änderungen
+  // Save draft changes when changes occur
   useEffect(() => {
     if (draftChanges.length > 0) {
       saveDraftChanges(draftChanges);
@@ -483,24 +483,24 @@ export const CMSProvider = ({ children }) => {
           savedPage = null;
         }
 
-        // Wenn eine Seite im localStorage gespeichert ist, versuche sie zu finden
+        // If a page is stored in localStorage, try to find it
         if (savedPage && savedPage.id) {
           const foundPage = data.find(page => page.id === savedPage.id);
           if (foundPage) {
             setCurrentPage(foundPage);
 
-            // Verwende Blöcke aus localStorage anstatt von der DB zu laden
-            // Die Blöcke sind bereits im useState Initializer aus localStorage geladen worden
-            // Wende Draft-Änderungen an falls vorhanden
+            // Use blocks from localStorage instead of loading from DB
+            // The blocks have already been loaded from localStorage in the useState initializer
+            // Apply draft changes if available
             setTimeout(() => {
               loadAndApplyDrafts();
             }, 100);
 
-            return; // Verlasse die Funktion früh, da wir die gespeicherte Seite gefunden haben
+            return; // Exit the function early since we found the saved page
           } else {
             localStorage.removeItem('currentPage');
           }
-        }        // Automatisch Home-Seite auswählen wenn keine Seite ausgewählt ist und keine im localStorage gespeichert war
+        }        // Automatically select home page if no page is selected and none was saved in localStorage
         if (!currentPage && data.length > 0) {
           const homePage = data.find(page =>
             page.slug === 'home' ||
@@ -510,14 +510,14 @@ export const CMSProvider = ({ children }) => {
 
           setCurrentPage(homePage);
 
-          // Prüfe ob bereits Blöcke im localStorage vorhanden sind
+          // Check if blocks are already present in localStorage
           if (blocks.length > 0) {
-            // Wende Draft-Änderungen an
+            // Apply draft changes
             setTimeout(() => {
               loadAndApplyDrafts();
             }, 100);
           } else {
-            // Nur laden wenn keine Blöcke im localStorage vorhanden sind
+            // Only load if no blocks are present in localStorage
             const blocksResponse = await fetch(`/api/cms/pages/${homePage.id}/blocks`);
             if (blocksResponse.ok) {
               const blocksData = await blocksResponse.json();
@@ -544,7 +544,7 @@ export const CMSProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // Keine Dependencies - wird nur einmal beim Mount aufgerufen
+  }, []); // No dependencies - called only once on mount
 
   // Load layout settings from API
   const loadLayoutSettings = useCallback(async () => {
@@ -567,7 +567,7 @@ export const CMSProvider = ({ children }) => {
       return;
     }
 
-    // Wenn nicht explizit von DB geladen werden soll, prüfe localStorage zuerst
+    // If not explicitly loading from DB, check localStorage first
     if (!forceFromDB) {
       try {
         const storedBlocks = localStorage.getItem('blocks');
@@ -663,12 +663,12 @@ export const CMSProvider = ({ children }) => {
     // Load blocks for new page
     if (page && page.id) {
 
-      // Prüfe ob bereits Blöcke für diese Seite im localStorage sind
+      // Check if blocks for this page are already in localStorage
       try {
         const storedBlocks = localStorage.getItem('blocks');
         const parsedBlocks = storedBlocks ? JSON.parse(storedBlocks) : [];
 
-        // Filtere Blöcke für die aktuelle Seite (sowohl string als auch number IDs berücksichtigen)
+        // Filter blocks for the current page (consider both string and number IDs)
         const pageBlocks = parsedBlocks.filter(block =>
           block.page_id === page.id ||
           block.page_id === String(page.id) ||
@@ -677,7 +677,7 @@ export const CMSProvider = ({ children }) => {
 
         if (pageBlocks.length > 0) {
 
-          // Setze zuerst die Blöcke ohne Draft-Änderungen
+          // First set the blocks without draft changes
           setBlocks(pageBlocks);
 
           // Lade Draft-Änderungen
@@ -705,7 +705,7 @@ export const CMSProvider = ({ children }) => {
       const newOps = new Map(prev);
 
       if (operation === 'delete') {
-        // Bei Delete: entferne alle anderen Operations für diesen Block
+        // On delete: remove all other operations for this block
         newOps.delete(blockId);
         newOps.set(blockId, { operation, data, timestamp: Date.now() });
       } else {
@@ -789,7 +789,7 @@ export const CMSProvider = ({ children }) => {
         }
       }
 
-      // Fallback: neue Zeile am Ende
+      // Fallback: new row at the end
       const lastRow = blocks.length > 0 ? Math.max(...blocks.map(b => (b.grid_row || 0) + (b.grid_height || 1)), 0) : 0;
       return { col: 0, row: lastRow };
     };
@@ -819,7 +819,7 @@ export const CMSProvider = ({ children }) => {
     } else {
       // Kein automatischer Fallback mehr - Block muss gültigen Content haben
       console.warn(`Block ${blockType} konnte nicht erstellt werden: Kein gültiger Content oder Default-Options gefunden`);
-      return null; // Verhindere automatische Text-Block-Erstellung
+      return null; // Prevent automatic text block creation
     }
 
     const newBlock = {
@@ -900,7 +900,7 @@ export const CMSProvider = ({ children }) => {
       // Stelle sicher, dass Content-Updates korrekt verarbeitet werden
       let processedUpdates = { ...updates };
 
-      // Wenn content als Objekt übergeben wird, lass es als Objekt im lokalen State
+      // If content is passed as object, keep it as object in local state
       // (Konvertierung zu JSON-String erfolgt nur beim Speichern zur API)
       if (processedUpdates.content && typeof processedUpdates.content === 'string') {
         try {
@@ -1042,7 +1042,7 @@ export const CMSProvider = ({ children }) => {
       return;
     }
 
-    // WICHTIG: Lade die neuesten Blöcke aus der Datenbank vor dem Veröffentlichen
+    // IMPORTANT: Load the latest blocks from the database before publishing
     // um sicherzustellen, dass wir mit den aktuellsten Daten arbeiten
     let latestBlocksFromDB = [];
     if (currentPage?.id) {
@@ -1103,7 +1103,7 @@ export const CMSProvider = ({ children }) => {
               });
               break;
             case 'layout':
-              // Layout-Änderungen werden separat behandelt
+              // Layout changes are handled separately
               if (!pendingLayoutChanges) {
                 setPendingLayoutChanges(draft.data);
               }
@@ -1122,20 +1122,20 @@ export const CMSProvider = ({ children }) => {
       // 2. Sammle alle Block-Operations mit aktuellen Positionen aus dem State
       const allBlockOperations = new Map();
 
-      // Verwende NUR die aktuellen Blöcke aus dem State - NICHT aus localStorage
-      // localStorage kann veraltete temp_ IDs enthalten, die zu doppelten Blöcken führen
+      // Use ONLY the current blocks from state - NOT from localStorage
+      // localStorage may contain outdated temp_ IDs that lead to duplicate blocks
       const allCurrentBlocks = [...blocks];
 
       console.log(`📋 Processing ${allCurrentBlocks.length} blocks from current state`);
 
-      // Verarbeite NUR Blöcke mit temp_ IDs, die auch in pendingOperations oder draftChanges sind
+      // Process ONLY blocks with temp_ IDs that are also in pendingOperations or draftChanges
       // Das verhindert, dass alte temp_ IDs aus localStorage doppelt erstellt werden
       const tempBlocksToCreate = allCurrentBlocks.filter(block => {
         if (!block.id || !block.id.toString().startsWith('temp_')) {
           return false;
         }
 
-        // Prüfe ob dieser Block in pendingOperations oder draftChanges ist
+        // Check if this block is in pendingOperations or draftChanges
         const hasPendingOperation = pendingOperations.has(block.id);
         const hasDraftChange = allDraftChanges.some(draft => draft.blockId === block.id);
 
@@ -1176,7 +1176,7 @@ export const CMSProvider = ({ children }) => {
       pendingOperations.forEach((operation, blockId) => {
         let operationData = operation.data;
 
-        // Stelle sicher, dass content als JSON-String übertragen wird für existierende Operations
+        // Ensure content is transmitted as JSON string for existing operations
         if (operationData && operationData.content && typeof operationData.content === 'object') {
           operationData = {
             ...operationData,
@@ -1184,7 +1184,7 @@ export const CMSProvider = ({ children }) => {
           };
         }
 
-        // WICHTIG: Wenn blockId eine temp-ID ist, behandle IMMER als CREATE
+        // IMPORTANT: If blockId is a temp-ID, ALWAYS treat as CREATE
         const finalOperationType = blockId.toString().startsWith('temp_') ? 'create' : operation.operation;
 
         allBlockOperations.set(blockId, {
@@ -1199,7 +1199,7 @@ export const CMSProvider = ({ children }) => {
         if (allDraftChanges.length > 0) {
           const updatedBlocksMap = new Map();
 
-          // Erstelle eine Map der aktuellen Blöcke für schnellen Zugriff
+          // Create a map of current blocks for quick access
           // Priorisiere Datenbank-Daten, dann lokale Änderungen
           const blocksToUse = latestBlocksFromDB.length > 0 ? latestBlocksFromDB : blocks;
           blocksToUse.forEach(block => {
@@ -1251,7 +1251,7 @@ export const CMSProvider = ({ children }) => {
                   break;
               }
 
-              // Stelle sicher, dass content als JSON-String übertragen wird
+              // Ensure content is transmitted as JSON string
               if (operationData && operationData.content && typeof operationData.content === 'object') {
                 operationData = {
                   ...operationData,
@@ -1259,9 +1259,9 @@ export const CMSProvider = ({ children }) => {
                 };
               }
 
-              // Verhindere doppelte Operations für den gleichen Block
+              // Prevent duplicate operations for the same block
               if (!allBlockOperations.has(draft.blockId)) {
-                // WICHTIG: Wenn blockId eine temp-ID ist, behandle IMMER als CREATE
+                // IMPORTANT: If blockId is a temp-ID, ALWAYS treat as CREATE
                 const finalOperationType = draft.blockId.toString().startsWith('temp_') ? 'create' : draft.type;
 
                 allBlockOperations.set(draft.blockId, {
@@ -1330,7 +1330,7 @@ export const CMSProvider = ({ children }) => {
         promises.push({ type: 'layout', promise: layoutPromise });
       }
 
-      // 6. Warte auf alle Promises
+      // 6. Wait for all promises
       const results = await Promise.allSettled(promises.map(p => p.promise));
 
       // 7. Verarbeite Ergebnisse
@@ -1359,7 +1359,7 @@ export const CMSProvider = ({ children }) => {
                 background_color: block.background_color || 'transparent',
                 text_color: block.text_color || '#000000',
                 z_index: typeof block.z_index === 'number' ? block.z_index : 1,
-                // Stelle sicher, dass content korrekt als Objekt verarbeitet wird
+                // Ensure content is correctly processed as object
                 content: typeof block.content === 'string' ?
                   (() => {
                     try {
@@ -1371,7 +1371,7 @@ export const CMSProvider = ({ children }) => {
                   block.content || {}
               }));
 
-              // Erstelle ID-Mapping für neue Blöcke (temp_id -> real_id)
+              // Create ID mapping for new blocks (temp_id -> real_id)
               const idMapping = new Map();
               if (data.results) {
                 data.results.forEach(result => {
@@ -1391,7 +1391,7 @@ export const CMSProvider = ({ children }) => {
                 }
               }
 
-              // Setze die finalen Blöcke direkt vom Server
+              // Set the final blocks directly from server
               console.log(`✅ Setting ${normalizedBlocks.length} blocks from server response`);
               setBlocks(normalizedBlocks);
 
@@ -1413,7 +1413,7 @@ export const CMSProvider = ({ children }) => {
               console.log('🎨 Updated layout settings from server:', data);
               setLayoutSettings(data);
 
-              // Bestätige dass Layout-Änderungen erfolgreich gespeichert wurden
+              // Confirm that layout changes were successfully saved
               console.log('✅ Layout settings successfully saved to database');
             } else {
               console.warn('⚠️ Layout operation successful but no data returned');
@@ -1434,7 +1434,7 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('saved');
       setLastSaveTime(new Date());
 
-      // Verifizierung: Prüfe ob alle erwarteten Blöcke nach dem Speichern noch vorhanden sind
+      // Verification: Check if all expected blocks are still present after saving
       if (currentPage?.id) {
         setTimeout(async () => {
           try {
@@ -1497,7 +1497,7 @@ export const CMSProvider = ({ children }) => {
       console.warn('⚠️ Error loading localStorage drafts for discard:', error);
     }
 
-    // Lade Blöcke neu wenn Seite ausgewählt - explizit von DB laden
+    // Reload blocks when page is selected - explicitly load from DB
     if (currentPage && currentPage.id) {
       loadBlocks(currentPage.id, true); // forceFromDB = true
     }

@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     return NextResponse.json(page);
   } catch (error) {
     console.error('❌ Error getting page:', error);
-    return NextResponse.json({ error: 'Fehler beim Abrufen der Seite' }, { status: 500 });
+    return NextResponse.json({ error: 'Error retrieving page' }, { status: 500 });
   }
 }
 
@@ -37,16 +37,16 @@ export async function PUT(request, { params }) {
     const { title, slug } = await request.json();
 
     if (!title || !slug) {
-      return NextResponse.json({ error: 'Titel und Slug sind erforderlich' }, { status: 400 });
+      return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
     }
 
-    // Prüfe ob die Seite existiert
+    // Check if the page exists
     const existingPage = await getPageById(pageId);
     if (!existingPage) {
-      return NextResponse.json({ error: 'Seite nicht gefunden' }, { status: 404 });
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
     }
 
-    // Aktualisiere die Seite mit beiden Werten
+    // Update the page with both values
     await updatePage(pageId, title, slug);
 
     // Lade die aktualisierte Seite
@@ -58,7 +58,7 @@ export async function PUT(request, { params }) {
     if (error.message.includes('UNIQUE constraint failed') || error.message.includes('duplicate key')) {
       return NextResponse.json({ error: 'Eine Seite mit diesem Slug existiert bereits' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren der Seite' }, { status: 500 });
+    return NextResponse.json({ error: 'Error updating page' }, { status: 500 });
   }
 }
 
@@ -69,16 +69,16 @@ export async function DELETE(request, { params }) {
     const pageId = parseInt(id);
 
     if (isNaN(pageId)) {
-      return NextResponse.json({ error: 'Ungültige Seiten-ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid page ID' }, { status: 400 });
     }
 
-    // Prüfe ob die Seite existiert
+    // Check if the page exists
     const existingPage = await getPageById(pageId);
     if (!existingPage) {
-      return NextResponse.json({ error: 'Seite nicht gefunden' }, { status: 404 });
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
     }
 
-    // Lösche erst alle Blöcke der Seite
+    // First delete all blocks of the page
     const deletedBlocksCount = await deleteAllBlocksForPage(pageId);
 
     // Dann lösche die Seite selbst
@@ -86,11 +86,11 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      message: 'Seite erfolgreich gelöscht',
+      message: 'Page successfully deleted',
       deletedBlocks: deletedBlocksCount
     });
   } catch (error) {
     console.error('❌ Error deleting page:', error);
-    return NextResponse.json({ error: 'Fehler beim Löschen der Seite' }, { status: 500 });
+    return NextResponse.json({ error: 'Error deleting page' }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 /**
- * GridCanvas - Hauptkomponente für das Grid-System
+ * GridCanvas - Main component for the grid system
  *
  */
 
@@ -25,7 +25,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
         ...comp,
         Component: dynamic(() =>
           import(`@/components/nic/blocks/${categoryName === 'root' ? '' : categoryName + '/'}${comp.file}`)
-            .catch(() => import('@/components/nic/blocks/fallback')), // Fallback bei Fehlern
+            .catch(() => import('@/components/nic/blocks/fallback')), // Fallback on errors
           {
             ssr: false,
             loading: () => (
@@ -38,7 +38,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
                 borderRadius: '4px',
                 animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
               }}>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>Lädt...</span>
+                <span style={{ fontSize: '12px', color: '#6b7280' }}>Loading...</span>
               </div>
             )
           }
@@ -90,7 +90,7 @@ const GridBlock = ({ block, onUpdate, onDelete, isSelected, onSelect, containerR
         return;
     }
 
-    // Prüfe ob neue Position verfügbar ist und aktualisiere nur primitive Werte
+    // Check if new position is available and update only primitive values
     if (newCol !== currentCol || newRow !== currentRow) {
       onUpdate(block.id, {
         grid_col: newCol,
@@ -277,11 +277,11 @@ const GridCanvas = () => {
 
     try {
       updateBlock(id, data);
-      setSaveStatus('✓ Gespeichert');
+      setSaveStatus('✓ Saved');
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (error) {
       console.error('Error updating block:', error);
-      setSaveStatus('✗ Fehler beim Speichern');
+      setSaveStatus('✗ Error saving');
       setTimeout(() => setSaveStatus(''), 3000);
     }
   }, [updateBlock]);
@@ -298,7 +298,7 @@ const GridCanvas = () => {
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (error) {
       console.error('Error deleting block:', error);
-      setSaveStatus('✗ Fehler beim Löschen');
+      setSaveStatus('✗ Error deleting');
       setTimeout(() => setSaveStatus(''), 3000);
     }
   }, [deleteBlock]);
@@ -445,7 +445,7 @@ const GridCanvas = () => {
       z_index: newBlock.z_index || 1,
     };
 
-    // Block über Context hinzufügen
+    // Add block via context
     const result = createBlock(blockWithPosition);
     if (!result) {
       console.warn('Block konnte nicht erstellt werden - Fallback verhindert');
@@ -478,18 +478,18 @@ const GridCanvas = () => {
           onClick={() => addRows(1)}
           className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
         >
-          + Zeile hinzufügen
+          + Add Row
         </button>
         <button
           onClick={() => deleteLastRow()}
           className='bg-accent/10 hover:bg-background text-white ring ring-accent rounded-md px-4 py-2 cursor-pointer'
         >
-          - letzte Zeile entfernen
+          - Delete last row
         </button>
 
         <button
           onClick={() => {
-            if (confirm('Alle Blöcke löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+            if (confirm('Delete all blocks? This action cannot be undone.')) {
               blocks.forEach(block => {
                 handleDeleteBlock(block.id);
               });
@@ -497,7 +497,7 @@ const GridCanvas = () => {
           }}
           className='bg-accent/10 hover:bg-accent-red/20 text-foreground ring ring-accent hover:ring-accent-red cursor-pointer rounded-md px-4 py-2'
         >
-          Alle löschen
+          Delete all
         </button>
 
         <div style={{ fontSize: '14px', color: '#6b7280' }}>

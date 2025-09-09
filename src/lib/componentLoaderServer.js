@@ -1,10 +1,10 @@
-// Server-side Utility für dynamisches Laden von CMS-Komponenten
+// Server-side utility for dynamic loading of CMS components
 import fs from 'fs';
 import path from 'path';
 import dynamic from 'next/dynamic';
 
 /**
- * Server-seitige Funktion zum Scannen verfügbarer Komponenten
+ * Server-side function for scanning available components
  */
 export const getAvailableComponentsServer = () => {
   try {
@@ -19,15 +19,15 @@ export const getAvailableComponentsServer = () => {
         const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
 
         if (item.isDirectory()) {
-          // Rekursiv durch Unterordner scannen
+          // Recursively scan subdirectories
           components.push(...scanDirectory(fullPath, relativePath));
         } else if (item.isFile() && /\.(jsx?|tsx?)$/.test(item.name)) {
-          // Nur React-Komponenten-Dateien
+          // Only React component files
           const componentName = item.name.replace(/\.(jsx?|tsx?)$/, '');
 
-          // Versuche, Metadaten aus der Datei zu extrahieren
+          // Try to extract metadata from the file
           let icon = '🧩';
-          let description = 'Komponente';
+          let description = 'Component';
 
           try {
             const fileContent = fs.readFileSync(fullPath, 'utf8');
@@ -50,7 +50,7 @@ export const getAvailableComponentsServer = () => {
               }
             }
           } catch (error) {
-            console.warn(`Konnte Metadaten für ${relativePath} nicht lesen:`, error);
+            console.warn(`Could not read metadata for ${relativePath}:`, error);
           }
 
           components.push({
@@ -71,13 +71,13 @@ export const getAvailableComponentsServer = () => {
     return scanDirectory(componentsDir);
 
   } catch (error) {
-    console.error('Fehler beim Scannen der Komponenten:', error);
+    console.error('Error scanning components:', error);
     return [];
   }
 };
 
 /**
- * Erstellt dynamische Imports für alle verfügbaren Komponenten
+ * Creates dynamic imports for all available components
  */
 export const createDynamicComponents = () => {
   const availableComponents = getAvailableComponentsServer();
@@ -91,12 +91,12 @@ export const createDynamicComponents = () => {
         { ssr: true }
       );
 
-      // Auch unter componentName verfügbar machen
+      // Also make available under componentName
       if (comp.componentName !== comp.name) {
         components[comp.componentName] = components[comp.name];
       }
 
-      // Kurze Namen ohne "Block" Suffix für Backward-Compatibility
+      // Short names without "Block" suffix for backward compatibility
       if (comp.component.endsWith('Block')) {
         const shortName = comp.component.replace('Block', '');
         components[shortName] = components[comp.name];
@@ -108,7 +108,7 @@ export const createDynamicComponents = () => {
       // Fallback-Komponente
       components[comp.name] = () => (
         <div className="text-red-500 p-4 border border-red-300 rounded">
-          <div className="font-bold">Komponente nicht verfügbar</div>
+          <div className="font-bold">Component not available</div>
           <div className="text-sm">Type: {comp.name}</div>
         </div>
       );
@@ -119,7 +119,7 @@ export const createDynamicComponents = () => {
 };
 
 /**
- * Spezielle Funktion für Header-Komponenten
+ * Special function for header components
  */
 export const createDynamicHeaderComponents = () => {
   const availableComponents = getAvailableComponentsServer();
@@ -131,7 +131,7 @@ export const createDynamicHeaderComponents = () => {
 
   for (const comp of headers) {
     try {
-      // Erstelle aussagekräftigere Keys
+      // Create more meaningful keys
       let key = comp.name.toLowerCase()
         .replace(/header/gi, '')
         .replace(/block/gi, '')
@@ -150,7 +150,7 @@ export const createDynamicHeaderComponents = () => {
     }
   }
 
-  // Fallback für Standard-Header
+  // Fallback for default header
   if (!headerComponents.default) {
     try {
       headerComponents.default = dynamic(
@@ -166,7 +166,7 @@ export const createDynamicHeaderComponents = () => {
 };
 
 /**
- * Spezielle Funktion für Footer-Komponenten
+ * Special function for footer components
  */
 export const createDynamicFooterComponents = () => {
   const availableComponents = getAvailableComponentsServer();
@@ -178,7 +178,7 @@ export const createDynamicFooterComponents = () => {
 
   for (const comp of footers) {
     try {
-      // Erstelle aussagekräftigere Keys
+      // Create more meaningful keys
       let key = comp.name.toLowerCase()
         .replace(/footer/gi, '')
         .replace(/block/gi, '')
@@ -197,7 +197,7 @@ export const createDynamicFooterComponents = () => {
     }
   }
 
-  // Fallback für Standard-Footer
+  // Fallback for default footer
   if (!footerComponents.default) {
     try {
       footerComponents.default = dynamic(

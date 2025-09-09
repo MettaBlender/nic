@@ -1,32 +1,32 @@
 /**
  * NIC CMS Configuration
  *
- * Grid System Konfiguration für das Layout-System
+ * Grid System Configuration for the Layout System
  */
 
 const nicConfig = {
   // Grid System
   grid: {
-    // Anzahl der Spalten im Grid (Standard: 12 wie Bootstrap)
+    // Number of columns in the grid (default: 12 like Bootstrap)
     columns: 12,
 
-    // Minimale Anzahl der Reihen (automatisch erweiterbar)
+    // Minimum number of rows (automatically expandable)
     minRows: 12,
 
-    // Maximale Anzahl der Reihen (0 = unbegrenzt)
+    // Maximum number of rows (0 = unlimited)
     maxRows: 0,
 
-    // Gap zwischen Grid-Elementen in px
+    // Gap between grid elements in px
     gap: 8,
 
-    // Mindest-Höhe einer Grid-Reihe in px
+    // Minimum height of a grid row in px
     rowHeight: '60px',
 
     // Responsive Breakpoints
     breakpoints: {
       mobile: {
         maxWidth: 768,
-        columns: 4, // Weniger Spalten auf Mobile
+        columns: 4, // Fewer columns on mobile
         rowHeight: 50
       },
       tablet: {
@@ -42,7 +42,7 @@ const nicConfig = {
     }
   },
 
-  // Drag & Drop Konfiguration
+  // Drag & Drop Configuration
   dragDrop: {
     enabled: true,
     snapToGrid: true,
@@ -53,7 +53,7 @@ const nicConfig = {
 
 };
 
-// Export für Node.js und Browser
+// Export for Node.js and Browser
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = nicConfig;
 } else if (typeof window !== 'undefined') {

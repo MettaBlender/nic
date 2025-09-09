@@ -1,7 +1,7 @@
--- Neon Database Schema für NIC CMS
--- Führe diese SQL-Befehle in deiner Neon-Konsole aus
+-- Neon Database Schema for NIC CMS
+-- Execute these SQL commands in your Neon console
 
--- Seiten Tabelle
+-- Pages table
 CREATE TABLE IF NOT EXISTS pages (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS pages (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Blöcke Tabelle
+-- Blocks table
 CREATE TABLE IF NOT EXISTS blocks (
   id SERIAL PRIMARY KEY,
   page_id INTEGER REFERENCES pages(id) ON DELETE CASCADE,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS blocks (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- CMS Einstellungen Tabelle
+-- CMS settings table
 CREATE TABLE IF NOT EXISTS cms_settings (
   id SERIAL PRIMARY KEY,
   key TEXT UNIQUE NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS cms_settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Layout Einstellungen Tabelle
+-- Layout settings table
 CREATE TABLE IF NOT EXISTS layout_settings (
   id SERIAL PRIMARY KEY,
   header_component TEXT DEFAULT 'default',
@@ -53,16 +53,16 @@ CREATE TABLE IF NOT EXISTS layout_settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Standard Layout Einstellungen einfügen
+-- Insert default layout settings
 INSERT INTO layout_settings (header_component, footer_component, background_color, primary_color, secondary_color)
 VALUES ('default', 'default', '#ffffff', '#3b82f6', '#64748b')
 ON CONFLICT DO NOTHING;
 
--- Standard Home-Seite erstellen
+-- Create default home page
 INSERT INTO pages (title, slug) VALUES ('Home', 'home')
 ON CONFLICT (slug) DO NOTHING;
 
--- Standard-Blöcke für die Home-Seite hinzufügen (nur wenn Home-Seite existiert)
+-- Add default blocks for the home page (only if home page exists)
 DO $$
 DECLARE
     home_page_id INTEGER;
@@ -74,7 +74,7 @@ BEGIN
             page_id, block_type, content, position_x, position_y, width, height,
             rotation, scale_x, scale_y, z_index, background_color, text_color, order_index
         ) VALUES (
-            home_page_id, 'Text', 'Willkommen auf meiner Website!', 20, 20, 60, 20,
+            home_page_id, 'Text', 'Welcome to my website!', 20, 20, 60, 20,
             0, 1, 1, 1, '#ffffff', '#000000', 0
         );
 
@@ -82,7 +82,7 @@ BEGIN
             page_id, block_type, content, position_x, position_y, width, height,
             rotation, scale_x, scale_y, z_index, background_color, text_color, order_index
         ) VALUES (
-            home_page_id, 'Text', 'Dies ist ein CMS-System mit Drag & Drop Editor.', 20, 50, 60, 15,
+            home_page_id, 'Text', 'This is a CMS system with drag & drop editor.', 20, 50, 60, 15,
             0, 1, 1, 2, '#f0f0f0', '#333333', 1
         );
     END IF;

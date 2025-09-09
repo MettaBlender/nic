@@ -4,7 +4,7 @@ import { getBlocksForPage, createBlock, deleteAllBlocksForPage } from '@/lib/dat
 // Force dynamic API routes
 export const dynamic = 'force-dynamic';
 
-// GET: Blöcke für eine bestimmte Seite laden
+// GET: Load blocks for a specific page
 export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
@@ -76,7 +76,7 @@ export async function POST(request, { params }) {
   }
 }
 
-// DELETE: Alle Blöcke einer Seite löschen
+// DELETE: Delete all blocks of a page
 export async function DELETE(request, { params }) {
   try {
     const resolvedParams = await params;

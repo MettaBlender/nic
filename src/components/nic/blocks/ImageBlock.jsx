@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Einfacher Bild Block für Inhalte
+ * Simple image block for content
  * @icon 🖼️
  * @width 3
  * @height 3
@@ -26,7 +26,7 @@ const ImageBlock = ({ content, alt = 'Image Block' }) => {
         <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 rounded">
           <div className="text-center">
             <div className="text-4xl mb-2">📷</div>
-            <div>Bild Block</div>
+            <div>Image Block</div>
           </div>
         </div>
       )}

@@ -8,7 +8,7 @@ import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Globe } from 'l
 import { useRouter } from 'next/navigation';
 import DetailSideBar from './DetailSideBar';
 
-// Dynamische Komponenten-Erkennung über API
+// Dynamic component detection via API
 const getComponentFiles = async () => {
   try {
     const response = await fetch('/api/cms/components');
@@ -17,7 +17,7 @@ const getComponentFiles = async () => {
     if (data.success) {
       const components = [];
 
-      // Flatten die Kategorien zu einer Liste von Komponenten
+      // Flatten the categories to a list of components
       Object.entries(data.categories).forEach(([category, categoryComponents]) => {
         categoryComponents.forEach(comp => {
           components.push({
@@ -25,7 +25,7 @@ const getComponentFiles = async () => {
             componentName: comp.componentName,
             component: category === 'root' ? comp.file.replace(/\.(jsx?|tsx?)$/, '') : `${category}/${comp.file.replace(/\.(jsx?|tsx?)$/, '')}`,
             icon: comp.icon || '🧩',
-            description: comp.description || 'Block-Komponente',
+            description: comp.description || 'Block Component',
             category: category
           });
         });
@@ -34,7 +34,7 @@ const getComponentFiles = async () => {
       return components;
     }
   } catch (error) {
-    console.error('Fehler beim Laden der Komponenten-Liste:', error);
+    console.error('Error loading component list:', error);
   }
 };
 
@@ -56,7 +56,7 @@ const CMSEditor = () => {
   const [availableComponents, setAvailableComponents] = useState([]);
   const router = useRouter();
 
-  // Dynamisches Laden der Block-Komponenten
+  // Dynamic loading of block components
   useEffect(() => {
     const loadComponents = async () => {
       const components = {};
@@ -65,28 +65,28 @@ const CMSEditor = () => {
       setAvailableComponents(availableComps);
 
       try {
-        // Lade alle verfügbaren Komponenten dynamisch
+        // Load all available components dynamically
         for (const comp of availableComps) {
           try {
             const module = await import(`@/components/nic/blocks/${comp.component}`);
 
-            // Verwende sowohl den Namen als auch den Komponentennamen als Key
+            // Use both the name and component name as key
             components[comp.name] = module.default;
             components[comp.componentName] = module.default;
 
-            // Für Block-Typen auch ohne "Block" Suffix verfügbar machen
+            // Make block types available without "Block" suffix as well
             if (comp.component.endsWith('Block')) {
               const shortName = comp.component.replace('Block', '');
               components[shortName] = module.default;
             }
 
           } catch (importError) {
-            console.warn(`Komponente ${comp.component} konnte nicht geladen werden:`, importError);
+            console.warn(`Component ${comp.component} could not be loaded:`, importError);
 
-            // Fallback-Komponente für nicht ladbare Komponenten
+            // Fallback component for non-loadable components
             components[comp.name] = ({ content }) => (
               <div className="text-red-500 p-4 border border-red-300 rounded">
-                <div className="font-bold">Komponente nicht verfügbar</div>
+                <div className="font-bold">Component not available</div>
                 <div className="text-sm">Type: {comp.name}</div>
                 <div className="text-xs mt-2">{content}</div>
               </div>
@@ -95,7 +95,7 @@ const CMSEditor = () => {
         }
 
       } catch (error) {
-        console.error('Fehler beim Laden der Komponenten:', error);
+        console.error('Error loading components:', error);
       }
 
       setBlockComponents(components);
@@ -104,7 +104,7 @@ const CMSEditor = () => {
     loadComponents();
   }, []);
 
-  // Container-Größe überwachen
+  // Monitor container size
   useEffect(() => {
     const updateContainerSize = () => {
       if (containerRef.current) {
@@ -122,7 +122,7 @@ const CMSEditor = () => {
     return () => window.removeEventListener('resize', updateContainerSize);
   }, [setContainerSize]);
 
-  // Funktion um verfügbare Komponenten zu exportieren (für Sidebar etc.)
+  // Function to export available components (for Sidebar etc.)
   const getLoadedComponents = () => {
     return availableComponents.map(comp => ({
       ...comp,
@@ -130,7 +130,7 @@ const CMSEditor = () => {
     }));
   };
 
-  // Mache die Funktion global verfügbar (für andere Komponenten)
+  // Make the function globally available (for other components)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.cmsGetAvailableComponents = getLoadedComponents;
@@ -142,8 +142,8 @@ const CMSEditor = () => {
       <div className="w-full h-full flex items-center justify-center bg-background">
         <div className="text-center text-foreground">
           <div className="text-4xl mb-4">📄</div>
-          <h2 className="text-xl font-semibold mb-2">Keine Seite ausgewählt</h2>
-          <p>Wählen Sie eine Seite aus oder erstellen Sie eine neue Seite.</p>
+          <h2 className="text-xl font-semibold mb-2">No page selected</h2>
+          <p>Select a page or create a new page.</p>
         </div>
       </div>
     );
@@ -154,7 +154,7 @@ const CMSEditor = () => {
       await fetch('/api/auth/login', { method: 'DELETE' });
       router.push('/nic/login');
     } catch (error) {
-      console.error('Logout fehler:', error);
+      console.error('Logout error:', error);
     }
   };
 
@@ -170,7 +170,7 @@ const CMSEditor = () => {
 
       {selectedBlock && mode !== 'preview' && <DetailSideBar />}
 
-      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-0 left-6 w-[500%] text-center rounded-md bg-background text-accent'>Öffentliche Seite</p></button>
+      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-0 left-6 w-[500%] text-center rounded-md bg-background text-accent'>Public Page</p></button>
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>
@@ -196,7 +196,7 @@ const CMSEditor = () => {
               }`}
             >
               <Move size={16} />
-              Bewegen
+              Move
             </button>
             <button
               onClick={() => setMode('edit')}
@@ -207,7 +207,7 @@ const CMSEditor = () => {
               }`}
             >
               <Edit size={16} />
-              Bearbeiten
+              Edit
             </button>
 
             <button
@@ -219,7 +219,7 @@ const CMSEditor = () => {
               }`}
             >
               <Eye size={16} />
-              Vorschau
+              Preview
             </button>
 
             {/* Logout Button */}
@@ -242,11 +242,11 @@ const CMSEditor = () => {
         {/* Status Bar */}
         <div className="bg-background border-t border-accent px-4 py-2 flex items-center justify-between text-sm text-foreground">
           <div className="flex items-center gap-4">
-            <span>Modus: <span className="font-medium capitalize">{mode}</span></span>
-            <span>Komponenten geladen: {Object.keys(blockComponents).length}</span>
+            <span>Mode: <span className="font-medium capitalize">{mode}</span></span>
+            <span>Components loaded: {Object.keys(blockComponents).length}</span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Blöcke: {blocks.length}</span>
+            <span>Blocks: {blocks.length}</span>
             {activeBlock && (
               <span className="text-blue-600">
                 Aktiv: {activeBlock.block_type} #{activeBlock.id}

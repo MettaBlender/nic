@@ -1,6 +1,6 @@
 /**
- * LocalStorage Manager für CMS Drafts
- * Verwaltet lokale Speicherung von nicht-veröffentlichten Änderungen
+ * LocalStorage Manager for CMS Drafts
+ * Manages local storage of unpublished changes
  */
 
 'use client';
@@ -13,7 +13,7 @@ const STORAGE_KEYS = {
 };
 
 /**
- * Speichert Draft-Änderungen in localStorage
+ * Saves draft changes to localStorage
  */
 export const saveDraftChanges = (changes) => {
   try {
@@ -32,7 +32,7 @@ export const saveDraftChanges = (changes) => {
 };
 
 /**
- * Lädt Draft-Änderungen aus localStorage
+ * Loads draft changes from localStorage
  */
 export const loadDraftChanges = () => {
   try {
@@ -41,7 +41,7 @@ export const loadDraftChanges = () => {
 
     const data = JSON.parse(stored);
 
-    // Validiere Datenstruktur
+    // Validate data structure
     if (!data.changes || !Array.isArray(data.changes)) {
       console.warn('⚠️ Invalid draft changes format, clearing...');
       clearDraftChanges();
@@ -56,7 +56,7 @@ export const loadDraftChanges = () => {
 };
 
 /**
- * Löscht alle Draft-Änderungen
+ * Clears all draft changes
  */
 export const clearDraftChanges = () => {
   try {
@@ -69,7 +69,7 @@ export const clearDraftChanges = () => {
 };
 
 /**
- * Speichert Block-Zustand für eine spezifische Seite
+ * Saves block state for a specific page
  */
 export const savePageBlockState = (pageId, blocks) => {
   try {
@@ -90,7 +90,7 @@ export const savePageBlockState = (pageId, blocks) => {
 };
 
 /**
- * Lädt Block-Zustand für eine spezifische Seite
+ * Loads block state for a specific page
  */
 export const loadPageBlockState = (pageId) => {
   try {
@@ -108,17 +108,17 @@ export const loadPageBlockState = (pageId) => {
 };
 
 /**
- * Speichert eine einzelne Block-Änderung
+ * Saves a single block change
  */
 export const saveSingleBlockChange = (blockChange) => {
   const existingChanges = loadDraftChanges();
 
-  // Entferne vorherige Änderungen für denselben Block
+  // Remove previous changes for the same block
   const filteredChanges = existingChanges.filter(change =>
     !(change.blockId === blockChange.blockId && change.type === blockChange.type)
   );
 
-  // Füge neue Änderung hinzu
+  // Add new change
   filteredChanges.push({
     ...blockChange,
     id: Date.now(),
@@ -129,7 +129,7 @@ export const saveSingleBlockChange = (blockChange) => {
 };
 
 /**
- * Entfernt eine spezifische Block-Änderung
+ * Removes a specific block change
  */
 export const removeDraftChange = (changeId) => {
   const existingChanges = loadDraftChanges();
@@ -139,7 +139,7 @@ export const removeDraftChange = (changeId) => {
 };
 
 /**
- * Setzt Last-Save Timestamp
+ * Sets last save timestamp
  */
 export const setLastSaveTime = (timestamp = Date.now()) => {
   try {
@@ -152,7 +152,7 @@ export const setLastSaveTime = (timestamp = Date.now()) => {
 };
 
 /**
- * Holt Last-Save Timestamp
+ * Gets last save timestamp
  */
 export const getLastSaveTime = () => {
   try {
@@ -165,13 +165,13 @@ export const getLastSaveTime = () => {
 };
 
 /**
- * Bereinigt alte Draft-Daten (älter als 24 Stunden)
+ * Cleans up old draft data (older than 24 hours)
  */
 export const cleanupOldDrafts = () => {
   try {
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
-    // Bereinige Draft-Änderungen
+    // Clean draft changes
     const changes = loadDraftChanges();
     const recentChanges = changes.filter(change =>
       change.timestamp && change.timestamp > oneDayAgo
@@ -181,7 +181,7 @@ export const cleanupOldDrafts = () => {
       saveDraftChanges(recentChanges);
     }
 
-    // Bereinige Page-States
+    // Clean page states
     const pageStates = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAGE_STATES) || '{}');
     const cleanedStates = {};
 
@@ -201,7 +201,7 @@ export const cleanupOldDrafts = () => {
 };
 
 /**
- * Bereinige alte temp_ IDs aus localStorage blocks
+ * Clean up old temp_ IDs from localStorage blocks
  */
 export const cleanupTempBlocks = () => {
   try {
@@ -211,16 +211,16 @@ export const cleanupTempBlocks = () => {
     const blocks = JSON.parse(storedBlocks);
     if (!Array.isArray(blocks)) return true;
 
-    // Entferne alle Blöcke mit temp_ IDs die älter als 1 Stunde sind
+    // Remove all blocks with temp_ IDs older than 1 hour
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
     const cleanedBlocks = blocks.filter(block => {
       if (!block.id || !block.id.toString().startsWith('temp_')) {
-        return true; // Behalte nicht-temp Blöcke
+        return true; // Keep non-temp blocks
       }
 
-      // Prüfe das Alter basierend auf created_at
+      // Check age based on created_at
       const createdAt = new Date(block.created_at || 0).getTime();
-      return createdAt > oneHourAgo; // Behalte nur neue temp Blöcke
+      return createdAt > oneHourAgo; // Keep only new temp blocks
     });
 
     if (cleanedBlocks.length !== blocks.length) {
@@ -236,7 +236,7 @@ export const cleanupTempBlocks = () => {
 };
 
 /**
- * Bereinige problematische Draft-Änderungen
+ * Clean up problematic draft changes
  */
 export const cleanupProblematicDrafts = () => {
   try {
@@ -246,9 +246,9 @@ export const cleanupProblematicDrafts = () => {
     const drafts = JSON.parse(storedDrafts);
     if (!Array.isArray(drafts)) return true;
 
-    // Entferne problematische Draft-Änderungen
+    // Remove problematic draft changes
     const cleanedDrafts = drafts.filter(draft => {
-      // Entferne Text-Block CREATE Drafts ohne Inhalt
+      // Remove Text block CREATE drafts without content
       if (draft.type === 'create' &&
           draft.data?.block_type === 'Text' &&
           (!draft.data.content ||
@@ -258,7 +258,7 @@ export const cleanupProblematicDrafts = () => {
         return false;
       }
 
-      // Entferne sehr alte Draft-Änderungen (älter als 24 Stunden)
+      // Remove very old draft changes (older than 24 hours)
       const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
       if (draft.timestamp < dayAgo) {
         console.log(`🧹 Removing old draft: ${draft.blockId} (${new Date(draft.timestamp).toLocaleString()})`);

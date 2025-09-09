@@ -12,7 +12,7 @@ import {
 // Force dynamic API routes
 export const dynamic = 'force-dynamic';
 
-// POST: Batch-Operations für Blöcke verarbeiten
+// POST: Process batch operations for blocks
 export async function POST(request, { params }) {
   try {
     const resolvedParams = await params;
@@ -125,7 +125,7 @@ export async function POST(request, { params }) {
             break;
 
           case 'replace_all':
-            // Lösche alle Blöcke und erstelle neue
+            // Delete all blocks and create new ones
             await deleteAllBlocksForPage(pageId);
 
             if (data.blocks && data.blocks.length > 0) {
@@ -179,10 +179,10 @@ export async function POST(request, { params }) {
     // Update Page Rows
     await updatePageRows(pageId, rows || 12);
 
-    // Lade aktuelle Blöcke nach den Operationen
+    // Load current blocks after operations
     const currentBlocks = await getBlocksForPage(pageId);
 
-    // Zusätzliche Validierung: Prüfe ob alle Updates korrekt gespeichert wurden
+    // Additional validation: Check if all updates were correctly saved
     const updateOperations = results.filter(r => r.operation === 'update' && r.success);
     if (updateOperations.length > 0) {
 
