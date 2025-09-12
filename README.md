@@ -2,7 +2,7 @@
 
 A modern, drag-and-drop based Content Management System built with Next.js, React and SQLite.
 
-## 🚀 Features
+## Features
 
 ### CMS Editor (`/nic`)
 - **Drag & Drop Editor**: Freely movable blocks with grid-based positioning
@@ -56,91 +56,91 @@ A modern, drag-and-drop based Content Management System built with Next.js, Reac
 - **Automatic Migration**: Schema updates handled automatically
 - **Data Persistence**: Reliable storage of pages, blocks, and settings
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 nic/
-├── src/
-│   ├── app/
-│   │   ├── layout.js               # Root layout
-│   │   ├── page.js                 # Homepage
-│   │   ├── globals.css             # Global styles
-│   │   ├── [...id]/                # Dynamic public pages
-│   │   │   └── page.js
-│   │   ├── nic/                    # CMS Application
-│   │   │   ├── page.js             # Main CMS Editor
-│   │   │   ├── docs/               # Documentation
-│   │   │   │   └── page.js
-│   │   │   ├── login/              # Authentication
-│   │   │   │   └── page.js
-│   │   │   └── responsive-demo/    # Responsive testing
-│   │   └── api/                    # API Routes
-│   │       ├── auth/               # Authentication API
-│   │       │   └── login/
-│   │       └── cms/                # CMS API endpoints
-│   │           ├── pages/          # Page management
-│   │           ├── blocks/         # Block operations
-│   │           ├── layout/         # Layout settings
-│   │           ├── components/     # Component discovery
-│   │           ├── migrate/        # Database migration
-│   │           └── update-block/   # Block updates
-│   ├── components/nic/
-│   │   ├── cms/                    # CMS Interface Components
-│   │   │   ├── CMSEditor.jsx       # Main editor interface
-│   │   │   ├── GridCanvas.jsx      # Drag & drop canvas
-│   │   │   ├── DetailSideBar.jsx   # Block property editor
-│   │   │   ├── Components.jsx      # Block library
-│   │   │   ├── PageManager.jsx     # Page management
-│   │   │   ├── LayoutSettings.jsx  # Layout configuration
-│   │   │   ├── sidebar.jsx         # Main sidebar
-│   │   │   ├── header/             # Header components
-│   │   │   │   ├── DefaultHeader.jsx
-│   │   │   │   └── NavigationHeader.jsx
-│   │   │   └── footer/             # Footer components
-│   │   │       ├── DefaultFooter.jsx
-│   │   │       └── SocialFooter.jsx
-│   │   ├── blocks/                 # Content Blocks
-│   │   │   ├── Text.jsx            # Text block
-│   │   │   ├── ImageBlock.jsx      # Image block
-│   │   │   ├── ButtonBlock.jsx     # Button block
-│   │   │   ├── VideoBlock.jsx      # Video block
-│   │   │   ├── ContainerBlock.jsx  # Container block
-│   │   │   ├── fallback.jsx        # Error fallback
-│   │   │   ├── forms/              # Form blocks
-│   │   │   │   ├── ContactFormBlock.jsx
-│   │   │   │   └── NewsletterBlock.jsx
-│   │   │   ├── media/              # Media blocks
-│   │   │   │   ├── AudioBlock.jsx
-│   │   │   │   └── GalleryBlock.jsx
-│   │   │   └── test/               # Development blocks
-│   │   │       └── Test2.jsx
-│   │   └── responsive/             # Responsive utilities
-│   ├── context/
-│   │   └── CMSContext.js           # Global state management
-│   ├── hooks/
-│   │   └── useGridSystem.js        # Grid system utilities
-│   ├── lib/
-│   │   ├── database.js             # Database operations
-│   │   ├── componentLoader.js      # Component loading (client)
-│   │   └── componentLoaderServer.js # Component loading (server)
-│   ├── utils/
-│   │   ├── cmsFunctions.js         # CMS utility functions
-│   │   ├── colorFunctions.jsx      # Color manipulation
-│   │   └── localStorageManager.js  # Local storage utilities
-│   ├── config/                     # Configuration files
-│   ├── styles/                     # Additional styles
-│   └── middleware.js               # Next.js middleware
-├── data/                           # Data files
-│   └── nic-cms.json               # CMS configuration
-├── docs/                           # Documentation assets
-├── public/                         # Static assets
-├── database-init.sql               # Database schema
-├── database-migration.sql          # Database migrations
-├── nic.config.js                   # NIC configuration
-└── package.json                    # Dependencies
++-- src/
+|   +-- app/
+|   |   +-- layout.js               # Root layout
+|   |   +-- page.js                 # Homepage
+|   |   +-- globals.css             # Global styles
+|   |   +-- [...id]/                # Dynamic public pages
+|   |   |   +-- page.js
+|   |   +-- nic/                    # CMS Application
+|   |   |   +-- page.js             # Main CMS Editor
+|   |   |   +-- docs/               # Documentation
+|   |   |   |   +-- page.js
+|   |   |   +-- login/              # Authentication
+|   |   |   |   +-- page.js
+|   |   |   +-- responsive-demo/    # Responsive testing
+|   |   +-- api/                    # API Routes
+|   |       +-- auth/               # Authentication API
+|   |       |   +-- login/
+|   |       +-- cms/                # CMS API endpoints
+|   |           +-- pages/          # Page management
+|   |           +-- blocks/         # Block operations
+|   |           +-- layout/         # Layout settings
+|   |           +-- components/     # Component discovery
+|   |           +-- migrate/        # Database migration
+|   |           +-- update-block/   # Block updates
+|   +-- components/nic/
+|   |   +-- cms/                    # CMS Interface Components
+|   |   |   +-- CMSEditor.jsx       # Main editor interface
+|   |   |   +-- GridCanvas.jsx      # Drag & drop canvas
+|   |   |   +-- DetailSideBar.jsx   # Block property editor
+|   |   |   +-- Components.jsx      # Block library
+|   |   |   +-- PageManager.jsx     # Page management
+|   |   |   +-- LayoutSettings.jsx  # Layout configuration
+|   |   |   +-- sidebar.jsx         # Main sidebar
+|   |   |   +-- header/             # Header components
+|   |   |   |   +-- DefaultHeader.jsx
+|   |   |   |   +-- NavigationHeader.jsx
+|   |   |   +-- footer/             # Footer components
+|   |   |       +-- DefaultFooter.jsx
+|   |   |       +-- SocialFooter.jsx
+|   |   +-- blocks/                 # Content Blocks
+|   |   |   +-- Text.jsx            # Text block
+|   |   |   +-- ImageBlock.jsx      # Image block
+|   |   |   +-- ButtonBlock.jsx     # Button block
+|   |   |   +-- VideoBlock.jsx      # Video block
+|   |   |   +-- ContainerBlock.jsx  # Container block
+|   |   |   +-- fallback.jsx        # Error fallback
+|   |   |   +-- forms/              # Form blocks
+|   |   |   |   +-- ContactFormBlock.jsx
+|   |   |   |   +-- NewsletterBlock.jsx
+|   |   |   +-- media/              # Media blocks
+|   |   |   |   +-- AudioBlock.jsx
+|   |   |   |   +-- GalleryBlock.jsx
+|   |   |   +-- test/               # Development blocks
+|   |   |       +-- Test2.jsx
+|   |   +-- responsive/             # Responsive utilities
+|   +-- context/
+|   |   +-- CMSContext.js           # Global state management
+|   +-- hooks/
+|   |   +-- useGridSystem.js        # Grid system utilities
+|   +-- lib/
+|   |   +-- database.js             # Database operations
+|   |   +-- componentLoader.js      # Component loading (client)
+|   |   +-- componentLoaderServer.js # Component loading (server)
+|   +-- utils/
+|   |   +-- cmsFunctions.js         # CMS utility functions
+|   |   +-- colorFunctions.jsx      # Color manipulation
+|   |   +-- localStorageManager.js  # Local storage utilities
+|   +-- config/                     # Configuration files
+|   +-- styles/                     # Additional styles
+|   +-- middleware.js               # Next.js middleware
++-- data/                           # Data files
+|   +-- nic-cms.json               # CMS configuration
++-- docs/                           # Documentation assets
++-- public/                         # Static assets
++-- database-init.sql               # Database schema
++-- database-migration.sql          # Database migrations
++-- nic.config.js                   # NIC configuration
++-- package.json                    # Dependencies
 ```
 
-## 🛠️ Installation and Setup
+## Installation and Setup
 
 ### Prerequisites
 - Node.js 18+
@@ -183,7 +183,7 @@ nic/
    - **CMS Editor**: `http://localhost:3000/nic`
    - **Documentation**: `http://localhost:3000/nic/docs`
 
-## 📖 Usage
+## Usage
 
 ### 1. Access CMS Editor
 - Navigate to `http://localhost:3000/nic` for the main editor
@@ -224,7 +224,7 @@ nic/
 - **Public Access**: Pages are automatically available at `/{slug}`
 - **Homepage**: Visit `/` to see all published pages
 
-## 🎨 Editor Modes
+## Editor Modes
 
 ### Edit Mode
 - Blocks are movable and editable
@@ -239,7 +239,7 @@ nic/
 - Click on blocks to delete them
 - Red overlay marking
 
-## 🔧 Technical Details
+## Technical Details
 
 ### Dependencies
 - **Next.js 15.4.6**: React Framework with Turbopack support
@@ -281,7 +281,7 @@ nic/
 - `text_color`: Default text color
 - `created_at`, `updated_at`: Timestamps
 
-## 🏗️ Development
+## Development
 
 ### Adding New Block Components
 1. Create your component in `src/components/nic/blocks/`
@@ -300,7 +300,7 @@ nic/
 - `GET/PUT /api/cms/layout` - Layout settings
 - `GET /api/cms/components` - Component discovery
 
-## 🚀 Deployment
+## Deployment
 
 ### Supported Platforms
 1. **Vercel** (recommended) - Full Next.js support with edge functions
@@ -332,17 +332,17 @@ NEXTAUTH_SECRET=your_auth_secret
 NEXTAUTH_URL=your_domain_url
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Commit your changes
 4. Create a pull request
 
-## 📄 License
+## License
 
 This project is under the MIT License.
 
-## 🆘 Support
+## Support
 
 For questions or issues, please create an issue in the repository.

@@ -20,6 +20,12 @@ export default async function HomePage() {
               >
                 Try CMS
               </Link>
+              <Link
+                href="/nic/docs"
+                className="bg-accent/10 ring ring-accent text-white px-4 py-2 rounded-md hover:bg-accent/40 transition-colors"
+              >
+                Read the Docs
+              </Link>
             </nav>
           </div>
         </div>

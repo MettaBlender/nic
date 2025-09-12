@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import GridCanvas from './GridCanvas';
 import Sidebar from './sidebar';
-import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Globe } from 'lucide-react';
+import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Globe, Book } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DetailSideBar from './DetailSideBar';
+import Link from 'next/link';
 
 // Dynamic component detection via API
 const getComponentFiles = async () => {
@@ -170,7 +171,8 @@ const CMSEditor = () => {
 
       {selectedBlock && mode !== 'preview' && <DetailSideBar />}
 
-      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-0 left-6 w-[500%] text-center rounded-md bg-background text-accent'>Public Page</p></button>
+      <button onClick={openPublicPage} className='fixed top-4 left-4 z-100 cursor-pointer text-accent group'><Globe /><p className='hidden group-hover:block absolute top-6 left-0 w-[500%] text-center rounded-md bg-background text-accent'>Public Page</p></button>
+      <Link href="/nic/docs" target="_blank" className='fixed top-4 left-12 z-100 cursor-pointer text-accent group'><Book /><p className='hidden group-hover:block absolute top-6 left-0 w-[300%] text-center rounded-md bg-background text-accent'>Docs</p></Link>
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>

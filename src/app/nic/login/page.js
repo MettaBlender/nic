@@ -44,6 +44,9 @@ const LoginPage = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             NIC CMS Login
           </h2>
+          <p className='text-sm mt-1 font-light text-foreground/70'>
+            If the login does not work, please reload the page and try again.
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
