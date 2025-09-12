@@ -163,6 +163,10 @@ nic/
    ```bash
    # Copy .env.example to .env.local (if exists)
    # Add any required environment variables
+     LOGIN_USERNAME
+     LOGIN_PASSWORD
+     NEON_DATABASE_URL
+
    ```
 
 4. **Initialize database:**
