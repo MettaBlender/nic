@@ -1,83 +1,135 @@
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-const sql = neon(process.env.NEON_DATABASE_URL);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/nic_cms',
+  // SSL nur in Produktion
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// Query-Funktion die ähnlich wie Neon funktioniert
+async function sql(strings, ...values) {
+  const query = strings.join('?');
+  const client = await pool.connect();
+  try {
+    const result = await client.query(query.replace(/\?/g, (_, i) => `$${i + 1}`), values);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
 
 export async function getDb() {
   // This function is required for init routes
-  return sql;
+  return { query: (query, values) => pool.query(query, values) };
 }
 
-// Execute all queries directly with Neon syntax
+// Execute all queries directly with PostgreSQL syntax
 
 // CRUD Operations for Pages
 export async function getPages() {
-  return await sql`SELECT * FROM pages ORDER BY created_at DESC`;
+  const client = await pool.connect();
+  try {
+    return (await client.query('SELECT * FROM pages ORDER BY created_at DESC')).rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getPageById(id) {
-  const result = await sql`SELECT * FROM pages WHERE id = ${id}`;
-  return result[0] || null;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('SELECT * FROM pages WHERE id = $1', [id])).rows;
+    return result[0] || null;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updatePageTitle(id, title) {
-  const result = await sql`
-    UPDATE pages SET title = ${title}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}
-  `;
-  return result.length > 0;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('UPDATE pages SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *', [title, id])).rows;
+    return result.length > 0;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getPageBySlug(slug) {
-  const result = await sql`SELECT * FROM pages WHERE slug = ${slug}`;
-  return result[0] || null;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('SELECT * FROM pages WHERE slug = $1', [slug])).rows;
+    return result[0] || null;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createPage(title, slug) {
-  const result = await sql`
-    INSERT INTO pages (title, slug) VALUES (${title}, ${slug}) RETURNING id
-  `;
-  return result[0]?.id;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('INSERT INTO pages (title, slug) VALUES ($1, $2) RETURNING id', [title, slug])).rows;
+    return result[0]?.id;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updatePage(id, title, slug) {
-  return await sql`
-    UPDATE pages SET title = ${title}, slug = ${slug}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}
-  `;
+  const client = await pool.connect();
+  try {
+    return (await client.query('UPDATE pages SET title = $1, slug = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [title, slug, id])).rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function deletePage(id) {
-  return await sql`DELETE FROM pages WHERE id = ${id}`;
+  const client = await pool.connect();
+  try {
+    return (await client.query('DELETE FROM pages WHERE id = $1', [id])).rows;
+  } finally {
+    client.release();
+  }
 }
 
 // CRUD Operations for Blocks
 export async function getBlocksForPage(pageId) {
-  return await sql`
-    SELECT * FROM blocks WHERE page_id = ${pageId} ORDER BY z_index ASC, created_at ASC
-  `;
+  const client = await pool.connect();
+  try {
+    return (await client.query('SELECT * FROM blocks WHERE page_id = $1 ORDER BY z_index ASC, created_at ASC', [pageId])).rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getBlockById(id) {
-  const result = await sql`SELECT * FROM blocks WHERE id = ${id}`;
-  return result[0] || null;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('SELECT * FROM blocks WHERE id = $1', [id])).rows;
+    return result[0] || null;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createBlock(pageId, blockType, gridCol, gridRow, gridWidth, gridHeight, content) {
-  const result = await sql`
-    INSERT INTO blocks (
-      page_id, block_type, content, grid_col, grid_row, grid_width, grid_height,
-      background_color, text_color, z_index
-    ) VALUES (
-      ${pageId}, ${blockType}, ${JSON.stringify(content)}, ${gridCol}, ${gridRow}, ${gridWidth}, ${gridHeight},
-      'transparent', '#000000', 1
-    )
-    RETURNING *
-  `;
-  return result[0]; // Return complete block object
+  const client = await pool.connect();
+  try {
+    const result = (await client.query(
+      'INSERT INTO blocks (page_id, block_type, content, grid_col, grid_row, grid_width, grid_height, background_color, text_color, z_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+      [pageId, blockType, JSON.stringify(content), gridCol, gridRow, gridWidth, gridHeight, 'transparent', '#000000', 1]
+    )).rows;
+    return result[0];
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateBlock(id, blockData) {
-
+  const client = await pool.connect();
   try {
-    // Extract all possible fields from blockData
     const {
       grid_col,
       grid_row,
@@ -90,25 +142,25 @@ export async function updateBlock(id, blockData) {
       z_index
     } = blockData;
 
-    // All updates in one query with NULL-safe updates
-    const result = await sql`
-      UPDATE blocks SET
-        grid_col = COALESCE(${grid_col}, grid_col),
-        grid_row = COALESCE(${grid_row}, grid_row),
-        grid_width = COALESCE(${grid_width}, grid_width),
-        grid_height = COALESCE(${grid_height}, grid_height),
-        content = COALESCE(${content ? JSON.stringify(content) : null}, content),
-        block_type = COALESCE(${block_type}, block_type),
-        background_color = COALESCE(${background_color}, background_color),
-        text_color = COALESCE(${text_color}, text_color),
-        z_index = COALESCE(${z_index}, z_index),
+    const result = (await client.query(
+      `UPDATE blocks SET
+        grid_col = COALESCE($1, grid_col),
+        grid_row = COALESCE($2, grid_row),
+        grid_width = COALESCE($3, grid_width),
+        grid_height = COALESCE($4, grid_height),
+        content = COALESCE($5, content),
+        block_type = COALESCE($6, block_type),
+        background_color = COALESCE($7, background_color),
+        text_color = COALESCE($8, text_color),
+        z_index = COALESCE($9, z_index),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `;
+      WHERE id = $10
+      RETURNING *`,
+      [grid_col, grid_row, grid_width, grid_height, content ? JSON.stringify(content) : null, block_type, background_color, text_color, z_index, id]
+    )).rows;
 
     if (result.length > 0) {
-      return result[0]; // Return the updated block object
+      return result[0];
     } else {
       console.warn(`⚠️ No block found with ID ${id} to update`);
       return null;
@@ -116,17 +168,29 @@ export async function updateBlock(id, blockData) {
   } catch (error) {
     console.error(`❌ Error updating block ${id}:`, error);
     return null;
+  } finally {
+    client.release();
   }
 }
 
 export async function deleteBlock(id) {
-  const result = await sql`DELETE FROM blocks WHERE id = ${id}`;
-  return result.length > 0;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('DELETE FROM blocks WHERE id = $1', [id])).rows;
+    return result.length > 0;
+  } finally {
+    client.release();
+  }
 }
 
 export async function deleteAllBlocksForPage(pageId) {
-  const result = await sql`DELETE FROM blocks WHERE page_id = ${pageId}`;
-  return result.count || 0;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('DELETE FROM blocks WHERE page_id = $1', [pageId])).rows;
+    return result.length || 0;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createMultipleBlocks(pageId, blocksData) {
@@ -148,8 +212,13 @@ export async function createMultipleBlocks(pageId, blocksData) {
 
 // Layout Einstellungen
 export async function getLayoutSettings() {
-  const result = await sql`SELECT * FROM layout_settings ORDER BY id DESC LIMIT 1`;
-  return result[0] || null;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('SELECT * FROM layout_settings ORDER BY id DESC LIMIT 1')).rows;
+    return result[0] || null;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateLayoutSettings(settings) {
@@ -162,67 +231,78 @@ export async function updateLayoutSettings(settings) {
     secondary_color
   } = settings;
 
-  // Check if layout settings already exist
-  const existing = await sql`SELECT id FROM layout_settings ORDER BY id DESC LIMIT 1`;
+  const client = await pool.connect();
+  try {
+    // Check if layout settings already exist
+    const existing = (await client.query('SELECT id FROM layout_settings ORDER BY id DESC LIMIT 1')).rows;
 
-  if (existing.length > 0) {
-    // Update existing settings
-    return await sql`
-      UPDATE layout_settings SET
-        header_component = ${header_component || 'default'},
-        footer_component = ${footer_component || 'default'},
-        background_color = ${background_color || '#ffffff'},
-        background_image = ${background_image},
-        primary_color = ${primary_color || '#3b82f6'},
-        secondary_color = ${secondary_color || '#64748b'},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${existing[0].id}
-    `;
-  } else {
-    // Erstelle neue Layout-Einstellungen
-    return await sql`
-      INSERT INTO layout_settings (
-        header_component, footer_component, background_color,
-        background_image, primary_color, secondary_color,
-        created_at, updated_at
-      ) VALUES (
-        ${header_component || 'default'},
-        ${footer_component || 'default'},
-        ${background_color || '#ffffff'},
-        ${background_image},
-        ${primary_color || '#3b82f6'},
-        ${secondary_color || '#64748b'},
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-    `;
+    if (existing.length > 0) {
+      // Update existing settings
+      return (await client.query(
+        `UPDATE layout_settings SET
+          header_component = $1,
+          footer_component = $2,
+          background_color = $3,
+          background_image = $4,
+          primary_color = $5,
+          secondary_color = $6,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $7`,
+        [header_component || 'default', footer_component || 'default', background_color || '#ffffff', background_image, primary_color || '#3b82f6', secondary_color || '#64748b', existing[0].id]
+      )).rows;
+    } else {
+      // Create new layout settings
+      return (await client.query(
+        `INSERT INTO layout_settings (header_component, footer_component, background_color, background_image, primary_color, secondary_color, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [header_component || 'default', footer_component || 'default', background_color || '#ffffff', background_image, primary_color || '#3b82f6', secondary_color || '#64748b']
+      )).rows;
+    }
+  } finally {
+    client.release();
   }
 }
 
 // CMS Einstellungen
 export async function getCMSSetting(key) {
-  const result = await sql`SELECT value FROM cms_settings WHERE key = ${key}`;
-  return result[0]?.value || null;
+  const client = await pool.connect();
+  try {
+    const result = (await client.query('SELECT value FROM cms_settings WHERE key = $1', [key])).rows;
+    return result[0]?.value || null;
+  } finally {
+    client.release();
+  }
 }
 
 export async function setCMSSetting(key, value) {
-  return await sql`
-    INSERT INTO cms_settings (key, value, updated_at)
-    VALUES (${key}, ${value}, CURRENT_TIMESTAMP)
-    ON CONFLICT (key) DO UPDATE SET value = ${value}, updated_at = CURRENT_TIMESTAMP
-  `;
+  const client = await pool.connect();
+  try {
+    return (await client.query(
+      `INSERT INTO cms_settings (key, value, updated_at)
+      VALUES ($1, $2, CURRENT_TIMESTAMP)
+      ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP`,
+      [key, value]
+    )).rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updatePageRows(pageId, rows) {
-  return await sql`
-    UPDATE pages SET rows = ${rows} WHERE id = ${pageId}
-  `;
+  const client = await pool.connect();
+  try {
+    return (await client.query('UPDATE pages SET rows = $1 WHERE id = $2', [rows, pageId])).rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateBlockContent(id, content) {
   // Content sollte bereits ein JSON-String sein von der API
-  return await sql`
-    UPDATE blocks SET content = ${content}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${id}
-  `;
+  const client = await pool.connect();
+  try {
+    return (await client.query('UPDATE blocks SET content = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [content, id])).rows;
+  } finally {
+    client.release();
+  }
 }

@@ -1,0 +1,52 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: nic-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-nicuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nicpassword}
+      POSTGRES_DB: ${DB_NAME:-nic_cms}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database-migration.sql:/docker-entrypoint-initdb.d/02-migration.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nicuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nic-network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nic-frontend
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-nicuser}:${DB_PASSWORD:-nicpassword}@postgres:5432/${DB_NAME:-nic_cms}
+      NODE_ENV: ${NODE_ENV:-development}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - nic-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+
+networks:
+  nic-network:
+    driver: bridge

@@ -1,4 +1,5 @@
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 import {
   createDynamicComponents,
   createDynamicHeaderComponents,
@@ -18,40 +19,46 @@ import SocialFooter from '@/components/nic/cms/footer/SocialFooter.jsx';
 
 import nicConfig from '../../../nic.config.js';
 
-// Database connection
-const connectionString = process.env.NEON_DATABASE_URL;
+// Database connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/nic_cms',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
-if (!connectionString) {
-  throw new Error('NEON_DATABASE_URL environment variable is not set');
+if (!process.env.DATABASE_URL) {
+  console.warn('Warning: DATABASE_URL environment variable is not set, using default');
 }
 
 // Page by slug
 async function getPageBySlug(slug) {
+  const client = await pool.connect();
   try {
-    const sql = neon(connectionString);
-    const result = await sql`
-      SELECT * FROM pages WHERE slug = ${slug.join('/')} LIMIT 1
-    `;
+    const result = (await client.query(
+      'SELECT * FROM pages WHERE slug = $1 LIMIT 1',
+      [slug.join('/')]
+    )).rows;
     return result.length > 0 ? result[0] : null;
   } catch (error) {
     console.error('Error fetching page:', error);
     return null;
+  } finally {
+    client.release();
   }
 }
 
 // Blocks by page ID
 async function getBlocks(pageId) {
+  const client = await pool.connect();
   try {
-    const sql = neon(connectionString);
-
     // Force fresh data by adding timestamp to prevent any potential caching
     const timestamp = Date.now();
 
-    const result = await sql`
-      SELECT * FROM blocks
-      WHERE page_id = ${pageId}
-      ORDER BY grid_row ASC, grid_col ASC
-    `;
+    const result = (await client.query(
+      `SELECT * FROM blocks
+      WHERE page_id = $1
+      ORDER BY grid_row ASC, grid_col ASC`,
+      [pageId]
+    )).rows;
 
     // Normalisiere Block-Daten für Live-View
     const normalizedBlocks = result.map(block => ({
@@ -69,16 +76,18 @@ async function getBlocks(pageId) {
   } catch (error) {
     console.error('Error fetching blocks:', error);
     return [];
+  } finally {
+    client.release();
   }
 }
 
 // Layout settings from database
 async function getLayoutSettings() {
+  const client = await pool.connect();
   try {
-    const sql = neon(connectionString);
-    const result = await sql`
-      SELECT * FROM layout_settings LIMIT 1
-    `;
+    const result = (await client.query(
+      `SELECT * FROM layout_settings LIMIT 1`
+    )).rows;
 
     if (result.length > 0) {
       const settings = result[0];
@@ -112,6 +121,8 @@ async function getLayoutSettings() {
       primary_color: '#3b82f6',
       secondary_color: '#64748b'
     };
+  } finally {
+    client.release();
   }
 }
 

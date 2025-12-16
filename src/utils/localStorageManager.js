@@ -16,6 +16,9 @@ const STORAGE_KEYS = {
  * Saves draft changes to localStorage
  */
 export const saveDraftChanges = (changes) => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     const data = {
       changes: Array.isArray(changes) ? changes : [],
@@ -35,6 +38,9 @@ export const saveDraftChanges = (changes) => {
  * Loads draft changes from localStorage
  */
 export const loadDraftChanges = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return [];
+
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.DRAFT_CHANGES);
     if (!stored) return [];
@@ -59,6 +65,9 @@ export const loadDraftChanges = () => {
  * Clears all draft changes
  */
 export const clearDraftChanges = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     localStorage.removeItem(STORAGE_KEYS.DRAFT_CHANGES);
     return true;
@@ -72,6 +81,9 @@ export const clearDraftChanges = () => {
  * Saves block state for a specific page
  */
 export const savePageBlockState = (pageId, blocks) => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAGE_STATES) || '{}');
 
@@ -93,6 +105,9 @@ export const savePageBlockState = (pageId, blocks) => {
  * Loads block state for a specific page
  */
 export const loadPageBlockState = (pageId) => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return null;
+
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAGE_STATES) || '{}');
 
@@ -155,6 +170,9 @@ export const setLastSaveTime = (timestamp = Date.now()) => {
  * Gets last save timestamp
  */
 export const getLastSaveTime = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return null;
+
   try {
     const timestamp = localStorage.getItem(STORAGE_KEYS.LAST_SAVE);
     return timestamp ? parseInt(timestamp) : null;
@@ -168,6 +186,9 @@ export const getLastSaveTime = () => {
  * Cleans up old draft data (older than 24 hours)
  */
 export const cleanupOldDrafts = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
@@ -204,6 +225,9 @@ export const cleanupOldDrafts = () => {
  * Clean up old temp_ IDs from localStorage blocks
  */
 export const cleanupTempBlocks = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     const storedBlocks = localStorage.getItem('blocks');
     if (!storedBlocks) return true;
@@ -239,6 +263,9 @@ export const cleanupTempBlocks = () => {
  * Clean up problematic draft changes
  */
 export const cleanupProblematicDrafts = () => {
+  // SSR-safe check
+  if (typeof window === 'undefined') return false;
+
   try {
     const storedDrafts = localStorage.getItem(STORAGE_KEYS.DRAFT_CHANGES);
     if (!storedDrafts) return true;

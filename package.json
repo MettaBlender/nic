@@ -6,10 +6,17 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "db:init": "docker-compose exec postgres psql -U nicuser -d nic_cms -f /docker-entrypoint-initdb.d/01-init.sql",
+    "db:migrate": "docker-compose exec postgres psql -U nicuser -d nic_cms -f /docker-entrypoint-initdb.d/02-migration.sql"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.1",
+    "pg": "^8.11.3",
     "lucide-react": "^0.539.0",
     "next": "16.0.10",
     "node-fetch": "^3.3.2",
