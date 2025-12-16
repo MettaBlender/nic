@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export function middleware(request) {
+export function proxy(request) {
   // Check only requests to /nic, but not /nic/login
   if (request.nextUrl.pathname.startsWith('/nic') && !request.nextUrl.pathname.startsWith('/nic/login') && !request.nextUrl.pathname.startsWith('/nic/docs')) {
     const isAuthenticated = request.cookies.get('nic-auth')?.value === 'authenticated';
