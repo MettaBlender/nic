@@ -142,14 +142,13 @@ export async function updateBlock(id, blockData) {
       z_index
     } = blockData;
 
-    console.log(`🔄 Updating block ${id} with data:`, {
-      grid_col,
-      grid_row,
-      grid_width,
-      grid_height,
-      block_type,
-      hasContent: !!content
-    });
+    console.log(`🔄 Database updateBlock ${id}:`);
+    console.log(`   grid_col: ${grid_col} (type: ${typeof grid_col})`);
+    console.log(`   grid_row: ${grid_row} (type: ${typeof grid_row})`);
+    console.log(`   grid_width: ${grid_width} (type: ${typeof grid_width})`);
+    console.log(`   grid_height: ${grid_height} (type: ${typeof grid_height})`);
+    console.log(`   block_type: ${block_type}`);
+    console.log(`   hasContent: ${!!content}`);
 
     const result = (await client.query(
       `UPDATE blocks SET

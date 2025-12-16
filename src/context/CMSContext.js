@@ -7,6 +7,7 @@ import {
   smartRegenerateLayouts,
   RESPONSIVE_GRIDS
 } from '../utils/responsiveLayoutGenerator.js';
+import { saveSingleBlockChange } from '../utils/localStorageManager.js';
 import { getComponentFiles } from '@/components/nic/cms/Components.jsx';
 import nicConfig from '../../nic.config.js';
 
@@ -48,6 +49,13 @@ export const CMSProvider = ({ children }) => {
 
   // Blocks Management with intelligent batching
   const [blocks, setBlocks] = useState([]);
+  const blocksRef = useRef(blocks); // Ref for synchronous updates
+
+  // Sync blocksRef with blocks state
+  useEffect(() => {
+    blocksRef.current = blocks;
+  }, [blocks]);
+
   const [pendingOperations, setPendingOperations] = useState(new Map());
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
@@ -508,7 +516,6 @@ export const CMSProvider = ({ children }) => {
   // Block erstellen mit verbesserter Collision Detection und Default-Options
   const createBlock = useCallback((blockData) => {
     console.log('🆕 createBlock called with:', blockData);
-    console.trace('📍 createBlock call stack');
 
     // Validierung: Stelle sicher, dass blockData existiert
     if (!blockData) {
@@ -667,27 +674,40 @@ export const CMSProvider = ({ children }) => {
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
     console.log(`🔄 updateBlock called for ${blockId}:`, updates);
+    console.log(`📍 Position update: col=${updates.grid_col}, row=${updates.grid_row}`);
 
     // Sofort UI aktualisieren für responsive Feedback
     saveStateToHistory(); // Speichere Zustand für Undo
 
     // Force immediate state update with timestamp to trigger re-renders
     const timestamp = new Date().toISOString();
-    let currentBlock = null;
-    let updatedBlock = null;
 
-    setBlocks(prev => {
-      currentBlock = prev.find(b => b.id === blockId);
-      const updated = prev.map(block => {
-        if (block.id === blockId) {
-          updatedBlock = { ...block, ...updates, updated_at: timestamp };
-          return updatedBlock;
-        }
-        return block;
-      });
-      console.log(`✅ Blocks updated, new position:`, updatedBlock);
-      return updated;
+    // Find block in current state using Ref for synchronous updates
+    const currentBlock = blocksRef.current.find(b => b.id === blockId);
+
+    if (!currentBlock) {
+      console.warn(`⚠️ Block ${blockId} not found for update`);
+      return;
+    }
+
+    const updatedBlock = { ...currentBlock, ...updates, updated_at: timestamp };
+
+    // Optimistically update ref
+    blocksRef.current = blocksRef.current.map(block => {
+      if (block.id === blockId) {
+        return updatedBlock;
+      }
+      return block;
     });
+
+    setBlocks(prev => prev.map(block => {
+      if (block.id === blockId) {
+        return updatedBlock;
+      }
+      return block;
+    }));
+
+    console.log(`✅ Blocks updated, new position: col=${updatedBlock.grid_col}, row=${updatedBlock.grid_row}`);
 
     // Aktualisiere selectedBlock falls es das gleiche ist
     setSelectedBlock(prev => {
@@ -697,47 +717,43 @@ export const CMSProvider = ({ children }) => {
       return prev;
     });
 
-    // Process the update after state is set
-    if (currentBlock && updatedBlock) {
-      // Stelle sicher, dass Content-Updates korrekt verarbeitet werden
-      let processedUpdates = { ...updates };
+    // Process the update
+    // Stelle sicher, dass Content-Updates korrekt verarbeitet werden
+    let processedUpdates = { ...updates };
 
-      // If content is passed as object, keep it as object in local state
-      // (Konvertierung zu JSON-String erfolgt nur beim Speichern zur API)
-      if (processedUpdates.content && typeof processedUpdates.content === 'string') {
-        try {
-          processedUpdates.content = JSON.parse(processedUpdates.content);
-        } catch {
-          // Falls JSON-Parsing fehlschlägt, verwende als Plain-Text
-          processedUpdates.content = { text: processedUpdates.content };
-        }
+    // If content is passed as object, keep it as object in local state
+    // (Konvertierung zu JSON-String erfolgt nur beim Speichern zur API)
+    if (processedUpdates.content && typeof processedUpdates.content === 'string') {
+      try {
+        processedUpdates.content = JSON.parse(processedUpdates.content);
+      } catch {
+        // Falls JSON-Parsing fehlschlägt, verwende als Plain-Text
+        processedUpdates.content = { text: processedUpdates.content };
       }
-
-      // Wichtig: Wenn Block eine temp_id hat, behandle als CREATE, nicht UPDATE
-      const operationType = blockId.toString().startsWith('temp_') ? 'create' : 'update';
-      console.log(`📦 Calling batchOperation: ${operationType} for ${blockId}`);
-      batchOperation(blockId, operationType, updatedBlock);
-
-      // Speichere Draft-Änderung in localStorage
-      const draftChange = {
-        id: Date.now(),
-        type: operationType,
-        blockId: blockId,
-        data: operationType === 'create' ? updatedBlock : processedUpdates,
-        timestamp: Date.now()
-      };
-
-      setDraftChanges(prev => {
-        const updated = [...prev, draftChange];
-        saveSingleBlockChange(draftChange);
-        return updated;
-      });
-
-      console.log(`🔄 Updated block ${blockId} (${operationType}):`, Object.keys(updates));
-    } else {
-      console.warn(`⚠️ Block ${blockId} not found for update`);
     }
-  }, [batchOperation, saveStateToHistory]);
+
+    // Wichtig: Wenn Block eine temp_id hat, behandle als CREATE, nicht UPDATE
+    const operationType = blockId.toString().startsWith('temp_') ? 'create' : 'update';
+    console.log(`📦 Calling batchOperation: ${operationType} for ${blockId}`);
+    batchOperation(blockId, operationType, updatedBlock);
+
+    // Speichere Draft-Änderung in localStorage
+    const draftChange = {
+      id: Date.now(),
+      type: operationType,
+      blockId: blockId,
+      data: operationType === 'create' ? updatedBlock : processedUpdates,
+      timestamp: Date.now()
+    };
+
+    setDraftChanges(prev => {
+      const updated = [...prev, draftChange];
+      saveSingleBlockChange(draftChange);
+      return updated;
+    });
+
+    console.log(`🔄 Updated block ${blockId} (${operationType}):`, Object.keys(updates));
+  }, [blocks, batchOperation, saveStateToHistory]);
 
   const deleteBlock = useCallback((blockId) => {
 
@@ -966,18 +982,19 @@ export const CMSProvider = ({ children }) => {
         // If we have a current block, use its latest data (for position updates)
         if (currentBlock && operation.operation === 'update') {
           console.log(`🔄 Merging latest block data for ${blockId} from state`);
+          console.log(`   Position: col=${currentBlock.grid_col}, row=${currentBlock.grid_row}`);
           operationData = {
             id: currentBlock.id,
             page_id: currentBlock.page_id,
             block_type: currentBlock.block_type,
             content: currentBlock.content,
-            grid_col: currentBlock.grid_col,
-            grid_row: currentBlock.grid_row,
-            grid_width: currentBlock.grid_width,
-            grid_height: currentBlock.grid_height,
-            background_color: currentBlock.background_color,
-            text_color: currentBlock.text_color,
-            z_index: currentBlock.z_index,
+            grid_col: typeof currentBlock.grid_col === 'number' ? currentBlock.grid_col : 0,
+            grid_row: typeof currentBlock.grid_row === 'number' ? currentBlock.grid_row : 0,
+            grid_width: typeof currentBlock.grid_width === 'number' ? currentBlock.grid_width : 2,
+            grid_height: typeof currentBlock.grid_height === 'number' ? currentBlock.grid_height : 1,
+            background_color: currentBlock.background_color || 'transparent',
+            text_color: currentBlock.text_color || '#000000',
+            z_index: typeof currentBlock.z_index === 'number' ? currentBlock.z_index : 1,
             created_at: currentBlock.created_at,
             updated_at: currentBlock.updated_at
           };
@@ -1034,18 +1051,19 @@ export const CMSProvider = ({ children }) => {
                   // Verwende die AKTUELLE Block-Position aus dem State, nicht nur die Draft-Änderung
                   // Stelle sicher, dass ALLE Block-Eigenschaften übertragen werden
                   if (currentBlock) {
+                    console.log(`🔄 Draft update for ${draft.blockId}: col=${currentBlock.grid_col}, row=${currentBlock.grid_row}`);
                     operationData = {
                       id: currentBlock.id,
                       page_id: currentBlock.page_id,
                       block_type: currentBlock.block_type,
                       content: currentBlock.content,
-                      grid_col: currentBlock.grid_col,
-                      grid_row: currentBlock.grid_row,
-                      grid_width: currentBlock.grid_width,
-                      grid_height: currentBlock.grid_height,
-                      background_color: currentBlock.background_color,
-                      text_color: currentBlock.text_color,
-                      z_index: currentBlock.z_index,
+                      grid_col: typeof currentBlock.grid_col === 'number' ? currentBlock.grid_col : 0,
+                      grid_row: typeof currentBlock.grid_row === 'number' ? currentBlock.grid_row : 0,
+                      grid_width: typeof currentBlock.grid_width === 'number' ? currentBlock.grid_width : 2,
+                      grid_height: typeof currentBlock.grid_height === 'number' ? currentBlock.grid_height : 1,
+                      background_color: currentBlock.background_color || 'transparent',
+                      text_color: currentBlock.text_color || '#000000',
+                      z_index: typeof currentBlock.z_index === 'number' ? currentBlock.z_index : 1,
                       created_at: currentBlock.created_at,
                       updated_at: currentBlock.updated_at
                     };
