@@ -51,6 +51,100 @@ const nicConfig = {
     ghostOpacity: 0.5
   },
 
+  // Default block sizes for responsive design
+  // Desktop: 12 cols, Tablet: 8 cols, Mobile: 4 cols
+  // Supports @device syntax: width@mobile, height@tablet, etc.
+  defaultBlockSizes: {
+    'Text': {
+      width: 6, height: 2,
+      responsive: {
+        mobile: { width: 4, height: 2 },
+        tablet: { width: 6, height: 2 },
+        desktop: { width: 6, height: 2 }
+      }
+    },
+    'Image': {
+      width: 4, height: 3,
+      responsive: {
+        mobile: { width: 4, height: 3 },
+        tablet: { width: 4, height: 3 },
+        desktop: { width: 4, height: 3 }
+      }
+    },
+    'Video': {
+      width: 8, height: 4,
+      responsive: {
+        mobile: { width: 4, height: 4 },
+        tablet: { width: 8, height: 4 },
+        desktop: { width: 8, height: 4 }
+      }
+    },
+    'Button': {
+      width: 3, height: 1,
+      responsive: {
+        mobile: { width: 4, height: 1 },
+        tablet: { width: 4, height: 1 },
+        desktop: { width: 3, height: 1 }
+      }
+    },
+    'Container': {
+      width: 12, height: 3,
+      responsive: {
+        mobile: { width: 4, height: 3 },
+        tablet: { width: 8, height: 3 },
+        desktop: { width: 12, height: 3 }
+      }
+    },
+    'Gallery': {
+      width: 8, height: 4,
+      responsive: {
+        mobile: { width: 4, height: 4 },
+        tablet: { width: 8, height: 4 },
+        desktop: { width: 8, height: 4 }
+      }
+    },
+    'ContactForm': {
+      width: 6, height: 5,
+      responsive: {
+        mobile: { width: 4, height: 5 },
+        tablet: { width: 6, height: 5 },
+        desktop: { width: 6, height: 5 }
+      }
+    },
+    'Newsletter': {
+      width: 6, height: 3,
+      responsive: {
+        mobile: { width: 4, height: 3 },
+        tablet: { width: 6, height: 3 },
+        desktop: { width: 6, height: 3 }
+      }
+    },
+    'TestBlock': {
+      width: 4, height: 2,
+      responsive: {
+        mobile: { width: 4, height: 2 },
+        tablet: { width: 4, height: 2 },
+        desktop: { width: 4, height: 2 }
+      }
+    },
+    'AudioBlock': {
+      width: 6, height: 2,
+      responsive: {
+        mobile: { width: 4, height: 2 },
+        tablet: { width: 6, height: 2 },
+        desktop: { width: 6, height: 2 }
+      }
+    },
+    'default': {
+      width: 4, height: 2,
+      responsive: {
+        mobile: { width: 4, height: 2 },
+        tablet: { width: 4, height: 2 },
+        desktop: { width: 4, height: 2 }
+      }
+    }
+  }
+
 };
 
 // Export for Node.js and Browser

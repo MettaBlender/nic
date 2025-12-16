@@ -225,11 +225,11 @@ export default async function PublicPage({ params }) {
         {/* Main Content */}
         <main className="flex-1 relative">
           <div
-            className="w-full h-full relative"
+            className="w-full h-full relative responsive-live-grid"
             style={{
               display: 'grid',
               gridTemplateRows: `repeat(${page.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
-              gridTemplateColumns: `repeat(${nicConfig.grid.columns}, minmax(0, 1fr))`,
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
               gap: `${nicConfig.grid.gap || 8}px`,
               padding: '16px'
             }}

@@ -77,9 +77,16 @@ const Sidebar = () => {
             {/* Draft status and actions - ALWAYS VISIBLE */}
             <div className="p-4 pt-16 border-b border-accent">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-foreground text-sm font-medium">
-                  Draft-Changes: {pendingOperationsCount}
-                </span>
+                <div>
+                  <span className="text-foreground text-sm font-medium">
+                    Ungespeichert: {pendingOperationsCount}
+                  </span>
+                  {pendingOperationsCount > 0 && (
+                    <div className="text-xs text-orange-500 mt-0.5">
+                      Klicken Sie "Publish" zum Speichern
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-1">
                   <button
                     onClick={undo}
@@ -105,23 +112,24 @@ const Sidebar = () => {
                 <button
                   onClick={publishDrafts}
                   disabled={pendingOperationsCount === 0}
-                  className="flex-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                  className="flex-1 px-3 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1 transition-colors"
+                  title="Änderungen in die Datenbank speichern"
                 >
-                  <Upload size={12} />
-                  Publish
+                  <Upload size={14} />
+                  In Datenbank Speichern
                 </button>
                 <button
                   onClick={() => {
                     if (pendingOperationsCount === 0) return;
-                    if (confirm(`Discard ${pendingOperationsCount} changes?`)) {
+                    if (confirm(`${pendingOperationsCount} Änderungen verwerfen?`)) {
                       discardDrafts();
                     }
                   }}
                   disabled={pendingOperationsCount === 0}
-                  className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                  className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-1 transition-colors"
+                  title="Alle Änderungen verwerfen"
                 >
-                  <X size={12} />
-                  Discard
+                  <X size={14} />
                 </button>
               </div>
             </div>

@@ -142,6 +142,15 @@ export async function updateBlock(id, blockData) {
       z_index
     } = blockData;
 
+    console.log(`🔄 Updating block ${id} with data:`, {
+      grid_col,
+      grid_row,
+      grid_width,
+      grid_height,
+      block_type,
+      hasContent: !!content
+    });
+
     const result = (await client.query(
       `UPDATE blocks SET
         grid_col = COALESCE($1, grid_col),
@@ -156,10 +165,25 @@ export async function updateBlock(id, blockData) {
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $10
       RETURNING *`,
-      [grid_col, grid_row, grid_width, grid_height, content ? JSON.stringify(content) : null, block_type, background_color, text_color, z_index, id]
+      [
+        grid_col !== undefined ? grid_col : null,
+        grid_row !== undefined ? grid_row : null,
+        grid_width !== undefined ? grid_width : null,
+        grid_height !== undefined ? grid_height : null,
+        content !== undefined ? JSON.stringify(content) : null,
+        block_type !== undefined ? block_type : null,
+        background_color !== undefined ? background_color : null,
+        text_color !== undefined ? text_color : null,
+        z_index !== undefined ? z_index : null,
+        id
+      ]
     )).rows;
 
     if (result.length > 0) {
+      console.log(`✅ Block ${id} updated successfully:`, {
+        grid_col: result[0].grid_col,
+        grid_row: result[0].grid_row
+      });
       return result[0];
     } else {
       console.warn(`⚠️ No block found with ID ${id} to update`);

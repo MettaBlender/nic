@@ -35,3 +35,22 @@ select {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/* Responsive Grid System for Live Pages */
+@media (max-width: 768px) {
+  .responsive-live-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .responsive-live-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .responsive-live-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  }
+}

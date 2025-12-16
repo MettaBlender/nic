@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import GridCanvas from './GridCanvas';
 import Sidebar from './sidebar';
+import ResponsiveControls from './ResponsiveControls';
 import { Move, Edit, Trash2, Eye, Plus, LogOut, Grid3X3, Magnet, Globe, Book } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DetailSideBar from './DetailSideBar';
@@ -176,6 +177,9 @@ const CMSEditor = () => {
 
       {/* Main Editor */}
       <div className={`flex-1 flex flex-col z-10`}>
+        {/* Responsive Controls */}
+        {mode !== 'preview' && <ResponsiveControls />}
+
         {/* Editor Toolbar */}
         <div className="bg-background border-b border-accent p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">

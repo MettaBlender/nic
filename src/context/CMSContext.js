@@ -10,7 +10,14 @@ import {
   cleanupTempBlocks,
   cleanupProblematicDrafts
 } from '../utils/localStorageManager.js';
+import {
+  generateResponsiveLayouts,
+  getBlocksForDevice,
+  smartRegenerateLayouts,
+  RESPONSIVE_GRIDS
+} from '../utils/responsiveLayoutGenerator.js';
 import { getComponentFiles } from '@/components/nic/cms/Components.jsx';
+import nicConfig from '../../nic.config.js';
 
 const CMSContext = createContext();
 
@@ -89,6 +96,31 @@ export const CMSProvider = ({ children }) => {
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
   const [deviceSize, setDeviceSize] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
+
+  // Responsive Layouts - stores different layouts for each device
+  const [responsiveLayouts, setResponsiveLayouts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('responsiveLayouts');
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
+
+  const [autoResponsiveEnabled, setAutoResponsiveEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('autoResponsiveEnabled');
+        return stored === 'true';
+      } catch {
+        return true; // Default: enabled
+      }
+    }
+    return true;
+  });
 
   // Helper function to save current state - AFTER blocks declaration
   const saveStateToHistory = useCallback(() => {
@@ -700,6 +732,7 @@ export const CMSProvider = ({ children }) => {
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
+    console.log(`📦 batchOperation: ${operation} for block ${blockId}`, data);
 
     setPendingOperations(prev => {
       const newOps = new Map(prev);
@@ -713,6 +746,7 @@ export const CMSProvider = ({ children }) => {
         newOps.set(blockId, { operation, data, timestamp: Date.now() });
       }
 
+      console.log(`✅ pendingOperations now has ${newOps.size} operations`);
       return newOps;
     });
 
@@ -752,13 +786,16 @@ export const CMSProvider = ({ children }) => {
 
     // Finde freie Position mit Collision Detection
     const findFreePosition = (preferredCol = 0, preferredRow = 0) => {
+      // Get default sizes from nicConfig
+      const defaultSize = nicConfig.defaultBlockSizes?.[blockType] || nicConfig.defaultBlockSizes?.default || { width: 4, height: 2 };
+
       // Unterstützt sowohl grid_width/grid_height als auch width/height für Flexibilität
       const blockWidth = typeof normalizedData.grid_width === 'number' ? normalizedData.grid_width :
                         typeof normalizedData.width === 'number' ? normalizedData.width :
-                        componentDef?.width || 2;
+                        componentDef?.width || defaultSize.width;
       const blockHeight = typeof normalizedData.grid_height === 'number' ? normalizedData.grid_height :
                          typeof normalizedData.height === 'number' ? normalizedData.height :
-                         componentDef?.height || 1;
+                         componentDef?.height || defaultSize.height;
 
       // Prüfe die bevorzugte Position zuerst
       const isPositionFree = (col, row) => {
@@ -877,26 +914,39 @@ export const CMSProvider = ({ children }) => {
 
   // Block aktualisieren
   const updateBlock = useCallback((blockId, updates) => {
-
+    console.log(`🔄 updateBlock called for ${blockId}:`, updates);
 
     // Sofort UI aktualisieren für responsive Feedback
     saveStateToHistory(); // Speichere Zustand für Undo
-    setBlocks(prev => prev.map(block =>
-      block.id === blockId
-        ? { ...block, ...updates, updated_at: new Date().toISOString() }
-        : block
-    ));
+
+    // Force immediate state update with timestamp to trigger re-renders
+    const timestamp = new Date().toISOString();
+    let currentBlock = null;
+    let updatedBlock = null;
+
+    setBlocks(prev => {
+      currentBlock = prev.find(b => b.id === blockId);
+      const updated = prev.map(block => {
+        if (block.id === blockId) {
+          updatedBlock = { ...block, ...updates, updated_at: timestamp };
+          return updatedBlock;
+        }
+        return block;
+      });
+      console.log(`✅ Blocks updated, new position:`, updatedBlock);
+      return updated;
+    });
 
     // Aktualisiere selectedBlock falls es das gleiche ist
     setSelectedBlock(prev => {
       if (prev && prev.id === blockId) {
-        return { ...prev, ...updates, updated_at: new Date().toISOString() };
+        return { ...prev, ...updates, updated_at: timestamp };
       }
       return prev;
     });
 
-    const currentBlock = blocks.find(b => b.id === blockId);
-    if (currentBlock) {
+    // Process the update after state is set
+    if (currentBlock && updatedBlock) {
       // Stelle sicher, dass Content-Updates korrekt verarbeitet werden
       let processedUpdates = { ...updates };
 
@@ -911,35 +961,31 @@ export const CMSProvider = ({ children }) => {
         }
       }
 
-      const updatedBlock = {
-        ...currentBlock,
-        ...processedUpdates,
-        updated_at: new Date().toISOString()
-      };
-
       // Wichtig: Wenn Block eine temp_id hat, behandle als CREATE, nicht UPDATE
       const operationType = blockId.toString().startsWith('temp_') ? 'create' : 'update';
+      console.log(`📦 Calling batchOperation: ${operationType} for ${blockId}`);
       batchOperation(blockId, operationType, updatedBlock);
 
       // Speichere Draft-Änderung in localStorage
       const draftChange = {
         id: Date.now(),
-        type: operationType, // Verwende den korrekten Typ
+        type: operationType,
         blockId: blockId,
-        data: operationType === 'create' ? updatedBlock : processedUpdates, // Vollständige Daten für CREATE
+        data: operationType === 'create' ? updatedBlock : processedUpdates,
         timestamp: Date.now()
       };
 
       setDraftChanges(prev => {
-        // Behalte ALLE Draft-Änderungen, auch mehrere Updates für den gleichen Block
         const updated = [...prev, draftChange];
         saveSingleBlockChange(draftChange);
         return updated;
       });
 
       console.log(`🔄 Updated block ${blockId} (${operationType}):`, Object.keys(updates));
+    } else {
+      console.warn(`⚠️ Block ${blockId} not found for update`);
     }
-  }, [blocks, batchOperation, saveStateToHistory]);
+  }, [batchOperation, saveStateToHistory]);
 
   const deleteBlock = useCallback((blockId) => {
 
@@ -1174,7 +1220,29 @@ export const CMSProvider = ({ children }) => {
 
       // Sammle existierende pendingOperations
       pendingOperations.forEach((operation, blockId) => {
+        // Find the current block from state to get latest position
+        const currentBlock = blocks.find(b => b.id === blockId);
         let operationData = operation.data;
+
+        // If we have a current block, use its latest data (for position updates)
+        if (currentBlock && operation.operation === 'update') {
+          console.log(`🔄 Merging latest block data for ${blockId} from state`);
+          operationData = {
+            id: currentBlock.id,
+            page_id: currentBlock.page_id,
+            block_type: currentBlock.block_type,
+            content: currentBlock.content,
+            grid_col: currentBlock.grid_col,
+            grid_row: currentBlock.grid_row,
+            grid_width: currentBlock.grid_width,
+            grid_height: currentBlock.grid_height,
+            background_color: currentBlock.background_color,
+            text_color: currentBlock.text_color,
+            z_index: currentBlock.z_index,
+            created_at: currentBlock.created_at,
+            updated_at: currentBlock.updated_at
+          };
+        }
 
         // Ensure content is transmitted as JSON string for existing operations
         if (operationData && operationData.content && typeof operationData.content === 'object') {
@@ -1612,6 +1680,139 @@ export const CMSProvider = ({ children }) => {
     }
   }, [undoHistory, redoHistory, draftChanges, currentPage]);
 
+  // =======================
+  // RESPONSIVE LAYOUT SYSTEM
+  // =======================
+
+  /**
+   * Generate responsive layouts automatically for all devices
+   */
+  const generateAutoResponsiveLayouts = useCallback(() => {
+    if (!autoResponsiveEnabled || !currentPage) return;
+
+    console.log('🔄 Generating auto-responsive layouts...');
+    const newLayouts = generateResponsiveLayouts(blocks, deviceSize);
+
+    setResponsiveLayouts(newLayouts);
+
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('responsiveLayouts', JSON.stringify(newLayouts));
+        localStorage.setItem(`responsiveLayouts_page_${currentPage.id}`, JSON.stringify(newLayouts));
+      } catch (error) {
+        console.warn('⚠️ Could not save responsive layouts:', error);
+      }
+    }
+
+    console.log('✅ Responsive layouts generated', newLayouts);
+  }, [blocks, deviceSize, autoResponsiveEnabled, currentPage]);
+
+  /**
+   * Toggle auto-responsive mode
+   */
+  const toggleAutoResponsive = useCallback((enabled) => {
+    setAutoResponsiveEnabled(enabled);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('autoResponsiveEnabled', enabled.toString());
+    }
+
+    if (enabled) {
+      // Generate layouts immediately when enabled
+      generateAutoResponsiveLayouts();
+    }
+  }, [generateAutoResponsiveLayouts]);
+
+  /**
+   * Get blocks for current device
+   */
+  const getCurrentDeviceBlocks = useCallback(() => {
+    if (!autoResponsiveEnabled || !responsiveLayouts[deviceSize]) {
+      return blocks;
+    }
+
+    return responsiveLayouts[deviceSize] || blocks;
+  }, [blocks, deviceSize, autoResponsiveEnabled, responsiveLayouts]);
+
+  /**
+   * Manually adjust responsive layout for specific device
+   */
+  const updateResponsiveLayout = useCallback((device, updatedBlocks) => {
+    const newLayouts = smartRegenerateLayouts(responsiveLayouts, updatedBlocks, device);
+
+    setResponsiveLayouts(newLayouts);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('responsiveLayouts', JSON.stringify(newLayouts));
+        if (currentPage) {
+          localStorage.setItem(`responsiveLayouts_page_${currentPage.id}`, JSON.stringify(newLayouts));
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not save responsive layouts:', error);
+      }
+    }
+  }, [responsiveLayouts, currentPage]);
+
+  /**
+   * Get grid configuration for current device
+   */
+  const getCurrentGridConfig = useCallback(() => {
+    return RESPONSIVE_GRIDS[deviceSize] || RESPONSIVE_GRIDS.desktop;
+  }, [deviceSize]);
+
+  /**
+   * Switch device size and load appropriate layout
+   */
+  const switchDevice = useCallback((newDevice) => {
+    console.log(`📱 Switching to ${newDevice}...`);
+    setDeviceSize(newDevice);
+
+    // If auto-responsive is enabled and no layout exists, generate it
+    if (autoResponsiveEnabled && !responsiveLayouts[newDevice]) {
+      generateAutoResponsiveLayouts();
+    }
+  }, [autoResponsiveEnabled, responsiveLayouts, generateAutoResponsiveLayouts]);
+
+  // Auto-generate responsive layouts when blocks change significantly
+  useEffect(() => {
+    if (autoResponsiveEnabled && blocks.length > 0 && currentPage) {
+      // Debounce the generation to avoid too many updates
+      const timeoutId = setTimeout(() => {
+        console.log('🔄 Auto-regenerating responsive layouts due to block changes...');
+        generateAutoResponsiveLayouts();
+      }, 800); // Increased debounce for better UX
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [blocks, autoResponsiveEnabled, currentPage?.id]); // React to any block changes (position, size, etc.)
+
+  // Load responsive layouts when page changes
+  useEffect(() => {
+    if (currentPage && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(`responsiveLayouts_page_${currentPage.id}`);
+        if (stored) {
+          const layouts = JSON.parse(stored);
+          setResponsiveLayouts(layouts);
+        } else if (autoResponsiveEnabled) {
+          // Generate if not exists
+          generateAutoResponsiveLayouts();
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load responsive layouts:', error);
+      }
+    }
+  }, [currentPage?.id]);
+
+  // Recalculate pending count whenever dependencies change
+  const pendingOperationsCount = React.useMemo(() => {
+    const count = getTotalPendingChanges();
+    console.log(`📊 pendingOperationsCount updated: ${count} (pendingOps: ${pendingOperations.size}, drafts: ${draftChanges.length})`);
+    return count;
+  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length]);
+
   const value = {
     pages,
     currentPage,
@@ -1619,8 +1820,8 @@ export const CMSProvider = ({ children }) => {
     isLoading,
     saveStatus,
     lastSaveTime,
-    // Verbesserte Berechnung der ausstehenden Änderungen (inklusive localStorage)
-    pendingOperationsCount: getTotalPendingChanges(),
+    // Use memoized count that updates automatically
+    pendingOperationsCount,
 
     // Sidebar
     sidebarOpen,
@@ -1647,6 +1848,7 @@ export const CMSProvider = ({ children }) => {
 
     // Legacy compatibility for old components
     draftChanges,
+    pendingOperations,
 
     selectedBlock,
 
@@ -1784,6 +1986,18 @@ export const CMSProvider = ({ children }) => {
 
     deviceSize,
     setDeviceSize,
+    switchDevice,
+
+    // Responsive Layout System
+    responsiveLayouts,
+    setResponsiveLayouts,
+    autoResponsiveEnabled,
+    toggleAutoResponsive,
+    generateAutoResponsiveLayouts,
+    getCurrentDeviceBlocks,
+    updateResponsiveLayout,
+    getCurrentGridConfig,
+    RESPONSIVE_GRIDS,
 
     // Helper functions
     getTotalPendingChanges,

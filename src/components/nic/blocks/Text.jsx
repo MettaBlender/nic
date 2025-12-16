@@ -1,8 +1,14 @@
 /**
  * Simple text block for content
  * @icon 📝
- * @width 3
+ * @width 6
  * @height 2
+ * @width@mobile 4
+ * @height@mobile 2
+ * @width@tablet 6
+ * @height@tablet 2
+ * @width@desktop 6
+ * @height@desktop 2
  * @options {
  *  text: "text1"
  * }
@@ -77,7 +83,7 @@ const Text = ({ content, onContentChange, editable = false, block_type = 'Text' 
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center p-2"
+      className="w-full h-full flex items-center justify-center p-2 bg-red-500"
       onDoubleClick={handleDoubleClick}
     >
       {isEditing ? (

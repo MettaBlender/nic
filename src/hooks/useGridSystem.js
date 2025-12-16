@@ -8,29 +8,46 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import nicConfig from '../../nic.config.js';
 import { useCMS } from '@/context/CMSContext.js';
 import { hexToHsl, hslToHex } from '@/utils/colorFunctions.jsx';
+import { RESPONSIVE_GRIDS } from '@/utils/responsiveLayoutGenerator.js';
 
 export const useGridSystem = (containerSize = { width: 1200, height: 800 }, externalLayoutSettings = null) => {
-  const [gridConfig, setGridConfig] = useState(nicConfig.grid);
-  const [currentBreakpoint, setCurrentBreakpoint] = useState('desktop');
+  const {currentPage, setCurrentPage, deviceSize: contextDeviceSize, getCurrentGridConfig} = useCMS();
+
+  // Use deviceSize from context instead of calculating from window width
+  const [currentBreakpoint, setCurrentBreakpoint] = useState(contextDeviceSize || 'desktop');
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Get responsive grid config
+  const responsiveGridConfig = RESPONSIVE_GRIDS[currentBreakpoint] || RESPONSIVE_GRIDS.desktop;
+
   const [gridRows, setGridRows] = useState(nicConfig.grid.minRows);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedBlock, setDraggedBlock] = useState(null);
   const [dropZone, setDropZone] = useState(null);
-  const {currentPage, setCurrentPage} = useCMS();
   const {mode, blocks} = useCMS();
   const {layoutSettings: contextLayoutSettings} = useCMS();
 
   // Use external layout settings if provided, otherwise use context
   const layoutSettings = externalLayoutSettings || contextLayoutSettings;
 
+  // Update breakpoint when context deviceSize changes
+  useEffect(() => {
+    if (contextDeviceSize) {
+      setCurrentBreakpoint(contextDeviceSize);
+      // Force re-calculation of grid dimensions
+      setForceUpdate(prev => prev + 1);
+    }
+  }, [contextDeviceSize]);
+
   // Calculate grid dimensions based on container size
   const calculateGridDimensions = useCallback(() => {
-    const config = nicConfig.grid.breakpoints[currentBreakpoint] || nicConfig.grid;
-    const columns = config.columns;
-    const gap = nicConfig.grid.gap;
+    // Use responsive grid config
+    const columns = responsiveGridConfig.columns;
+    const gap = responsiveGridConfig.gap;
+    const rowHeight = responsiveGridConfig.rowHeight;
 
     const cellWidth = (containerSize.width - (gap * (columns + 1))) / columns;
-    const cellHeight = config.rowHeight;
+    const cellHeight = rowHeight;
 
     return {
       columns,
@@ -41,40 +58,24 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
       totalWidth: containerSize.width,
       totalHeight: (cellHeight * currentPage.rows) + (gap * (currentPage.rows + 1))
     };
-  }, [containerSize, currentBreakpoint, currentPage.rows]);
-
-  // Ermittle aktuellen Breakpoint
-  useEffect(() => {
-    const updateBreakpoint = () => {
-      const width = window.innerWidth;
-      const breakpoints = nicConfig.grid.breakpoints;
-
-      if (width <= breakpoints.mobile.maxWidth) {
-        setCurrentBreakpoint('mobile');
-      } else if (width <= breakpoints.tablet.maxWidth) {
-        setCurrentBreakpoint('tablet');
-      } else {
-        setCurrentBreakpoint('desktop');
-      }
-    };
-
-    updateBreakpoint();
-    window.addEventListener('resize', updateBreakpoint);
-    return () => window.removeEventListener('resize', updateBreakpoint);
-  }, []);
+  }, [containerSize, responsiveGridConfig, currentPage.rows, currentBreakpoint, forceUpdate]);
 
   // Konvertiere Pixel-Position zu Grid-Position
   const pixelToGrid = useCallback((x, y) => {
-    const { cellWidth, cellHeight, gap } = calculateGridDimensions();
+    const { cellWidth, cellHeight, gap, columns } = calculateGridDimensions();
 
-    const col = Math.floor((x + gap) / (cellWidth + gap));
-    const row = Math.floor((y + gap) / (cellHeight + gap));
+    // Ensure x and y are valid numbers
+    const validX = typeof x === 'number' && !isNaN(x) ? x : 0;
+    const validY = typeof y === 'number' && !isNaN(y) ? y : 0;
+
+    const col = Math.floor((validX + gap) / (cellWidth + gap));
+    const row = Math.floor((validY + gap) / (cellHeight + gap));
 
     return {
-      col: Math.max(0, Math.min(col, gridConfig.columns - 1)),
+      col: Math.max(0, Math.min(col, columns - 1)),
       row: Math.max(0, row)
     };
-  }, [calculateGridDimensions, gridConfig.columns]);
+  }, [calculateGridDimensions]);
 
   // Konvertiere Grid-Position zu Pixel-Position
   const gridToPixel = useCallback((col, row) => {
@@ -211,6 +212,7 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
         backgroundColor: '#ffffff',
       };
     } else {
+      const gridDimensions = calculateGridDimensions();
       return {
         position: 'relative',
         width: `${totalWidth}px`,
@@ -220,16 +222,16 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
         linear-gradient(to right, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px),
         linear-gradient(to bottom, ${hslToHex((bghsl.h + 180) % 360, (bghsl.s + 50) % 100, (bghsl.l + 50) % 100)} 1px, transparent 1px)
         `,
-        backgroundSize: `${calculateGridDimensions().cellWidth + nicConfig.grid.gap}px ${calculateGridDimensions().cellHeight + nicConfig.grid.gap}px`,
-        backgroundPosition: `4px 4px`
+        backgroundSize: `${gridDimensions.cellWidth + gridDimensions.gap}px ${gridDimensions.cellHeight + gridDimensions.gap}px`,
+        backgroundPosition: `${gridDimensions.gap}px ${gridDimensions.gap}px`
       };
     }
   }, [calculateGridDimensions, mode, layoutSettings]);
 
   // Style generator for grid blocks
   const getBlockStyle = useCallback((block) => {
-    const position = gridToPixel(block.grid_col, block.grid_row);
-    const size = getBlockPixelSize(block.grid_width, block.grid_height);
+    const position = gridToPixel(block.grid_col || 0, block.grid_row || 0);
+    const size = getBlockPixelSize(block.grid_width || 1, block.grid_height || 1);
 
     return {
       position: 'absolute',
@@ -243,9 +245,10 @@ export const useGridSystem = (containerSize = { width: 1200, height: 800 }, exte
       overflow: 'hidden',
       zIndex: block.z_index || 1,
       border: '1px solid rgba(0,0,0,1)',
-      transition: isDragging ? 'none' : 'all 0.2s ease'
+      // No transition for immediate feedback
+      transition: 'none'
     };
-  }, [gridToPixel, getBlockPixelSize, isDragging]);
+  }, [gridToPixel, getBlockPixelSize]);
 
   // Style-Generator für Drop-Zone
   const getDropZoneStyle = useCallback(() => {
