@@ -49,17 +49,15 @@ export default function ResponsiveGridClient({
       const width = window.innerWidth;
       const newDeviceType = getDeviceType(width);
 
-      if (newDeviceType !== deviceType) {
-        setDeviceType(newDeviceType);
+      setDeviceType(newDeviceType);
 
-        // Calculate responsive layout for current device
-        const responsive = calculateResponsiveLayout(blocks, newDeviceType);
-        setResponsiveBlocks(responsive);
+      // Calculate responsive layout for current device
+      const responsive = calculateResponsiveLayout(blocks, newDeviceType);
+      setResponsiveBlocks(responsive);
 
-        // Calculate minimum rows needed
-        const rows = calculateMinGridRows(responsive);
-        setMinRows(rows);
-      }
+      // Calculate minimum rows needed
+      const rows = calculateMinGridRows(responsive);
+      setMinRows(rows);
     }
 
     // Initial calculation
@@ -67,7 +65,7 @@ export default function ResponsiveGridClient({
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [blocks, deviceType]);
+  }, [blocks]);
 
   // Get grid configuration based on device
   const getGridConfig = () => {
