@@ -2,15 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
-  saveDraftChanges,
-  loadDraftChanges,
-  clearDraftChanges,
-  saveSingleBlockChange,
-  cleanupOldDrafts,
-  cleanupTempBlocks,
-  cleanupProblematicDrafts
-} from '../utils/localStorageManager.js';
-import {
   generateResponsiveLayouts,
   getBlocksForDevice,
   smartRegenerateLayouts,
@@ -35,9 +26,8 @@ export const CMSProvider = ({ children }) => {
   const [currentPage, setCurrentPage] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('currentPage');
-        const parsed = JSON.parse(stored);
-        return parsed && typeof parsed === 'object' ? parsed : null;
+        const stored = localStorage.getItem('currentPageId');
+        return stored ? { id: parseInt(stored) } : null;
       } catch {
         return null;
       }
@@ -50,47 +40,14 @@ export const CMSProvider = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Undo/Redo System
-    const [undoHistory, setUndoHistory] = useState(() => {
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('undoHistory');
-          const parsed = JSON.parse(stored);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      }
-      return [];
-    });
-  const [redoHistory, setRedoHistory] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('redoHistory');
-        const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const [undoHistory, setUndoHistory] = useState([]);
+  const [redoHistory, setRedoHistory] = useState([]);
   const MAX_HISTORY_SIZE = 50;
 
   const [selectedBlock, setSelectedBlock] = useState(null);
 
   // Blocks Management with intelligent batching
-  const [blocks, setBlocks] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('blocks');
-        const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const [blocks, setBlocks] = useState([]);
   const [pendingOperations, setPendingOperations] = useState(new Map());
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaveTime, setLastSaveTime] = useState(null);
@@ -98,29 +55,16 @@ export const CMSProvider = ({ children }) => {
   const [deviceSize, setDeviceSize] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
 
   // Responsive Layouts - stores different layouts for each device
-  const [responsiveLayouts, setResponsiveLayouts] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('responsiveLayouts');
-        return stored ? JSON.parse(stored) : {};
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  });
+  const [responsiveLayouts, setResponsiveLayouts] = useState({});
 
-  const [autoResponsiveEnabled, setAutoResponsiveEnabled] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('autoResponsiveEnabled');
-        return stored === 'true';
-      } catch {
-        return true; // Default: enabled
-      }
+  const [autoResponsiveEnabled, setAutoResponsiveEnabled] = useState(true);
+
+  // Save current page to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentPage?.id) {
+      localStorage.setItem('currentPageId', currentPage.id.toString());
     }
-    return true;
-  });
+  }, [currentPage?.id]);
 
   // Helper function to save current state - AFTER blocks declaration
   const saveStateToHistory = useCallback(() => {
@@ -222,19 +166,22 @@ export const CMSProvider = ({ children }) => {
   });
   const [pendingLayoutChanges, setPendingLayoutChanges] = useState(null);
 
-  // Draft Changes for localStorage persistence
-  const [draftChanges, setDraftChanges] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('draftChanges');
-        const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+  // Draft Changes - only in memory now
+  const [draftChanges, setDraftChanges] = useState([]);
+
+  // Warning before reload if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (pendingOperations.size > 0) {
+        e.preventDefault();
+        e.returnValue = 'Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?';
+        return e.returnValue;
       }
-    }
-    return [];
-  });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [pendingOperations]);
 
   // Mode Management (Edit/Preview)
   const [mode, setMode] = useState('edit');
@@ -388,107 +335,7 @@ export const CMSProvider = ({ children }) => {
     return updatedBlocks;
   }, []);
 
-  // Extended function for loading and applying draft changes
-  const loadAndApplyDrafts = useCallback(() => {
-    const savedDrafts = loadDraftChanges();
-    if (savedDrafts.length > 0) {
-      console.log(`🔄 Loading ${savedDrafts.length} draft changes from localStorage`);
-
-      // Filter problematic draft changes before application
-      const validDrafts = savedDrafts.filter(draft => {
-        // Filtere leere Text-Block CREATE Drafts
-        if (draft.type === 'create' &&
-            draft.data?.block_type === 'Text' &&
-            (!draft.data.content ||
-             (typeof draft.data.content === 'object' && !draft.data.content.text) ||
-             (typeof draft.data.content === 'string' && draft.data.content.trim() === ''))) {
-          console.warn(`⚠️ Filtering out empty Text block draft: ${draft.blockId}`);
-          return false;
-        }
-        return true;
-      });
-
-      if (validDrafts.length !== savedDrafts.length) {
-        console.log(`🧹 Filtered out ${savedDrafts.length - validDrafts.length} problematic drafts`);
-      }
-
-      if (validDrafts.length > 0) {
-        // Apply draft changes to current blocks
-        setBlocks(prevBlocks => {
-          const updatedBlocks = applyDraftChangesToBlocks(validDrafts, prevBlocks);
-          console.log(`📦 Applied drafts: ${prevBlocks.length} -> ${updatedBlocks.length} blocks`);
-          return updatedBlocks;
-        });
-
-        // Overwrite draftChanges with filtered drafts
-        setDraftChanges(validDrafts);
-        setSaveStatus('dirty');
-      }
-    }
-  }, [loadDraftChanges, applyDraftChangesToBlocks]);
-
-  // Load draft changes on start and synchronize with localStorage
-  useEffect(() => {
-    const savedDrafts = loadDraftChanges();
-    if (savedDrafts.length > 0) {
-
-      // Completely overwrite draftChanges with loaded drafts
-      // to ensure all draft changes are preserved
-      setDraftChanges(savedDrafts);
-
-      setSaveStatus('dirty');
-    }
-
-    // Clean up old drafts, temp blocks and problematic draft changes
-    cleanupOldDrafts();
-    cleanupTempBlocks();
-    cleanupProblematicDrafts();
-  }, []);
-
-  // State to track whether draft changes have already been applied
-  const [draftsApplied, setDraftsApplied] = useState(false);
-
-  // Additional useEffect that applies draft changes as soon as blocks are loaded
-  useEffect(() => {
-    if (blocks.length > 0 && !draftsApplied && draftChanges.length > 0) {
-      console.log('🔄 Applying draft changes to loaded blocks...');
-
-      // Small delay to ensure blocks are fully loaded
-      const timer = setTimeout(() => {
-        // Check again if draft changes have already been applied
-        if (draftsApplied) {
-          console.log('ℹ️ Draft changes already applied, skipping');
-          return;
-        }
-
-        const updatedBlocks = applyDraftChangesToBlocks(draftChanges, blocks);
-
-        // Prevent infinite loop by checking if something actually changed
-        if (JSON.stringify(updatedBlocks) !== JSON.stringify(blocks)) {
-          console.log('✅ Applying draft changes to blocks');
-          setBlocks(updatedBlocks);
-        } else {
-          console.log('ℹ️ No changes detected in draft application');
-        }
-
-        setDraftsApplied(true);
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [blocks.length, draftsApplied, draftChanges.length, applyDraftChangesToBlocks]);
-
-  // Reset draftsApplied when page changes
-  useEffect(() => {
-    setDraftsApplied(false);
-  }, [currentPage?.id]);
-
-  // Save draft changes when changes occur
-  useEffect(() => {
-    if (draftChanges.length > 0) {
-      saveDraftChanges(draftChanges);
-    }
-  }, [draftChanges]);
+  // No more draft loading from localStorage - everything is in memory
 
   // Cleanup bei Unmount
   useEffect(() => {
@@ -499,127 +346,10 @@ export const CMSProvider = ({ children }) => {
     };
   }, []);
 
-  const loadPages = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/cms/pages');
-      if (response.ok) {
-        const data = await response.json();
-        setPages(data);
-
-        const savedCurrentPage = localStorage.getItem('currentPage');
-        let savedPage = null;
-        try {
-          savedPage = savedCurrentPage ? JSON.parse(savedCurrentPage) : null;
-        } catch {
-          savedPage = null;
-        }
-
-        // If a page is stored in localStorage, try to find it
-        if (savedPage && savedPage.id) {
-          const foundPage = data.find(page => page.id === savedPage.id);
-          if (foundPage) {
-            setCurrentPage(foundPage);
-
-            // Use blocks from localStorage instead of loading from DB
-            // The blocks have already been loaded from localStorage in the useState initializer
-            // Apply draft changes if available
-            setTimeout(() => {
-              loadAndApplyDrafts();
-            }, 100);
-
-            return; // Exit the function early since we found the saved page
-          } else {
-            localStorage.removeItem('currentPage');
-          }
-        }        // Automatically select home page if no page is selected and none was saved in localStorage
-        if (!currentPage && data.length > 0) {
-          const homePage = data.find(page =>
-            page.slug === 'home' ||
-            page.slug === 'index' ||
-            page.title?.toLowerCase() === 'home'
-          ) || data[0];
-
-          setCurrentPage(homePage);
-
-          // Check if blocks are already present in localStorage
-          if (blocks.length > 0) {
-            // Apply draft changes
-            setTimeout(() => {
-              loadAndApplyDrafts();
-            }, 100);
-          } else {
-            // Only load if no blocks are present in localStorage
-            const blocksResponse = await fetch(`/api/cms/pages/${homePage.id}/blocks`);
-            if (blocksResponse.ok) {
-              const blocksData = await blocksResponse.json();
-              const validBlocks = blocksData.map(block => ({
-                ...block,
-                grid_col: typeof block.grid_col === 'number' && !isNaN(block.grid_col) ? block.grid_col : 0,
-                grid_row: typeof block.grid_row === 'number' && !isNaN(block.grid_row) ? block.grid_row : 0,
-                grid_width: typeof block.grid_width === 'number' && !isNaN(block.grid_width) ? block.grid_width : 2,
-                grid_height: typeof block.grid_height === 'number' && !isNaN(block.grid_height) ? block.grid_height : 1,
-                background_color: block.background_color || 'transparent',
-                text_color: block.text_color || '#000000',
-                z_index: typeof block.z_index === 'number' ? block.z_index : 1
-              }));
-              setBlocks(validBlocks);
-            }
-          }
-        }
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
-    } catch (error) {
-      console.error('❌ Error loading pages:', error);
-      setSaveStatus('error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []); // No dependencies - called only once on mount
-
-  // Load layout settings from API
-  const loadLayoutSettings = useCallback(async () => {
-    try {
-      const response = await fetch('/api/cms/layout');
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          setLayoutSettings(data);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading layout settings:', error);
-    }
-  }, []);
-
-  // Load blocks for a specific page
-  const loadBlocks = useCallback(async (pageId, forceFromDB = false) => {
+  // Load blocks for a specific page - ALWAYS from DB
+  const loadBlocks = useCallback(async (pageId) => {
     if (!pageId) {
       return;
-    }
-
-    // If not explicitly loading from DB, check localStorage first
-    if (!forceFromDB) {
-      try {
-        const storedBlocks = localStorage.getItem('blocks');
-        const parsedBlocks = storedBlocks ? JSON.parse(storedBlocks) : [];
-        const pageBlocks = parsedBlocks.filter(block =>
-          block.page_id === pageId ||
-          block.page_id === String(pageId) ||
-          String(block.page_id) === String(pageId)
-        );
-
-        if (pageBlocks.length > 0) {
-          setBlocks(pageBlocks);
-          setPendingOperations(new Map());
-          setSaveStatus('saved');
-          setIsLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.warn('⚠️ Error reading localStorage, falling back to database:', error);
-      }
     }
 
     setIsLoading(true);
@@ -652,15 +382,6 @@ export const CMSProvider = ({ children }) => {
         setBlocks(validBlocks);
         setPendingOperations(new Map());
         setSaveStatus('saved');
-
-        // Aktualisiere localStorage mit den neuen Daten von der DB
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('blocks', JSON.stringify(validBlocks));
-          } catch (error) {
-            console.warn('⚠️ Could not update localStorage with loaded blocks:', error);
-          }
-        }
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -672,63 +393,94 @@ export const CMSProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [loadDraftChanges, applyDraftChangesToBlocks]);
+  }, []);
+
+  const loadPages = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/cms/pages');
+      if (response.ok) {
+        const data = await response.json();
+        setPages(data);
+
+        // Try to restore saved page from localStorage
+        let pageToSelect = null;
+        if (typeof window !== 'undefined') {
+          const savedPageId = localStorage.getItem('currentPageId');
+          if (savedPageId) {
+            pageToSelect = data.find(p => p.id === parseInt(savedPageId));
+          }
+        }
+
+        // If no saved page or not found, select home page
+        if (!pageToSelect && data.length > 0) {
+          pageToSelect = data.find(page =>
+            page.slug === 'home' ||
+            page.slug === 'index' ||
+            page.title?.toLowerCase() === 'home'
+          ) || data[0];
+        }
+
+        if (pageToSelect) {
+          setCurrentPage(pageToSelect);
+
+          // Load blocks from database
+          if (pageToSelect.id) {
+            await loadBlocks(pageToSelect.id);
+          }
+        }
+      } else {
+        console.error('Failed to load pages');
+      }
+    } catch (error) {
+      console.error('❌ Error loading pages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, loadBlocks]);
+
+  // Load layout settings from API
+  const loadLayoutSettings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/cms/layout');
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setLayoutSettings(data);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading layout settings:', error);
+    }
+  }, []);
 
   // Select page and load its blocks
   const selectPage = useCallback((page) => {
 
     // Warn if there are unsaved changes
     if (pendingOperations.size > 0) {
-      console.warn(`⚠️ Switching pages with ${pendingOperations.size} unsaved changes. Consider saving first.`);
+      const confirmSwitch = window.confirm(
+        `Sie haben ${pendingOperations.size} ungespeicherte Änderungen. Möchten Sie wirklich die Seite wechseln? Ungespeicherte Änderungen gehen verloren.`
+      );
+      if (!confirmSwitch) {
+        return; // Cancel page switch
+      }
     }
 
     // Clear current state
     setBlocks([]);
     setPendingOperations(new Map());
     setSaveStatus('saved');
-    // NICHT die draftChanges leeren - sie werden beim Laden neu gesetzt
-    // setDraftChanges([]); // Entfernt um Draft-Änderungen zu bewahren
+    setDraftChanges([]);
 
     // Set new page
     setCurrentPage(page);
 
-    // Load blocks for new page
+    // Load blocks from database
     if (page && page.id) {
-
-      // Check if blocks for this page are already in localStorage
-      try {
-        const storedBlocks = localStorage.getItem('blocks');
-        const parsedBlocks = storedBlocks ? JSON.parse(storedBlocks) : [];
-
-        // Filter blocks for the current page (consider both string and number IDs)
-        const pageBlocks = parsedBlocks.filter(block =>
-          block.page_id === page.id ||
-          block.page_id === String(page.id) ||
-          String(block.page_id) === String(page.id)
-        );
-
-        if (pageBlocks.length > 0) {
-
-          // First set the blocks without draft changes
-          setBlocks(pageBlocks);
-
-          // Lade Draft-Änderungen
-          const savedDrafts = loadDraftChanges();
-          setDraftChanges(savedDrafts);
-
-          // Markiere, dass Draft-Änderungen noch angewendet werden müssen
-          setDraftsApplied(false);
-
-          setSaveStatus(savedDrafts.length > 0 ? 'dirty' : 'saved');
-        } else {
-          loadBlocks(page.id);
-        }
-      } catch (error) {
-        console.warn('⚠️ Error reading blocks from localStorage, loading from database:', error);
-        loadBlocks(page.id);
-      }
+      loadBlocks(page.id);
     }
-  }, [loadBlocks]); // Entferne pendingOperations.size aus Abhängigkeiten
+  }, [loadBlocks, pendingOperations]);
 
   // Intelligente Operation mit Batching
   const batchOperation = useCallback((blockId, operation, data) => {
@@ -1069,20 +821,7 @@ export const CMSProvider = ({ children }) => {
     const hasBlockChanges = pendingOperations.size > 0;
     const hasLayoutChanges = pendingLayoutChanges !== null;
     const hasDraftChanges = draftChanges.length > 0;
-
-    // Lade auch Draft-Änderungen aus localStorage
-    let localStorageDrafts = [];
-    try {
-      const storedDrafts = loadDraftChanges();
-      localStorageDrafts = storedDrafts || [];
-    } catch (error) {
-      console.warn('⚠️ Error loading draft changes from localStorage:', error);
-    }
-
-    // Kombiniere alle Draft-Änderungen
-    const allDraftChanges = [...draftChanges, ...localStorageDrafts.filter(draft =>
-      !draftChanges.some(existing => existing.id === draft.id)
-    )];
+    const allDraftChanges = draftChanges;
 
     if (!hasBlockChanges && !hasLayoutChanges && allDraftChanges.length === 0) {
       return;
@@ -1523,10 +1262,8 @@ export const CMSProvider = ({ children }) => {
         }, 1000);
       }
 
-      // 9. Lösche ALLE Draft-Änderungen (State + localStorage) und synchronisiere mit DB
+      // 9. Lösche ALLE Draft-Änderungen (State only)
       setDraftChanges([]);
-      clearDraftChanges(); // Lösche localStorage
-      cleanupTempBlocks(); // Bereinige alte temp_ IDs
 
       console.log('✅ All draft changes published and cleared');
 
@@ -1535,7 +1272,7 @@ export const CMSProvider = ({ children }) => {
       setSaveStatus('error');
       throw error;
     }
-  }, [currentPage, pendingOperations, pendingLayoutChanges, draftChanges, loadDraftChanges, blocks]);
+  }, [currentPage, pendingOperations, pendingLayoutChanges, draftChanges, blocks]);
 
   // Separater useEffect zum Aktualisieren des localStorage nach Block-Änderungen
   useEffect(() => {
@@ -1557,17 +1294,9 @@ export const CMSProvider = ({ children }) => {
   // Draft-Änderungen verwerfen
   const discardDrafts = useCallback(() => {
 
-    // Lade auch Draft-Änderungen aus localStorage für vollständige Bereinigung
-    let localStorageDrafts = [];
-    try {
-      localStorageDrafts = loadDraftChanges() || [];
-    } catch (error) {
-      console.warn('⚠️ Error loading localStorage drafts for discard:', error);
-    }
-
     // Reload blocks when page is selected - explicitly load from DB
     if (currentPage && currentPage.id) {
-      loadBlocks(currentPage.id, true); // forceFromDB = true
+      loadBlocks(currentPage.id);
     }
 
     // Lade Layout-Einstellungen neu
@@ -1578,13 +1307,12 @@ export const CMSProvider = ({ children }) => {
     setPendingLayoutChanges(null);
     setSaveStatus('saved');
 
-    // Lösche ALLE Draft-Änderungen (State + localStorage)
+    // Lösche ALLE Draft-Änderungen (State only)
     setDraftChanges([]);
-    clearDraftChanges();
 
     console.log('✅ All draft changes discarded, layout settings reloaded');
 
-  }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, loadDraftChanges, blocks]);
+  }, [currentPage, loadBlocks, loadLayoutSettings, draftChanges, blocks]);
 
   // Manuelles Speichern
   const saveNow = useCallback(async () => {
@@ -1607,19 +1335,8 @@ export const CMSProvider = ({ children }) => {
     let totalLayoutChanges = pendingLayoutChanges ? 1 : 0;
     let totalDraftChanges = draftChanges.length;
 
-    // Prüfe auch localStorage für zusätzliche Draft-Änderungen
-    try {
-      const localStorageDrafts = loadDraftChanges() || [];
-      const uniqueLocalStorageDrafts = localStorageDrafts.filter(draft =>
-        !draftChanges.some(existing => existing.id === draft.id)
-      );
-      totalDraftChanges += uniqueLocalStorageDrafts.length;
-    } catch (error) {
-      console.warn('⚠️ Error counting localStorage drafts:', error);
-    }
-
     return totalPendingOperations + totalLayoutChanges + totalDraftChanges;
-  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length, loadDraftChanges]);
+  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length]);
 
   const [componentFiles, setComponentFiles] = useState([]);
 
@@ -1714,10 +1431,6 @@ export const CMSProvider = ({ children }) => {
   const toggleAutoResponsive = useCallback((enabled) => {
     setAutoResponsiveEnabled(enabled);
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('autoResponsiveEnabled', enabled.toString());
-    }
-
     if (enabled) {
       // Generate layouts immediately when enabled
       generateAutoResponsiveLayouts();
@@ -1740,20 +1453,8 @@ export const CMSProvider = ({ children }) => {
    */
   const updateResponsiveLayout = useCallback((device, updatedBlocks) => {
     const newLayouts = smartRegenerateLayouts(responsiveLayouts, updatedBlocks, device);
-
     setResponsiveLayouts(newLayouts);
-
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('responsiveLayouts', JSON.stringify(newLayouts));
-        if (currentPage) {
-          localStorage.setItem(`responsiveLayouts_page_${currentPage.id}`, JSON.stringify(newLayouts));
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not save responsive layouts:', error);
-      }
-    }
-  }, [responsiveLayouts, currentPage]);
+  }, [responsiveLayouts]);
 
   /**
    * Get grid configuration for current device
@@ -1788,30 +1489,19 @@ export const CMSProvider = ({ children }) => {
     }
   }, [blocks, autoResponsiveEnabled, currentPage?.id]); // React to any block changes (position, size, etc.)
 
-  // Load responsive layouts when page changes
+  // Generate responsive layouts when page changes and auto-responsive is enabled
   useEffect(() => {
-    if (currentPage && typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(`responsiveLayouts_page_${currentPage.id}`);
-        if (stored) {
-          const layouts = JSON.parse(stored);
-          setResponsiveLayouts(layouts);
-        } else if (autoResponsiveEnabled) {
-          // Generate if not exists
-          generateAutoResponsiveLayouts();
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not load responsive layouts:', error);
-      }
+    if (currentPage && autoResponsiveEnabled && blocks.length > 0) {
+      generateAutoResponsiveLayouts();
     }
-  }, [currentPage?.id]);
+  }, [currentPage?.id, autoResponsiveEnabled]);
 
   // Recalculate pending count whenever dependencies change
   const pendingOperationsCount = React.useMemo(() => {
     const count = getTotalPendingChanges();
     console.log(`📊 pendingOperationsCount updated: ${count} (pendingOps: ${pendingOperations.size}, drafts: ${draftChanges.length})`);
     return count;
-  }, [pendingOperations.size, pendingLayoutChanges, draftChanges.length]);
+  }, [pendingOperations, pendingLayoutChanges, draftChanges.length, getTotalPendingChanges]);
 
   const value = {
     pages,
@@ -2006,16 +1696,13 @@ export const CMSProvider = ({ children }) => {
     debugLocalStorage: () => {
       console.log('🔍 localStorage Debug Info:');
       console.log('Blocks:', JSON.parse(localStorage.getItem('blocks') || '[]'));
-      console.log('Draft Changes:', JSON.parse(localStorage.getItem('draftChanges') || '[]'));
-      console.log('Current Page:', JSON.parse(localStorage.getItem('currentPage') || 'null'));
+      console.log('Draft Changes:', draftChanges);
+      console.log('Current Page:', currentPage);
     },
 
     cleanupAllStorage: () => {
-      console.log('🧹 Cleaning up all localStorage...');
-      cleanupOldDrafts();
-      cleanupTempBlocks();
-      cleanupProblematicDrafts();
-      console.log('✅ Storage cleanup completed');
+      console.log('🧹 No localStorage cleanup needed - using memory only');
+      console.log('✅ Nothing to clean');
     },
   };
 
