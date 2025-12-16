@@ -6,6 +6,8 @@ import {
   createDynamicFooterComponents
 } from '@/lib/componentLoaderServer';
 import { notFound } from 'next/navigation';
+import { calculateResponsiveLayout, calculateMinGridRows } from '@/utils/responsiveLayoutCalculator';
+import ResponsiveGridClient from '@/components/ResponsiveGridClient';
 
 // Force dynamic rendering and disable caching
 export const dynamic = 'force-dynamic';
@@ -224,77 +226,11 @@ export default async function PublicPage({ params }) {
 
         {/* Main Content */}
         <main className="flex-1 relative">
-          <div
-            className="w-full h-full relative responsive-live-grid"
-            style={{
-              display: 'grid',
-              gridTemplateRows: `repeat(${page.rows || 12}, minmax(${nicConfig.grid.rowHeight || '50px'}, auto))`,
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: `${nicConfig.grid.gap || 8}px`,
-              padding: '16px'
-            }}
-          >
-            {/* Render Blocks im Grid System */}
-            {blocks.map((block) => {
-              const Component = blockComponents[block.block_type];
-              if (!Component) {
-                return (
-                  <div
-                    key={block.id}
-                    className="text-red-500 p-2 border border-red-300 rounded bg-red-50 flex items-center justify-center"
-                    style={{
-                      gridColumn: `${(block.grid_col || 0) + 1} / span ${block.grid_width || 2}`,
-                      gridRow: `${(block.grid_row || 0) + 1} / span ${block.grid_height || 1}`,
-                      zIndex: block.z_index || 1
-                    }}
-                  >
-                    <div className="text-center">
-                      <div className="font-bold">Unbekannter Block-Typ: {block.block_type}</div>
-                      <div className="text-sm mt-1">Verfügbare Typen: {Object.keys(blockComponents).join(', ')}</div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  key={block.id}
-                  className="rounded-md overflow-hidden"
-                  style={{
-                    gridColumn: `${(block.grid_col || 0) + 1} / span ${block.grid_width || 2}`,
-                    gridRow: `${(block.grid_row || 0) + 1} / span ${block.grid_height || 1}`,
-                    backgroundColor: block.background_color || 'transparent',
-                    color: block.text_color || '#000000',
-                    zIndex: block.z_index || 1
-                  }}
-                >
-                  <div className="w-full h-full relative">
-                    <Component
-                      content={
-                        block.content &&
-                        typeof block.content === 'object' &&
-                        Object.keys(block.content).length > 0
-                          ? block.content
-                          : (typeof block.content === 'string' ? block.content : '')
-                      }
-                      block_type={block.block_type}
-                      editable={false}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Empty State for pages without blocks */}
-            {blocks.length === 0 && (
-              <div className="col-span-12 flex items-center justify-center h-full">
-                <div className="text-center text-gray-500">
-                  <h1 className="text-4xl font-bold mb-4">{page.title}</h1>
-                  <p>Diese Seite ist noch in Bearbeitung.</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <ResponsiveGridClient
+            blocks={blocks}
+            layoutSettings={layoutSettings}
+            nicConfig={nicConfig}
+          />
         </main>
 
         {/* Footer */}
