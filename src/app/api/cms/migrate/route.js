@@ -1,11 +1,5 @@
 import { NextResponse } from 'next/server';
-import pkg from 'pg';
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/nic_cms',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+import { pool } from '@/lib/database';
 
 export async function POST() {
   const client = await pool.connect();

@@ -1,11 +1,31 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
+// DATABASE_URL (Docker / generic Postgres) or NEON_DATABASE_URL (Vercel deployment with Neon)
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.NEON_DATABASE_URL ||
+  'postgresql://user:password@localhost:5432/nic_cms';
+
+// Use SSL for remote databases (e.g. Neon), not for local/Docker Postgres
+function needsSsl(url) {
+  if (process.env.DATABASE_SSL === 'true') return true;
+  if (process.env.DATABASE_SSL === 'false') return false;
+  if (/sslmode=(require|verify-ca|verify-full)/.test(url)) return true;
+  try {
+    const host = new URL(url).hostname;
+    return !['localhost', '127.0.0.1', 'postgres', 'db'].includes(host);
+  } catch {
+    return false;
+  }
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/nic_cms',
-  // SSL nur in Produktion
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: needsSsl(connectionString) ? { rejectUnauthorized: false } : false,
 });
+
+export { pool };
 
 // Query-Funktion die ähnlich wie Neon funktioniert
 async function sql(strings, ...values) {

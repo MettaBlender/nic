@@ -1,5 +1,4 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+import { pool } from '@/lib/database';
 import {
   createDynamicComponents,
   createDynamicHeaderComponents,
@@ -20,16 +19,6 @@ import DefaultFooter from '@/components/nic/cms/footer/DefaultFooter.jsx';
 import SocialFooter from '@/components/nic/cms/footer/SocialFooter.jsx';
 
 import nicConfig from '../../../nic.config.js';
-
-// Database connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/nic_cms',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
-
-if (!process.env.DATABASE_URL) {
-  console.warn('Warning: DATABASE_URL environment variable is not set, using default');
-}
 
 // Page by slug
 async function getPageBySlug(slug) {
